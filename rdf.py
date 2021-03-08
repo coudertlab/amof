@@ -38,16 +38,15 @@ class Rdf(object):
         self.rdf_data = []
         # self.struct = struct
 
-    # TBC
-    def cutoff_from_rdf(x, rdf, a, b): 
-        """ return x such that rdf(x) global minimun between a and b of rdf"""
-        return x[np.argmin(rdf[(x>a)*(x<b)])+np.size(rdf[x<=a])]
+    # # TBC
+    # def cutoff_from_rdf(x, rdf, a, b): 
+    #     """ return x such that rdf(x) global minimun between a and b of rdf"""
+    #     return x[np.argmin(rdf[(x>a)*(x<b)])+np.size(rdf[x<=a])]
 
-    # must clean single_frame
     @classmethod
-    def from_trajectory(cls, path_to_traj, dr = 0.01, rmax = 'half_cell', single_frame = False, last_frames = False):
+    def from_trajectory(cls, trajectory, dr = 0.01, rmax = 'half_cell', single_frame = False, last_frames = False):
         """
-        constructor of rdf class from trajectory
+        constructor of rdf class from sadi trajectory object
         dr, rmax in Angstrom
         If rmax is set to 'half_cell', then half of the minimum dimension of the cell is used to ensure no atom is taken into account twice for a given atom (computation is possible beyound this threeshold up to the min cell size)
         last_frames: number of last frames required
@@ -55,6 +54,19 @@ class Rdf(object):
         rdf_class = cls() # initialize class
         rdf_class.read_trajectory(path_to_traj, dr, rmax, single_frame, last_frames)
         return rdf_class # return class as it is a constructor
+
+    # # must clean single_frame
+    # @classmethod
+    # def from_trajectory(cls, path_to_traj, dr = 0.01, rmax = 'half_cell', single_frame = False, last_frames = False):
+    #     """
+    #     constructor of rdf class from trajectory
+    #     dr, rmax in Angstrom
+    #     If rmax is set to 'half_cell', then half of the minimum dimension of the cell is used to ensure no atom is taken into account twice for a given atom (computation is possible beyound this threeshold up to the min cell size)
+    #     last_frames: number of last frames required
+    #     Seed: specify if seed in traj so that these atoms are removed from the computation"""
+    #     rdf_class = cls() # initialize class
+    #     rdf_class.read_trajectory(path_to_traj, dr, rmax, single_frame, last_frames)
+    #     return rdf_class # return class as it is a constructor
 
     @classmethod
     def from_position(cls, path_to_traj, dr = 0.01, rmax = 'half_cell'):
@@ -75,97 +87,38 @@ class Rdf(object):
         rdf_class.read_rdf_file(path_to_rdf)
         return rdf_class # return class as it is a constructor
 
-    def read_trajectory(self, path_to_traj, dr, rmax, single_frame = False, last_frames = False):
+    def compute_rdf(self, trajectory, dr, rmax):
         """
-        last_frames: number of last frames required
-        Seed: specify if seed in traj so that these atoms are removed from the computation"""
-
-        logger.info("read trajectory %s", path_to_traj)
-
-        if single_frame:
-            # to be changed with a proper import func or either a class
-            # format to be changed when first used
-            atoms = ase.io.read(path_to_traj, format = 'lammps-data', style='charge')
-
-            def get_index_closest(myList, myNumber):
-                """
-                Assumes myList is sorted. Returns closest value to myNumber.
-
-                If two numbers are equally close, return the smallest number.
-                """
-                pos = bisect.bisect_left(myList, myNumber)
-        #         pos = np.searchsorted(myList, myNumber) # twice as slow in tried example
-                if pos == 0:
-                    return myList[0]
-                if pos == len(myList):
-                    return myList[-1]
-                before = myList[pos - 1]
-                after = myList[pos]
-                if after - myNumber < myNumber - before:
-                    return pos
-                else:
-                    return pos - 1
-
-            myList = ase.data.atomic_masses            
-            atomic_numbers = [get_index_closest(myList, myNumber) for myNumber in atoms.get_masses()]            
-            atoms.set_atomic_numbers(atomic_numbers)
-            traj = [atoms]
-        else:
-            traj = Trajectory(path_to_traj, mode='r')
-        if last_frames!=False:
-        #     output_path += "-lastframes"
-            traj = [traj[i] for i in range(len(traj) - last_frames, len(traj))] # last <last_frames> frames
-             
-        # H = data.atomic_numbers['H']
-        # C = data.atomic_numbers['C']
-        # N = data.atomic_numbers['N']
-        # Zn = data.atomic_numbers['Zn']
-
-        # chemical_symbols = list(set())
-        atomic_numbers_unique = list(set(traj[0].get_atomic_numbers()))
+        compute rdf from sadi trajectory object
+        """
+        atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
         N_species = len(atomic_numbers_unique) # number of different chemical species
 
-        # add this as default option
+        # default option
         if  rmax == 'half_cell':
-            rmax = np.min([a for t in traj for a in t.get_cell_lengths_and_angles()[0:3]]) / 2
-
+            rmax = np.min([a for t in trajectory for a in t.get_cell_lengths_and_angles()[0:3]]) / 2
         bins = int(rmax // dr)
-        
-        # if single_frame:
-        #     bins = 200
-        # elif last_frames!=False and last_frames<10:
-        #     bins = 200
-        # else:
-        #     bins = 800
-        
-
-
         r = np.arange(bins) * dr
         
         self.rdf_data = pd.DataFrame({"r": r})
-        # self.rdf_data = pd.DataFrame({"r": r}, index = r) # set index ?
 
-        rng = rmax
         # Code from the asap3 manual for a trajectory
         RDFobj = None
         for atoms in traj:
             if RDFobj is None:
-                RDFobj = RadialDistributionFunction(atoms, rng, bins)
+                RDFobj = RadialDistributionFunction(atoms, rmax, bins)
             else:
                 RDFobj.atoms = atoms  # Fool RDFobj to use the new atoms
             RDFobj.update()           # Collect data
         
-        # Total RDF
-        
-        rdf = RDFobj.get_rdf(groups=0)
-        
+        # Total RDF        
+        rdf = RDFobj.get_rdf(groups=0)        
         self.rdf_data["X-X"] = rdf
 
-
-            
-        # elements_list = [H, C, N, Zn]
+        # Partial RDFs               
         elements = [[(x, y) for y in atomic_numbers_unique] for x in atomic_numbers_unique] # cartesian product of very couple of  species
 
+        # change to np.like 
         partial_rdf = [[0 for y in atomic_numbers_unique] for x in atomic_numbers_unique] # need to have same structure as elements but any content is fine as it will be replaced
 
         for i in range(N_species):
@@ -173,24 +126,128 @@ class Rdf(object):
                 xx = elements[i][j]
                 xx_str = data.chemical_symbols[xx[0]] + "-" + data.chemical_symbols[xx[1]]
                 partial_rdf[i][j] = RDFobj.get_rdf(elements=xx,groups=0)
-                # plt.plot(x, partial_rdf[i][j], label = xx_str)
-                # print(xx_str)
-                # np.save(output_path + ".rdf_" + xx_str, partial_rdf[i][j])
-                self.rdf_data[xx_str] = partial_rdf[i][j]
-
-        # plt.legend()
-        # plt.savefig(output_path + ".rdf_Y-Y" + ".png")        
-        # plt.show()        
+                self.rdf_data[xx_str] = partial_rdf[i][j]    
         for i in range(N_species):
             xx = elements[i][i]
             xx_str = data.chemical_symbols[xx[0]] + "-" + data.chemical_symbols[xx[1]]
-            # plt.plot(x, partial_rdf[i][i], label = xx_str)
-            # print(xx_str)
-            # np.save(output_path + ".rdf_" + data.chemical_symbols[xx[0]] + "-X", sum([partial_rdf[i][j] for j in range(N_species)]))
-            self.rdf_data[data.chemical_symbols[xx[0]] + "-X"] = sum([partial_rdf[i][j] for j in range(N_species)])
-        # plt.legend()
-        # plt.savefig(output_path + ".rdf_X-Y" + ".png")        
-        # plt.show()       
+            self.rdf_data[data.chemical_symbols[xx[0]] + "-X"] = sum([partial_rdf[i][j] for j in range(N_species)])   
+
+    # def read_trajectory(self, path_to_traj, dr, rmax, single_frame = False, last_frames = False):
+    #     """
+    #     last_frames: number of last frames required
+    #     Seed: specify if seed in traj so that these atoms are removed from the computation"""
+
+    #     logger.info("read trajectory %s", path_to_traj)
+
+    #     if single_frame:
+    #         # to be changed with a proper import func or either a class
+    #         # format to be changed when first used
+    #         atoms = ase.io.read(path_to_traj, format = 'lammps-data', style='charge')
+
+    #         def get_index_closest(myList, myNumber):
+    #             """
+    #             Assumes myList is sorted. Returns closest value to myNumber.
+
+    #             If two numbers are equally close, return the smallest number.
+    #             """
+    #             pos = bisect.bisect_left(myList, myNumber)
+    #     #         pos = np.searchsorted(myList, myNumber) # twice as slow in tried example
+    #             if pos == 0:
+    #                 return myList[0]
+    #             if pos == len(myList):
+    #                 return myList[-1]
+    #             before = myList[pos - 1]
+    #             after = myList[pos]
+    #             if after - myNumber < myNumber - before:
+    #                 return pos
+    #             else:
+    #                 return pos - 1
+
+    #         myList = ase.data.atomic_masses            
+    #         atomic_numbers = [get_index_closest(myList, myNumber) for myNumber in atoms.get_masses()]            
+    #         atoms.set_atomic_numbers(atomic_numbers)
+    #         traj = [atoms]
+    #     else:
+    #         traj = Trajectory(path_to_traj, mode='r')
+    #     if last_frames!=False:
+    #     #     output_path += "-lastframes"
+    #         traj = [traj[i] for i in range(len(traj) - last_frames, len(traj))] # last <last_frames> frames
+             
+    #     # H = data.atomic_numbers['H']
+    #     # C = data.atomic_numbers['C']
+    #     # N = data.atomic_numbers['N']
+    #     # Zn = data.atomic_numbers['Zn']
+
+    #     # chemical_symbols = list(set())
+    #     atomic_numbers_unique = list(set(traj[0].get_atomic_numbers()))
+    #     N_species = len(atomic_numbers_unique) # number of different chemical species
+
+    #     # add this as default option
+    #     if  rmax == 'half_cell':
+    #         rmax = np.min([a for t in traj for a in t.get_cell_lengths_and_angles()[0:3]]) / 2
+
+    #     bins = int(rmax // dr)
+        
+    #     # if single_frame:
+    #     #     bins = 200
+    #     # elif last_frames!=False and last_frames<10:
+    #     #     bins = 200
+    #     # else:
+    #     #     bins = 800
+        
+
+
+    #     r = np.arange(bins) * dr
+        
+    #     self.rdf_data = pd.DataFrame({"r": r})
+    #     # self.rdf_data = pd.DataFrame({"r": r}, index = r) # set index ?
+
+    #     rng = rmax
+    #     # Code from the asap3 manual for a trajectory
+    #     RDFobj = None
+    #     for atoms in traj:
+    #         if RDFobj is None:
+    #             RDFobj = RadialDistributionFunction(atoms, rng, bins)
+    #         else:
+    #             RDFobj.atoms = atoms  # Fool RDFobj to use the new atoms
+    #         RDFobj.update()           # Collect data
+        
+    #     # Total RDF
+        
+    #     rdf = RDFobj.get_rdf(groups=0)
+        
+    #     self.rdf_data["X-X"] = rdf
+
+
+            
+    #     # elements_list = [H, C, N, Zn]
+    #     elements = [[(x, y) for y in atomic_numbers_unique] for x in atomic_numbers_unique] # cartesian product of very couple of  species
+
+    #     partial_rdf = [[0 for y in atomic_numbers_unique] for x in atomic_numbers_unique] # need to have same structure as elements but any content is fine as it will be replaced
+
+    #     for i in range(N_species):
+    #         for j in range(N_species):
+    #             xx = elements[i][j]
+    #             xx_str = data.chemical_symbols[xx[0]] + "-" + data.chemical_symbols[xx[1]]
+    #             partial_rdf[i][j] = RDFobj.get_rdf(elements=xx,groups=0)
+    #             # plt.plot(x, partial_rdf[i][j], label = xx_str)
+    #             # print(xx_str)
+    #             # np.save(output_path + ".rdf_" + xx_str, partial_rdf[i][j])
+    #             self.rdf_data[xx_str] = partial_rdf[i][j]
+
+    #     # plt.legend()
+    #     # plt.savefig(output_path + ".rdf_Y-Y" + ".png")        
+    #     # plt.show()        
+    #     for i in range(N_species):
+    #         xx = elements[i][i]
+    #         xx_str = data.chemical_symbols[xx[0]] + "-" + data.chemical_symbols[xx[1]]
+    #         # plt.plot(x, partial_rdf[i][i], label = xx_str)
+    #         # print(xx_str)
+    #         # np.save(output_path + ".rdf_" + data.chemical_symbols[xx[0]] + "-X", sum([partial_rdf[i][j] for j in range(N_species)]))
+    #         self.rdf_data[data.chemical_symbols[xx[0]] + "-X"] = sum([partial_rdf[i][j] for j in range(N_species)])
+    #     # plt.legend()
+    #     # plt.savefig(output_path + ".rdf_X-Y" + ".png")        
+    #     # plt.show()       
 
 
     def write_to_file(self, path_to_output):
