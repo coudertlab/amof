@@ -1,23 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Created on Thu Feb  7 10:39:47 2019
-
-@author: nicoc
-
-v5:
-- turned to class:
-    - 
-
-v4:
-    -imported from cambridge prod v3
-    -change everything to be compatible with any number of atoms (and not just Ag, Sb and Te = 3)
-    - removed seed possibility
-
-prod v3:
-    - branch of prod v1, included in one func
-    - include function allowed by v2
-    - generation of every possible partial rdf
-    - cleaned
+Module containing rdf related methods
 """
 
 # TD: clean imports
@@ -41,10 +23,12 @@ import bisect
 
 import logging
 
+import sadi.trajectory
+
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
 
-class rdf(object):
+class Rdf(object):
     """
     Main class for rdf
     """
@@ -243,7 +227,7 @@ class rdf(object):
             np.save(output_path +  output_name + p, rdf)   
     #average_rdfs(["3.c1.pbe","3.c2.pbe","3.c3.pbe"], "3.c.pbe")
 
-class rdf_plotter(object):
+class RdfPlotter(object):
     def __init__(self):
         """default constructor"""
         self.multiple_rdf_data = {}
