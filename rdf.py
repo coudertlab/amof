@@ -9,7 +9,7 @@ import ase
 from ase import data
 # from ase.io import read, write, vasp
 # from ase.visualize import view
-from ase.io.trajectory import Trajectory
+# from ase.io.trajectory import Trajectory
 
 from asap3.analysis.rdf import RadialDistributionFunction
 
@@ -18,8 +18,6 @@ import numpy as np
 import pandas as pd
 
 import glob
-
-import bisect
 
 import logging
 
