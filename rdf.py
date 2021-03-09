@@ -2,8 +2,6 @@
 Module containing rdf related methods
 """
 
-# TD: clean imports
-
 import ase
 import ase.data
 import asap3.analysis.rdf
