@@ -11,6 +11,7 @@ from asap3.analysis.rdf import RadialDistributionFunction
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy.integrate
 
 import logging
 
@@ -134,6 +135,18 @@ class Rdf(object):
     #         np.save(output_path +  output_name + p, rdf)   
     # #average_rdfs(["3.c1.pbe","3.c2.pbe","3.c3.pbe"], "3.c.pbe")
 #endregion
+
+
+def coordination_number(r, rdf, cutoff, density):
+    """
+    return coordination number
+    x, rdf: arrays of same size
+    cutoff: float, in Angstrom
+    density: float, no units
+    """
+    g = interpolate.interp1d(r, rdf)
+    integral = scipy.integrate.quad(lambda r: g(r)*(r**2), 0, cutoff)
+    return 4*np.pi*density*integral[0]
 
 
 class RdfPlotter(object):

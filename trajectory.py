@@ -75,3 +75,4 @@ def read_lammps_data(filename, atom_style):
     atom_style: string representing lammps atom_style (e.g. 'charge')
     """
     return Trajectory.from_lammps_data(filename, atom_style).get_traj()
+
