@@ -7,7 +7,9 @@ Module containing everythong related to trajectories:
 import ase.io.trajectory
 import logging
 import bisect
+import numpy as np
 
+import sadi.atom
 
 logger = logging.getLogger(__name__)
 
@@ -76,3 +78,15 @@ def read_lammps_data(filename, atom_style):
     """
     return Trajectory.from_lammps_data(filename, atom_style).get_traj()
 
+def apply_to_traj(trajectory, function, how):
+    """apply function to every atom of trajectory and aggregate using how"""
+    if how == 'mean':
+        return np.mean([function(atom) for atom in trajectory])
+
+def get_density(trajectory, how = 'mean'):
+    """return density of ase trajectory object"""
+    return apply_to_traj(trajectory, sadi.atom.get_density, how)
+
+def get_number_density(trajectory, how = 'mean'):
+    """return number density of ase trajectory object"""
+    return apply_to_traj(trajectory, sadi.atom.get_number_density, how)

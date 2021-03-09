@@ -6,12 +6,13 @@ Module containing rdf related methods
 
 import ase
 import ase.data
-from asap3.analysis.rdf import RadialDistributionFunction
+import asap3.analysis.rdf
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.integrate
+import scipy.interpolate
 
 import logging
 
@@ -69,7 +70,7 @@ class Rdf(object):
         RDFobj = None
         for atoms in trajectory:
             if RDFobj is None:
-                RDFobj = RadialDistributionFunction(atoms, rmax, bins)
+                RDFobj = asap3.analysis.rdf.RadialDistributionFunction(atoms, rmax, bins)
             else:
                 RDFobj.atoms = atoms  # Fool RDFobj to use the new atoms
             RDFobj.update()           # Collect data
@@ -100,6 +101,15 @@ class Rdf(object):
 
     def read_rdf_file(self, path_to_data):
         self.rdf_data = pd.read_feather(path_to_data + ".rdf")
+
+    def get_coordination_number(self, nn_set, cutoff, density):
+        """
+        return coordination number
+        nn_set: str indicating pair of neighbours
+        cutoff: float, in Angstrom
+        density: float, no units
+        """
+        return get_coordination_number(self.rdf_data['r'], self.rdf_data[nn_set], cutoff, density)
 
 #region deprecated code
     # # TBC
@@ -137,14 +147,14 @@ class Rdf(object):
 #endregion
 
 
-def coordination_number(r, rdf, cutoff, density):
+def get_coordination_number(r, rdf, cutoff, density):
     """
     return coordination number
     x, rdf: arrays of same size
     cutoff: float, in Angstrom
-    density: float, no units
+    density: float, number density of the entire system (counting every species) in Angstrom^-3
     """
-    g = interpolate.interp1d(r, rdf)
+    g = scipy.interpolate.interp1d(r, rdf)
     integral = scipy.integrate.quad(lambda r: g(r)*(r**2), 0, cutoff)
     return 4*np.pi*density*integral[0]
 
