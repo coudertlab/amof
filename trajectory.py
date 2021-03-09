@@ -33,17 +33,17 @@ class Trajectory(object):
 
     # DEV    
     @classmethod
-    def from_lammps_data(cls, filename, atom_style = 'charge'):
+    def from_lammps_data(cls, filename, atom_style):
         """
-        constructor of trajectory class from ase traj file 'filename'
+        constructor of trajectory class from lammps data file 'filename'
         atom_style: string representing lammps atom_style (e.g. 'charge')
         """
         rdf_class = cls() # initialize class
         atoms = ase.io.read(filename, format = 'lammps-data', style=atom_style)
         myList = ase.data.atomic_masses            
-        atomic_numbers = [get_index_closest(myList, myNumber) for myNumber in atoms.get_masses()]            
+        atomic_numbers = [cls.get_index_closest(myList, myNumber) for myNumber in atoms.get_masses()]            
         atoms.set_atomic_numbers(atomic_numbers)
-        cls.traj = [atoms]
+        rdf_class.traj = [atoms]
         return rdf_class 
 
     @staticmethod
@@ -65,3 +65,13 @@ class Trajectory(object):
             return pos
         else:
             return pos - 1
+
+    def get_traj(self):
+        return self.traj
+
+def read_lammps_data(filename, atom_style):
+    """
+    constructor of trajectory class from lammps data file 'filename'
+    atom_style: string representing lammps atom_style (e.g. 'charge')
+    """
+    return Trajectory.from_lammps_data(filename, atom_style).get_traj()
