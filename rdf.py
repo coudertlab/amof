@@ -92,7 +92,7 @@ class Rdf(object):
         for i in range(N_species):
             xx = elements[i][i]
             xx_str = ase.data.chemical_symbols[xx[0]] + "-" + ase.data.chemical_symbols[xx[1]]
-            self.rdf_data[data.chemical_symbols[xx[0]] + "-X"] = sum([partial_rdf[i][j] for j in range(N_species)])   
+            self.rdf_data[ase.data.chemical_symbols[xx[0]] + "-X"] = sum([partial_rdf[i][j] for j in range(N_species)])   
 
     def write_to_file(self, path_to_output):
         self.rdf_data.to_feather(path_to_output + ".rdf")
