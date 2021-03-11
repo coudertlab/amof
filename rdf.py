@@ -97,8 +97,11 @@ class Rdf(object):
     def write_to_file(self, path_to_output):
         self.rdf_data.to_feather(path_to_output + ".rdf")
 
-    def read_rdf_file(self, path_to_data):
-        self.rdf_data = pd.read_feather(path_to_data + ".rdf")
+    def read_rdf_file(self, path_to_data, add_file_extension = True):
+        """add_file_extension: if True will try to add .rdf if not already present"""
+        if add_file_extension and path_to_data[-4:] != ".rdf":
+            path_to_data += ".rdf"
+        self.rdf_data = pd.read_feather(path_to_data)
 
     def get_coordination_number(self, nn_set, cutoff, density):
         """
