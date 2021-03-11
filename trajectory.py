@@ -4,7 +4,8 @@ Module containing everythong related to trajectories:
 - constructor from different files used
 """
 
-import ase.io.trajectory
+# import ase.io.trajectory
+import ase.io
 import logging
 import bisect
 import numpy as np
@@ -24,16 +25,18 @@ class Trajectory(object):
         # self.struct = struct
 
     @classmethod
-    def from_traj(cls, filename):
+    def from_traj(cls, filename, index = None, format = None):
         """
-        constructor of trajectory class from ase traj file 'filename'
+        constructor of trajectory class using ase.io.read
+        index: index using ase format: 'first_frame:last_frame:step' or slice(first_frame,last_frame,step)
+        format: str, Used to specify the file-format. If not given, the file-format will be guessed by the filetype function.
         """
         logger.info("read trajectory %s", filename)
         rdf_class = cls() # initialize class
-        cls.traj = ase.io.trajectory(filename, mode='r')
+        # cls.traj = ase.io.trajectory(filename, mode='r')
+        rdf_class.traj = ase.io.read(filename, index, format)
         return rdf_class 
 
-    # DEV    
     @classmethod
     def from_lammps_data(cls, filename, atom_style):
         """
@@ -68,6 +71,17 @@ class Trajectory(object):
         else:
             return pos - 1
 
+    def set_cell(self, cell, set_pbc = True):
+        """
+        Args: 
+            cell: cell vector of same length than self.traj
+            set_pbc: wether to set_pbc=True to every frame of traj
+        """
+        for i in range(len(self.traj)):
+            self.traj[i].set_cell(cell[i])
+            if set_pbc:
+                self.traj[i].set_pbc(True)
+
     def get_traj(self):
         return self.traj
 
@@ -77,6 +91,22 @@ def read_lammps_data(filename, atom_style):
     atom_style: string representing lammps atom_style (e.g. 'charge')
     """
     return Trajectory.from_lammps_data(filename, atom_style).get_traj()
+
+def read_lammps_traj(path_to_xyz, index = None, cell = None):
+    """
+    Args: 
+        set_pbc: wether to set_pbc=True to every frame of traj    
+        index: index using ase format: 'first_frame:last_frame:step' or slice(first_frame,last_frame,step)
+        cell: cell vector of same length than self.traj, if None doesn't set cell
+        
+    Returns:
+        traj: ase.trajectory object
+    """
+    Traj = Trajectory.from_traj(path_to_xyz, index, format = 'xyz')
+    if cell is not None:
+        Traj.set_cell(cell, set_pbc = True)
+    return Traj.get_traj()
+    
 
 def apply_to_traj(trajectory, function, how):
     """apply function to every atom of trajectory and aggregate using how"""
