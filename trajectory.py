@@ -71,12 +71,21 @@ class Trajectory(object):
         else:
             return pos - 1
 
-    def set_cell(self, cell, set_pbc = True):
+    def set_cell(self, cell, set_pbc = True, fit_size = True):
         """
         Args: 
-            cell: cell vector of same length than self.traj
+            cell: cell vector of same length than self.traj in valid ase cell format
             set_pbc: wether to set_pbc=True to every frame of traj
+            fit_size = if True will limit array size to the smallest if cell and traj to avoir raising an error
         """
+        if fit_size and len(self.traj)!=len(cell):
+            logger.warning("Mismatch in file sizes; traj: %s vs cell: %s", len(traj), cells.shape[0])
+            if len(self.traj) > len(cell):
+                logger.warning("Reducing traj length")
+                self.traj = self.traj[0:len(cell)]
+            else:
+                logger.warning("reducing cell length")
+                cell = cell[0:len(self.traj)]
         for i in range(len(self.traj)):
             self.traj[i].set_cell(cell[i])
             if set_pbc:
@@ -95,7 +104,6 @@ def read_lammps_data(filename, atom_style):
 def read_lammps_traj(path_to_xyz, index = None, cell = None):
     """
     Args: 
-        set_pbc: wether to set_pbc=True to every frame of traj    
         index: index using ase format: 'first_frame:last_frame:step' or slice(first_frame,last_frame,step)
         cell: cell vector of same length than self.traj, if None doesn't set cell
         
@@ -106,7 +114,24 @@ def read_lammps_traj(path_to_xyz, index = None, cell = None):
     if cell is not None:
         Traj.set_cell(cell, set_pbc = True)
     return Traj.get_traj()
-    
+
+
+def read_cp2k_traj(path_to_xyz, path_to_cell, index = None):
+    """
+    Args: 
+        index: index using slice ase format: slice(first_frame,last_frame,step). 
+        'first_frame:last_frame:step' isn't supported
+        
+    Returns:
+        traj: ase.trajectory object
+    """
+    Traj = Trajectory.from_traj(path_to_xyz, index, format = 'xyz')
+    cell = np.genfromtxt(path_to_cell)[:,2:-1] 
+    cell = cell[index]
+    cell = np.array([c.reshape(3,3) for c in cell]) # reshape in 3*3 matrix cell format
+    Traj.set_cell(cell, set_pbc = True)
+    return Traj.get_traj()
+
 
 def apply_to_traj(trajectory, function, how):
     """apply function to every atom of trajectory and aggregate using how"""

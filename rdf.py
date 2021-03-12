@@ -60,6 +60,7 @@ class Rdf(object):
         if  rmax == 'half_cell':
             rmax = np.min([a for t in trajectory for a in t.get_cell_lengths_and_angles()[0:3]]) / 2
 
+        logger.info("Start computing rdf for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
         bins = int(rmax // dr)
         r = np.arange(bins) * dr        
         self.rdf_data = pd.DataFrame({"r": r})
