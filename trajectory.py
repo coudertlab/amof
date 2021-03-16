@@ -79,7 +79,7 @@ class Trajectory(object):
             fit_size = if True will limit array size to the smallest if cell and traj to avoir raising an error
         """
         if fit_size and len(self.traj)!=len(cell):
-            logger.warning("Mismatch in file sizes; traj: %s vs cell: %s", len(traj), cells.shape[0])
+            logger.warning("Mismatch in file sizes; traj: %s vs cell: %s", len(self.traj), len(cell))
             if len(self.traj) > len(cell):
                 logger.warning("Reducing traj length")
                 self.traj = self.traj[0:len(cell)]
