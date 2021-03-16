@@ -41,7 +41,7 @@ class Rdf(object):
         return rdf_class # return class as it is a constructor
 
     @classmethod
-    def from_rdf(cls, path_to_rdf, single_frame = False, last_frames = False):
+    def from_rdf(cls, path_to_rdf):
         """
         constructor of rdf class from rdf file
         """
