@@ -8,9 +8,12 @@ import ase.data
 # import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import logging
 
 import sadi.trajectory
 import sadi.atom
+
+logger = logging.getLogger(__name__)
 
 class Msd(object):
     """
@@ -61,6 +64,8 @@ class Msd(object):
             trajectory: ase trajectory object
             delta_Step: number of simulation steps between two frames
         """
+        logger.info("Start computing msd for %s frames with delta_Step = %s", len(trajectory), delta_Step)
+        
         elements = sadi.atom.get_atomic_numbers_unique(trajectory[0])
 
         Step = np.arange(len(trajectory)) * delta_Step        
