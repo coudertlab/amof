@@ -22,3 +22,23 @@ def get_number_density(atom):
 
 def get_total_mass(atom):
     return np.sum(atom.get_masses())
+
+
+def select_species_positions(atom, atomic_number):
+    """
+    return position of atom of species defined by atomic_number
+    Args:
+        atom: ase atom object
+        atomic_number: int, atom selection 
+
+    Return:
+        position array of a given species
+    """
+    if atomic_number is None:
+        return atom.get_positions()
+    else:
+        return atom.get_positions()[atom.get_atomic_numbers()==atomic_number]
+
+def get_atomic_numbers_unique(atom):
+    """return list of atomic numbers present in atom"""
+    return list(set(atom.get_atomic_numbers()))

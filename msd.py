@@ -2,44 +2,41 @@
 Module containing msd related methods
 """
 
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Feb  7 10:39:47 2019
-
-@author: nicoc
-
-prod v2
-* used MSD algo with PBC
-* put code into main func
-"""
-
 import ase
-from ase import Atoms, data
-from ase.io.trajectory import Trajectory
+import ase.data
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+import sadi.trajectory
+import sadi.atom
 
-def main(traj_name):
-    output_path = "../analysis/data/msd/" + traj_name
-    
-    traj = Trajectory('data/trajectory/'+traj_name+'.traj',mode='r')
-    
-    # Functions
-    def position(atoms, atomic_number):
-        """returns position arrays of a given species"""
-        if atomic_number!=0:
-            return atoms.get_positions()[atoms.get_atomic_numbers()==atomic_number]
-        else:
-            return atoms.get_positions()
-    
-   
-    def MSD(trajectory, atomic_number = 0):
+class Msd(object):
+    """
+    Main class for MSD
+    """
+
+    def __init__(self):
+        """default constructor"""
+        self.msd_data = []
+
+    @classmethod
+    def from_trajectory(cls, trajectory, dump_freq = 1):
+        """
+        constructor of msd class from an ase trajectory object
+
+        """
+        msd_class = cls() # initialize class
+        msd_class.compute_msd(trajectory, dr, rmax)
+        return msd_class # return class as it is a constructor
+
+    @staticmethod
+    def compute_species_msd(self, trajectory, atomic_number = None):
         """calculate MSD with real pos (stored in r) compared to PBC pos stored
         in ase (extracted with position)
+        if atomic_number is None, compute MSD between all atoms
         """
-        r_0 = position(trajectory[0], atomic_number)
+        r_0 = sadi.atom.select_species_positions(trajectory[0], atomic_number)
         r = np.zeros((len(trajectory), len(r_0), 3))
         r[0] = r_0 
         MSD = np.zeros(len(trajectory))
@@ -47,7 +44,7 @@ def main(traj_name):
             dr = np.zeros((len(r_0), 3))
             for j in range(3): #x,y,z
                 a = trajectory[t].get_cell()[j,j]
-                dr[:,j] = (position(trajectory[t], atomic_number) - r[t-1]%a)[:,j]
+                dr[:,j] = (sadi.atom.select_species_positions(trajectory[t], atomic_number) - r[t-1]%a)[:,j]
                 for i in range(len(dr)):
                     if dr[i][j]>a/2:
                         dr[i][j] -= a
@@ -56,39 +53,38 @@ def main(traj_name):
             r[t] = dr + r[t-1]
             MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
         return MSD
-    
-    Ag = data.atomic_numbers['Ag']
-    Sb = data.atomic_numbers['Sb']
-    Te = data.atomic_numbers['Te']
-    
-    
-    
-    t = np.linspace(0,4*len(traj)/1000,len(traj)) # in ps
-    
-    np.save(output_path + ".t", t)
-    np.save(output_path + ".msd_X", MSD(traj))
-    
-    elements = [Ag,Sb,Te]
-    for X in elements:
-        X_str = data.chemical_symbols[X]
-        MSD_array = MSD(traj, X)
-        np.save(output_path + ".msd_" + X_str, MSD_array)
-        plt.plot(t, MSD_array, label = X_str)
-        
-    plt.legend()
-    plt.xlabel("Time (ps)")
-    plt.ylabel("Mean-Square Displacement (${\AA}^{2}$)")
-    
-    
-    MSD_array = MSD(traj)
-    plt.plot(t, MSD_array, label = X_str)
-    
-    #plt.savefig("plots/MSD_"+traj_name+"_"+timestr+".png", dpi = 500)
-    plt.show()
 
+    def compute_msd(self, trajectory, dump_freq):
+        """
+        Args:
+            trajectory: ase trajectory object
+            dump_freq: number of simulation steps between two frames
+        """
+        elements = sadi.atom.get_atomic_numbers_unique(trajectory[0])
 
-#traj_names = ["1.a1", "1.a2", "1.a3", "2.c1", "4.c"]
-#for t in traj_names:
-#    print(t, " started")
-#    main(t)
-main("4.2")
+        Step = np.arange(len(trajectory)) * dump_freq        
+        self.msd_data = pd.DataFrame({"Step": Step})
+        self.msd_data["X"] = Msd.compute_species_msd(trajectory)
+
+        for x in elements:
+            x_str = ase.data.chemical_symbols[x]
+            self.msd_data[x_str] = Msd.compute_species_msd(trajectory, x)
+
+    def write_to_file(self, path_to_output):
+        """path_to_output: where the MSD object will be written"""
+        self.msd_data.to_feather(path_to_output + ".rdf")
+
+    @classmethod
+    def from_msd(cls, path_to_msd):
+        """
+        constructor of rdf class from rdf file
+        """
+        msd_class = cls() # initialize class
+        msd_class.read_msd_file(path_to_msd)
+        return msd_class # return class as it is a constructor
+
+    def read_msd_file(self, path_to_data, add_file_extension = True):
+        """add_file_extension: if True will try to add .rdf if not already present"""
+        if add_file_extension and path_to_data[-4:] != ".rdf":
+            path_to_data += ".rdf"
+        self.rdf_data = pd.read_feather(path_to_data)
