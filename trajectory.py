@@ -37,7 +37,7 @@ class Trajectory(object):
             format: str, Used to specify the file-format. If not given, the file-format will be guessed by the filetype function.
             unzip: if True will unzip file as temporary file before reading it with ase, if False will let ase handle the decompression
         """
-        logger.info("read trajectory %s", filename)
+        logger.info("Read trajectory %s", filename)
         trajectory_class = cls() # initialize class
         # cls.traj = ase.io.trajectory(filename, mode='r')
         if unzip:
@@ -45,10 +45,10 @@ class Trajectory(object):
             with tempfile.NamedTemporaryFile() as tmp:
                 with gzip.open(filename, 'rb') as f_in:
                     shutil.copyfileobj(f_in, tmp)
-                logger.info("ase read")
+                logger.info("Read trajectory with ase")
                 trajectory_class.traj = ase.io.read(tmp.name, index, format)
         else:
-            logger.info("ase read")
+            logger.info("Read trajectory with ase")
             trajectory_class.traj = ase.io.read(filename, index, format)
         return trajectory_class 
 
