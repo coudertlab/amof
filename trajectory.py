@@ -9,6 +9,9 @@ import ase.io
 import logging
 import bisect
 import numpy as np
+import gzip
+import shutil
+import tempfile
 
 import sadi.atom
 
@@ -25,17 +28,29 @@ class Trajectory(object):
         # self.struct = struct
 
     @classmethod
-    def from_traj(cls, filename, index = None, format = None):
+    def from_traj(cls, filename, index = None, format = None, unzip = False):
         """
         constructor of trajectory class using ase.io.read
-        index: index using ase format: 'first_frame:last_frame:step' or slice(first_frame,last_frame,step)
-        format: str, Used to specify the file-format. If not given, the file-format will be guessed by the filetype function.
+
+        Args:
+            index: index using ase format: 'first_frame:last_frame:step' or slice(first_frame,last_frame,step)
+            format: str, Used to specify the file-format. If not given, the file-format will be guessed by the filetype function.
+            unzip: if True will unzip file as temporary file before reading it with ase, if False will let ase handle the decompression
         """
         logger.info("read trajectory %s", filename)
-        rdf_class = cls() # initialize class
+        trajectory_class = cls() # initialize class
         # cls.traj = ase.io.trajectory(filename, mode='r')
-        rdf_class.traj = ase.io.read(filename, index, format)
-        return rdf_class 
+        if unzip:
+            logger.info("Unzip trajectory file before reading it %s", filename)
+            with tempfile.NamedTemporaryFile() as tmp:
+                with gzip.open(filename, 'rb') as f_in:
+                    shutil.copyfileobj(f_in, tmp)
+                logger.info("ase read")
+                trajectory_class.traj = ase.io.read(tmp.name, index, format)
+        else:
+            logger.info("ase read")
+            trajectory_class.traj = ase.io.read(filename, index, format)
+        return trajectory_class 
 
     @classmethod
     def from_lammps_data(cls, filename, atom_style):
@@ -43,13 +58,13 @@ class Trajectory(object):
         constructor of trajectory class from lammps data file 'filename'
         atom_style: string representing lammps atom_style (e.g. 'charge')
         """
-        rdf_class = cls() # initialize class
+        trajectory_class = cls() # initialize class
         atoms = ase.io.read(filename, format = 'lammps-data', style=atom_style)
         myList = ase.data.atomic_masses            
         atomic_numbers = [cls.get_index_closest(myList, myNumber) for myNumber in atoms.get_masses()]            
         atoms.set_atomic_numbers(atomic_numbers)
-        rdf_class.traj = [atoms]
-        return rdf_class 
+        trajectory_class.traj = [atoms]
+        return trajectory_class 
 
     @staticmethod
     def get_index_closest(myList, myNumber):
@@ -116,7 +131,7 @@ def read_lammps_traj(path_to_xyz, index = None, cell = None):
     return Traj.get_traj()
 
 
-def read_cp2k_traj(path_to_xyz, path_to_cell, index = None):
+def read_cp2k_traj(path_to_xyz, path_to_cell, index = None, unzip_xyz = False):
     """
     Args: 
         index: index using slice ase format: slice(first_frame,last_frame,step). 
@@ -125,7 +140,7 @@ def read_cp2k_traj(path_to_xyz, path_to_cell, index = None):
     Returns:
         traj: ase.trajectory object
     """
-    Traj = Trajectory.from_traj(path_to_xyz, index, format = 'xyz')
+    Traj = Trajectory.from_traj(path_to_xyz, index, format = 'xyz', unzip = unzip_xyz)
     cell = np.genfromtxt(path_to_cell)[:,2:-1] 
     cell = cell[index]
     cell = np.array([c.reshape(3,3) for c in cell]) # reshape in 3*3 matrix cell format
