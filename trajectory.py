@@ -41,7 +41,7 @@ class Trajectory(object):
         trajectory_class = cls() # initialize class
         # cls.traj = ase.io.trajectory(filename, mode='r')
         if unzip:
-            logger.info("Unzip trajectory file before reading it %s", filename)
+            logger.info("Unzip trajectory file")
             with tempfile.NamedTemporaryFile() as tmp:
                 with gzip.open(filename, 'rb') as f_in:
                     shutil.copyfileobj(f_in, tmp)
