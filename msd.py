@@ -9,6 +9,8 @@ import ase.data
 import numpy as np
 import pandas as pd
 import logging
+import os
+import pathlib
 
 import sadi.trajectory
 import sadi.atom
@@ -78,6 +80,7 @@ class Msd(object):
 
     def write_to_file(self, path_to_output):
         """path_to_output: where the MSD object will be written"""
+        path_to_output = os.fspath(path_to_output) # convert pathlib.Path object to string
         self.msd_data.to_feather(path_to_output + ".msd")
 
     @classmethod
