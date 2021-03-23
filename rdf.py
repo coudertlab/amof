@@ -15,6 +15,7 @@ import scipy.interpolate
 import logging
 
 import sadi.trajectory
+import sadi.files.path
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -96,12 +97,11 @@ class Rdf(object):
             self.rdf_data[ase.data.chemical_symbols[xx[0]] + "-X"] = sum([partial_rdf[i][j] for j in range(N_species)])   
 
     def write_to_file(self, path_to_output):
-        self.rdf_data.to_feather(path_to_output + ".rdf")
+        path_to_output = sadi.files.path.append_suffix(path_to_output, 'rdf')
+        self.rdf_data.to_feather(path_to_output)
 
-    def read_rdf_file(self, path_to_data, add_file_extension = True):
-        """add_file_extension: if True will try to add .rdf if not already present"""
-        if add_file_extension and path_to_data[-4:] != ".rdf":
-            path_to_data += ".rdf"
+    def read_rdf_file(self, path_to_data):
+        path_to_data = sadi.files.path.append_suffix(path_to_data, 'rdf')
         self.rdf_data = pd.read_feather(path_to_data)
 
     def get_coordination_number(self, nn_set, cutoff, density):

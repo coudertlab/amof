@@ -14,6 +14,7 @@ import pathlib
 
 import sadi.trajectory
 import sadi.atom
+import sadi.files.path
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +81,8 @@ class Msd(object):
 
     def write_to_file(self, path_to_output):
         """path_to_output: where the MSD object will be written"""
-        path_to_output = os.fspath(path_to_output) # convert pathlib.Path object to string
-        self.msd_data.to_feather(path_to_output + ".msd")
+        path_to_output = sadi.files.path.append_suffix(path_to_output, 'msd')
+        self.msd_data.to_feather(path_to_output)
 
     @classmethod
     def from_msd(cls, path_to_msd):
@@ -92,8 +93,7 @@ class Msd(object):
         msd_class.read_msd_file(path_to_msd)
         return msd_class # return class as it is a constructor
 
-    def read_msd_file(self, path_to_data, add_file_extension = True):
-        """add_file_extension: if True will try to add .msd if not already present"""
-        if add_file_extension and path_to_data[-4:] != ".msd":
-            path_to_data += ".msd"
+    def read_msd_file(self, path_to_data):
+        """path_to_data: where the MSD object is"""
+        path_to_data = sadi.files.path.append_suffix(path_to_data, 'msd')
         self.msd_data = pd.read_feather(path_to_data)
