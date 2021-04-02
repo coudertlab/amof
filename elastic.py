@@ -14,30 +14,46 @@ logger = logging.getLogger(__name__)
 
 
 
-h = []
-mock_atom = ase.Atoms()
-
-for c in cell:
-    mock_atom.set_cell(c)
-    h.append(mock_atom.get_cell().array)
-
-h = np.array(h)
 
 class ElasticConstant(object):
     """
     Main class for computing elastic constants
     """
 
-    def __init__(self):
-        """default constructor"""
-        self.epsilons = []
-        self.Cmat = [] 
+    def __init__(self, h, final_value = False):
+        """default constructor
+        Args:
+            h: cell vector
+            final_value: Boolean, If True only one value of C will be computed
+        """
+        self.set_h(h)
+        self.set_volume()
+        self.set_epsilons()
+        if final_value:
+            self.set_final_C() 
+        else:
+            self.set_every_C() 
         # self.msd_data = []
 
     # cell_traj_short = cell.isel(run_id=0).where(cell.notnull(), drop=True) # xarray where each line is a cell vector
 
     # Input file name
     # file = sys.argv[1]
+
+    def set_h(self, h):
+        """
+        # Format is: ( a_x    a_y   a_z      b_x     b_y    b_z   c_x      c_y     c_z )
+        """
+        # diff
+        h = []
+        mock_atom = ase.Atoms()
+        for c in cell:
+            mock_atom.set_cell(c)
+            h.append(mock_atom.get_cell().array)
+        h = np.array(h)
+        self.h = h
+        
+
 
     @staticmethod
     def cummean(a):
@@ -48,7 +64,10 @@ class ElasticConstant(object):
         """
         return np.cumsum(a) / np.arange(1, len(a) + 1)
 
-    def get_epsilons(h):
+    def set_volume(h):
+        self.volume = ElasticConstant.cummean(list(map(np.linalg.det, h)))
+
+    def set_epsilons(h):
         # Temperature of the trajectory
 
 
@@ -76,7 +95,6 @@ class ElasticConstant(object):
             return (np.linalg.norm(h[0]), np.linalg.norm(h[1]), np.linalg.norm(h[2]),
                                 vector_angle(h[1],h[2]), vector_angle(h[2],h[0]), vector_angle(h[0],h[1]))
 
-        volume = ElasticConstant.cummean(list(map(np.linalg.det, h)))
         abc = list(map(h2abc, h))
 
 
@@ -102,7 +120,7 @@ class ElasticConstant(object):
         print('    gamma = %.3f' % np.rad2deg(np.mean([x[5] for x in abc])))
         print('   volume = %.1f' % volume)
 
-    def compute_C(h):
+    def set_every_C(h):
         temperature = 300
 
         # Elastic constants
