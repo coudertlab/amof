@@ -45,12 +45,12 @@ class ElasticConstant(object):
         # Format is: ( a_x    a_y   a_z      b_x     b_y    b_z   c_x      c_y     c_z )
         """
         # diff
-        h = []
+        new_h = []
         mock_atom = ase.Atoms()
-        for c in cell:
+        for c in h:
             mock_atom.set_cell(c)
-            h.append(mock_atom.get_cell().array)
-        h = np.array(h)
+            new_h.append(mock_atom.get_cell().array)
+        h = np.array(new_h)
         self.h = h
         
 
@@ -64,10 +64,10 @@ class ElasticConstant(object):
         """
         return np.cumsum(a) / np.arange(1, len(a) + 1)
 
-    def set_volume(h):
-        self.volume = ElasticConstant.cummean(list(map(np.linalg.det, h)))
+    def set_volume(self):
+        self.volume = self.cummean(list(map(np.linalg.det, self.h)))
 
-    def set_epsilons(h):
+    def set_epsilons(self):
         # Temperature of the trajectory
 
 
@@ -95,21 +95,22 @@ class ElasticConstant(object):
             return (np.linalg.norm(h[0]), np.linalg.norm(h[1]), np.linalg.norm(h[2]),
                                 vector_angle(h[1],h[2]), vector_angle(h[2],h[0]), vector_angle(h[0],h[1]))
 
-        abc = list(map(h2abc, h))
+        abc = list(map(h2abc, self.h))
 
 
 
 
         # Calculating the strain matrices
 
-        inv_reference = np.linalg.inv(h[0])
+        inv_reference = np.linalg.inv(self.h[0])
         inv_reference_t = inv_reference.transpose()
 
         def h2eps(h):
             return (np.dot(inv_reference_t, np.dot(h.transpose(), np.dot(h, inv_reference))) - np.identity(3)) / 2
 
-        epsilons = list(map(h2eps, h))
+        self.epsilons = np.array(list(map(h2eps, self.h)))
 
+    @staticmethod
     def print_cell(abc):
         print('Unit cell averages:')
         print('            a = %.3f' % np.mean([x[0] for x in abc]))
@@ -120,7 +121,7 @@ class ElasticConstant(object):
         print('    gamma = %.3f' % np.rad2deg(np.mean([x[5] for x in abc])))
         print('   volume = %.1f' % volume)
 
-    def set_every_C(h):
+    def set_every_C(self):
         temperature = 300
 
         # Elastic constants
@@ -131,11 +132,11 @@ class ElasticConstant(object):
         Smat = np.zeros((6,6))
         for i in range(6):
             a, b = CARTESIAN_TO_VOIGT[i]
-            fi = ElasticConstant.cummean([ epsilon[a, b] for epsilon in epsilons ])
+            fi = ElasticConstant.cummean([ epsilon[a, b] for epsilon in self.epsilons ])
             for j in range(i+1):
                 u, v = CARTESIAN_TO_VOIGT[j]
-                fj = ElasticConstant.cummean([ epsilon[u, v] for epsilon in epsilons ])
-                fij = ElasticConstant.cummean([ epsilon[a, b] * epsilon[u, v] for epsilon in epsilons ])
+                fj = ElasticConstant.cummean([ epsilon[u, v] for epsilon in self.epsilons ])
+                fij = ElasticConstant.cummean([ epsilon[a, b] * epsilon[u, v] for epsilon in self.epsilons ])
                 Smat[i,j] = VOIGT_FACTORS[i] * VOIGT_FACTORS[j] * factor * (fij - fi * fj)
 
         for i in range(5):
@@ -143,9 +144,7 @@ class ElasticConstant(object):
                 Smat[i][j] = Smat[j][i]
 
         # And now the stiffness matrix (in GPa)
-        Cmat = np.linalg.inv(Smat) / 1.e9
-
-        return Cmat
+        self.Cmat = np.linalg.inv(Smat) / 1.e9
 
     def print_C(Cmat):
         print('')
@@ -166,8 +165,9 @@ class ElasticConstant(object):
 
 
 
-    def get_final_C(epsilons, volume):
+    def set_final_C(self):
         temperature = 300
+        volume = self.volume[-1]
 
         # Elastic constants
         factor = (volume * 1.e-30) / (1.3806488e-23 * temperature)
@@ -177,11 +177,11 @@ class ElasticConstant(object):
         Smat = np.zeros((6,6))
         for i in range(6):
             a, b = CARTESIAN_TO_VOIGT[i]
-            fi = np.mean([ epsilon[a, b] for epsilon in epsilons ])
+            fi = np.mean([ epsilon[a, b] for epsilon in self.epsilons ])
             for j in range(i+1):
                 u, v = CARTESIAN_TO_VOIGT[j]
-                fj = np.mean([ epsilon[u, v] for epsilon in epsilons ])
-                fij = np.mean([ epsilon[a, b] * epsilon[u, v] for epsilon in epsilons ])
+                fj = np.mean([ epsilon[u, v] for epsilon in self.epsilons ])
+                fij = np.mean([ epsilon[a, b] * epsilon[u, v] for epsilon in self.epsilons ])
                 Smat[i,j] = VOIGT_FACTORS[i] * VOIGT_FACTORS[j] * factor * (fij - fi * fj)
 
         for i in range(5):
@@ -189,19 +189,7 @@ class ElasticConstant(object):
                 Smat[i][j] = Smat[j][i]
 
         # And now the stiffness matrix (in GPa)
-        Cmat = np.linalg.inv(Smat) / 1.e9
-        return Cmat
+        self.Cmat = np.linalg.inv(Smat) / 1.e9
 
-
-    epsilons = get_epsilons(h)
-    volumes = list(map(np.linalg.det, h))
-    Cs = []
-
-    for i in range(100, len(h),100):
-        volume = np.mean(volumes[:i])
-        Cs.append(get_C(epsilons[:i], volume))
-    Cs = np.array(Cs)
-
-    # np.save('Cs', Cs)
-
-    a = 1
+    def write(self):
+        np.save('Cmat', self.Cmat)
