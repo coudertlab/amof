@@ -73,11 +73,11 @@ class Msd(object):
 
         Step = np.arange(len(trajectory)) * delta_Step        
         self.msd_data = pd.DataFrame({"Step": Step})
-        self.msd_data["X"] = Msd.compute_species_msd(trajectory)
+        self.msd_data["X"] = self.compute_species_msd(trajectory)
 
         for x in elements:
             x_str = ase.data.chemical_symbols[x]
-            self.msd_data[x_str] = Msd.compute_species_msd(trajectory, x)
+            self.msd_data[x_str] = self.compute_species_msd(trajectory, x)
 
     def write_to_file(self, path_to_output):
         """path_to_output: where the MSD object will be written"""
