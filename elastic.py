@@ -125,11 +125,11 @@ class ElasticConstant(object):
         temperature = 300
 
         # Elastic constants
-        factor = (volume * 1.e-30) / (1.3806488e-23 * temperature)
+        factor = (self.volume * 1.e-30) / (1.3806488e-23 * temperature)
         CARTESIAN_TO_VOIGT = ((0, 0), (1, 1), (2, 2), (2, 1), (2, 0), (1, 0))
         VOIGT_FACTORS = (1, 1, 1, 2, 2, 2)
 
-        Smat = np.zeros((6,6))
+        Smat = np.zeros((len(factor),6,6))
         for i in range(6):
             a, b = CARTESIAN_TO_VOIGT[i]
             fi = ElasticConstant.cummean([ epsilon[a, b] for epsilon in self.epsilons ])
@@ -137,11 +137,13 @@ class ElasticConstant(object):
                 u, v = CARTESIAN_TO_VOIGT[j]
                 fj = ElasticConstant.cummean([ epsilon[u, v] for epsilon in self.epsilons ])
                 fij = ElasticConstant.cummean([ epsilon[a, b] * epsilon[u, v] for epsilon in self.epsilons ])
-                Smat[i,j] = VOIGT_FACTORS[i] * VOIGT_FACTORS[j] * factor * (fij - fi * fj)
+                Smat[:, i,j] = VOIGT_FACTORS[i] * VOIGT_FACTORS[j] * factor * (fij - fi * fj)
 
         for i in range(5):
             for j in range(i+1,6):
-                Smat[i][j] = Smat[j][i]
+                Smat[:,i,j] = Smat[:,j,i]
+
+        Smat = Smat[1:] # remove first Smat = 0
 
         # And now the stiffness matrix (in GPa)
         self.Cmat = np.linalg.inv(Smat) / 1.e9
