@@ -10,6 +10,8 @@ import pathlib
 import logging
 import ase.atoms
 
+import sadi.files.path
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,13 +22,16 @@ class ElasticConstant(object):
     Main class for computing elastic constants
     """
 
-    def __init__(self, h, final_value = False):
+    def __init__(self, h, final_value = False, step = None):
         """default constructor
         Args:
-            h: cell vector
+            h: array_like, unit cell tensor
             final_value: Boolean, If True only one value of C will be computed
+            step: Contains step information.
+                can be array_like of same length than h containing the step information
         """
         self.set_h(h)
+        self.set_step(step)
         self.set_volume()
         self.set_epsilons()
         if final_value:
@@ -53,6 +58,12 @@ class ElasticConstant(object):
         h = np.array(new_h)
         self.h = h
         
+    def set_step(self, step):
+        if step is None:
+            self.step = None
+        else:
+            self.step = np.array(step)[1:] # remove first step corresponding to Smat = 0
+
 
 
     @staticmethod
@@ -110,6 +121,7 @@ class ElasticConstant(object):
 
         self.epsilons = np.array(list(map(h2eps, self.h)))
 
+    # not adapted
     @staticmethod
     def print_cell(abc):
         print('Unit cell averages:')
@@ -148,6 +160,7 @@ class ElasticConstant(object):
         # And now the stiffness matrix (in GPa)
         self.Cmat = np.linalg.inv(Smat) / 1.e9
 
+    # not adapted
     def print_C(Cmat):
         print('')
         print('Stiffness matrix C (GPa):')
@@ -193,5 +206,15 @@ class ElasticConstant(object):
         # And now the stiffness matrix (in GPa)
         self.Cmat = np.linalg.inv(Smat) / 1.e9
 
-    def write(self):
-        np.save('Cmat', self.Cmat)
+    def write(self, filename):
+        da = xr.DataArray(self.Cmat, dims=("Step","col",'row'))
+        da["col"] = np.arange(1,7)
+        da["row"] = np.arange(1,7)
+        if self.step is not None:
+            da["Step"] = self.step
+        path_to_output = sadi.files.path.append_suffix(filename, 'nc')
+        da.to_netcdf(path_to_output)
+
+        
+        
+        # np.save('Cmat', self.Cmat)
