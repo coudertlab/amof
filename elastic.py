@@ -22,7 +22,7 @@ class ElasticConstant(object):
     Main class for computing elastic constants
     """
 
-    def __init__(self, h, final_value = False, step = None):
+    def __init__(self, h, temperature, final_value = False, step = None):
         """default constructor
         Args:
             h: array_like, unit cell tensor
@@ -30,6 +30,7 @@ class ElasticConstant(object):
             step: Contains step information.
                 can be array_like of same length than h containing the step information
         """
+        self.temperature = temperature
         self.set_h(h)
         self.set_step(step)
         self.set_volume()
@@ -38,18 +39,15 @@ class ElasticConstant(object):
             self.set_final_C() 
         else:
             self.set_every_C() 
-        # self.msd_data = []
 
-    # cell_traj_short = cell.isel(run_id=0).where(cell.notnull(), drop=True) # xarray where each line is a cell vector
-
-    # Input file name
-    # file = sys.argv[1]
 
     def set_h(self, h):
         """
-        # Format is: ( a_x    a_y   a_z      b_x     b_y    b_z   c_x      c_y     c_z )
+        Args:
+            h: array_like, unit cell tensor, can be of any form that ase set_cell can process
+        Results:
+            self.h: Format is: ( a_x    a_y   a_z      b_x     b_y    b_z   c_x      c_y     c_z )
         """
-        # diff
         new_h = []
         mock_atom = ase.Atoms()
         for c in h:
@@ -64,8 +62,6 @@ class ElasticConstant(object):
         else:
             self.step = np.array(step)[1:] # remove first step corresponding to Smat = 0
 
-
-
     @staticmethod
     def cummean(a):
         """
@@ -79,17 +75,6 @@ class ElasticConstant(object):
         self.volume = self.cummean(list(map(np.linalg.det, self.h)))
 
     def set_epsilons(self):
-        # Temperature of the trajectory
-
-
-        # Read h matrix trajectory
-        # Format is: ( a_x    a_y   a_z      b_x     b_y    b_z   c_x      c_y     c_z )
-        # # First column in XST file is step number, it is ignored
-        # h = np.loadtxt(file, usecols=list(range(1,10)))
-        # # Remove the first 20% of the simulation
-        # h = h[len(h)/5:]
-        # h = np.reshape(h, (-1,3,3))
-
         # Unit cell averages
         def vector_angle(v1, v2):
             v1_u = v1 / np.linalg.norm(v1)
@@ -97,19 +82,16 @@ class ElasticConstant(object):
             angle = np.arccos(np.dot(v1_u, v2_u))
             if math.isnan(angle):
                 if np.dot(v1_u, v2_u) > 0:
-                        return 0.0
+                    return 0.0
                 else:
-                        return np.pi
+                    return np.pi
             return angle
 
         def h2abc(h):
             return (np.linalg.norm(h[0]), np.linalg.norm(h[1]), np.linalg.norm(h[2]),
-                                vector_angle(h[1],h[2]), vector_angle(h[2],h[0]), vector_angle(h[0],h[1]))
+                        vector_angle(h[1],h[2]), vector_angle(h[2],h[0]), vector_angle(h[0],h[1]))
 
         abc = list(map(h2abc, self.h))
-
-
-
 
         # Calculating the strain matrices
 
@@ -121,23 +103,9 @@ class ElasticConstant(object):
 
         self.epsilons = np.array(list(map(h2eps, self.h)))
 
-    # not adapted
-    @staticmethod
-    def print_cell(abc):
-        print('Unit cell averages:')
-        print('            a = %.3f' % np.mean([x[0] for x in abc]))
-        print('            b = %.3f' % np.mean([x[1] for x in abc]))
-        print('            c = %.3f' % np.mean([x[2] for x in abc]))
-        print('    alpha = %.3f' % np.rad2deg(np.mean([x[3] for x in abc])))
-        print('        beta = %.3f' % np.rad2deg(np.mean([x[4] for x in abc])))
-        print('    gamma = %.3f' % np.rad2deg(np.mean([x[5] for x in abc])))
-        print('   volume = %.1f' % volume)
-
     def set_every_C(self):
-        temperature = 300
-
         # Elastic constants
-        factor = (self.volume * 1.e-30) / (1.3806488e-23 * temperature)
+        factor = (self.volume * 1.e-30) / (1.3806488e-23 * self.temperature)
         CARTESIAN_TO_VOIGT = ((0, 0), (1, 1), (2, 2), (2, 1), (2, 0), (1, 0))
         VOIGT_FACTORS = (1, 1, 1, 2, 2, 2)
 
@@ -160,32 +128,11 @@ class ElasticConstant(object):
         # And now the stiffness matrix (in GPa)
         self.Cmat = np.linalg.inv(Smat) / 1.e9
 
-    # not adapted
-    def print_C(Cmat):
-        print('')
-        print('Stiffness matrix C (GPa):')
-        for i in range(6):
-            print('        ', end=' ')
-            for j in range(6):
-                if j >= i:
-                        print(('% 8.2f' % Cmat[i,j]), end=' ')
-                else:
-                        print('                ', end=' ')
-            print('')
-
-        # Eigenvalues
-        print('')
-        print('Stiffness matrix eigenvalues (GPa):')
-        print((6*'% 8.2f') % tuple(np.sort(np.linalg.eigvals(Cmat))))
-
-
-
     def set_final_C(self):
-        temperature = 300
         volume = self.volume[-1]
 
         # Elastic constants
-        factor = (volume * 1.e-30) / (1.3806488e-23 * temperature)
+        factor = (volume * 1.e-30) / (1.3806488e-23 * self.temperature)
         CARTESIAN_TO_VOIGT = ((0, 0), (1, 1), (2, 2), (2, 1), (2, 0), (1, 0))
         VOIGT_FACTORS = (1, 1, 1, 2, 2, 2)
 
@@ -215,6 +162,33 @@ class ElasticConstant(object):
         path_to_output = sadi.files.path.append_suffix(filename, 'nc')
         da.to_netcdf(path_to_output)
 
-        
-        
-        # np.save('Cmat', self.Cmat)
+
+    # not adapted
+    @staticmethod
+    def print_cell(abc):
+        print('Unit cell averages:')
+        print('            a = %.3f' % np.mean([x[0] for x in abc]))
+        print('            b = %.3f' % np.mean([x[1] for x in abc]))
+        print('            c = %.3f' % np.mean([x[2] for x in abc]))
+        print('    alpha = %.3f' % np.rad2deg(np.mean([x[3] for x in abc])))
+        print('        beta = %.3f' % np.rad2deg(np.mean([x[4] for x in abc])))
+        print('    gamma = %.3f' % np.rad2deg(np.mean([x[5] for x in abc])))
+        print('   volume = %.1f' % volume)
+
+    # not adapted
+    def print_C(Cmat):
+        print('')
+        print('Stiffness matrix C (GPa):')
+        for i in range(6):
+            print('        ', end=' ')
+            for j in range(6):
+                if j >= i:
+                        print(('% 8.2f' % Cmat[i,j]), end=' ')
+                else:
+                        print('                ', end=' ')
+            print('')
+
+        # Eigenvalues
+        print('')
+        print('Stiffness matrix eigenvalues (GPa):')
+        print((6*'% 8.2f') % tuple(np.sort(np.linalg.eigvals(Cmat))))
