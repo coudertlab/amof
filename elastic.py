@@ -60,7 +60,7 @@ class ElasticConstant(object):
         if step is None:
             self.step = None
         else:
-            self.step = np.array(step)[1:] # remove first step corresponding to Smat = 0
+            self.step = np.array(step) 
 
     @staticmethod
     def cummean(a):
@@ -123,7 +123,12 @@ class ElasticConstant(object):
             for j in range(i+1,6):
                 Smat[:,i,j] = Smat[:,j,i]
 
-        Smat = Smat[1:] # remove first Smat = 0
+        # remove non inversible elements
+        is_inversible = np.linalg.cond(Smat) < 1/sys.float_info.epsilon
+        Smat = Smat[is_inversible]
+        if self.step is not None:
+            self.step = self.step[is_inversible]
+        # Smat = Smat[1:] 
 
         # And now the stiffness matrix (in GPa)
         self.Cmat = np.linalg.inv(Smat) / 1.e9
