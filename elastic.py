@@ -22,23 +22,35 @@ class ElasticConstant(object):
     Main class for computing elastic constants
     """
 
-    def __init__(self, h, temperature, final_value = False, step = None):
-        """default constructor
+    def __init__(self):
+        """default constructor"""
+        self.temperature = None
+        self.h = None
+        self.step = None
+        self.volume = None
+        self.epsilons = None
+        self.Cmat = None
+
+    @classmethod
+    def from_cell(cls, h, temperature, final_value = False, step = None):
+        """default constructor from cell
         Args:
             h: array_like, unit cell tensor
             final_value: Boolean, If True only one value of C will be computed
             step: Contains step information.
                 can be array_like of same length than h containing the step information
         """
-        self.temperature = temperature
-        self.set_h(h)
-        self.set_step(step)
-        self.set_volume()
-        self.set_epsilons()
+        elastic_class = cls()
+        elastic_class.temperature = temperature
+        elastic_class.set_h(h)
+        elastic_class.set_step(step)
+        elastic_class.set_volume()
+        elastic_class.set_epsilons()
         if final_value:
-            self.set_final_C() 
+            elastic_class.set_final_C() 
         else:
-            self.set_every_C() 
+            elastic_class.set_every_C()
+        return elastic_class 
 
 
     def set_h(self, h):
@@ -190,13 +202,8 @@ class ElasticConstant(object):
 
     def read_elastic_file(self, filename):
         filename = sadi.files.path.append_suffix(filename, 'elastic')
-        self.Cmat = pd.read_feather(path_to_data)
-        # empty when reading file
-        self.temperature = ''
-        self.h = []
-        self.step = []
-        self.volume = []
-        self.epsilons = []
+        self.Cmat = xr.open_dataset(path_to_data)
+
 
 
     # not adapted
