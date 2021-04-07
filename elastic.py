@@ -149,6 +149,7 @@ class ElasticConstant(object):
         da = xr.DataArray(Cmat, dims=("Step","col",'row'))
         da["col"] = np.arange(1,7)
         da["row"] = np.arange(1,7)
+        da.name = 'elastic'
         if self.step is not None:
             da["Step"] = self.step
         self.Cmat = da
@@ -182,6 +183,7 @@ class ElasticConstant(object):
         da = xr.DataArray(Cmat, dims=("col",'row'))
         da["col"] = np.arange(1,7)
         da["row"] = np.arange(1,7)
+        da.name = 'elastic'
         if self.step is not None:
             da["Step"] = self.step
         self.Cmat = da
@@ -202,7 +204,7 @@ class ElasticConstant(object):
 
     def read_elastic_file(self, filename):
         filename = sadi.files.path.append_suffix(filename, 'elastic')
-        self.Cmat = xr.open_dataset(path_to_data)
+        self.Cmat = xr.open_dataset(filename)
 
 
 
