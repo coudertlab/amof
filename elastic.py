@@ -131,7 +131,15 @@ class ElasticConstant(object):
         # Smat = Smat[1:] 
 
         # And now the stiffness matrix (in GPa)
-        self.Cmat = np.linalg.inv(Smat) / 1.e9
+        Cmat = np.linalg.inv(Smat) / 1.e9
+        
+        # turn to xarray object
+        da = xr.DataArray(Cmat, dims=("Step","col",'row'))
+        da["col"] = np.arange(1,7)
+        da["row"] = np.arange(1,7)
+        if self.step is not None:
+            da["Step"] = self.step
+        self.Cmat = da
 
     def set_final_C(self):
         volume = self.volume[-1]
@@ -156,16 +164,39 @@ class ElasticConstant(object):
                 Smat[i][j] = Smat[j][i]
 
         # And now the stiffness matrix (in GPa)
-        self.Cmat = np.linalg.inv(Smat) / 1.e9
-
-    def write(self, filename):
-        da = xr.DataArray(self.Cmat, dims=("Step","col",'row'))
+        Cmat = np.linalg.inv(Smat) / 1.e9
+            
+        # turn to xarray object
+        da = xr.DataArray(Cmat, dims=("col",'row'))
         da["col"] = np.arange(1,7)
         da["row"] = np.arange(1,7)
         if self.step is not None:
             da["Step"] = self.step
-        path_to_output = sadi.files.path.append_suffix(filename, 'nc')
-        da.to_netcdf(path_to_output)
+        self.Cmat = da
+
+    def write(self, filename):
+        path_to_output = sadi.files.path.append_suffix(filename, 'elastic')
+        self.Cmat.to_netcdf(path_to_output)
+
+
+    @classmethod
+    def from_file(cls, filename):
+        """
+        constructor of elastic file class from rdf file
+        """
+        rdf_class = cls() # initialize class
+        rdf_class.read_elastic_file(filename)
+        return rdf_class # return class as it is a constructor
+
+    def read_elastic_file(self, filename):
+        filename = sadi.files.path.append_suffix(filename, 'elastic')
+        self.Cmat = pd.read_feather(path_to_data)
+        # empty when reading file
+        self.temperature = ''
+        self.h = []
+        self.step = []
+        self.volume = []
+        self.epsilons = []
 
 
     # not adapted
