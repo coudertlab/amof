@@ -23,13 +23,16 @@ class ElasticConstant(object):
     """
 
     def __init__(self):
-        """default constructor"""
+        """default constructor, initialize with empty fields"""
         self.temperature = None
         self.h = None
         self.step = None
         self.volume = None
         self.epsilons = None
-        self.Cmat = None
+        # empty data array with proper dims and coords
+        self.Cmat = xr.DataArray(np.empty([0,6,6]), 
+            coords = [('Step', np.empty([0], dtype='int64')), ('row', np.arange(1,7)), ('col', np.arange(1,7))], 
+            name = 'elastic')
 
     @classmethod
     def from_cell(cls, h, temperature, final_value = False, step = None):
@@ -220,20 +223,19 @@ class ElasticConstant(object):
         print('    gamma = %.3f' % np.rad2deg(np.mean([x[5] for x in abc])))
         print('   volume = %.1f' % volume)
 
-    # not adapted
-    def print_C(Cmat):
+def print_Cmat(Cmat):
+    print('')
+    print('Stiffness matrix C (GPa):')
+    for i in range(6):
+        print('        ', end=' ')
+        for j in range(6):
+            if j >= i:
+                    print(('% 8.2f' % Cmat[i,j]), end=' ')
+            else:
+                    print('                ', end=' ')
         print('')
-        print('Stiffness matrix C (GPa):')
-        for i in range(6):
-            print('        ', end=' ')
-            for j in range(6):
-                if j >= i:
-                        print(('% 8.2f' % Cmat[i,j]), end=' ')
-                else:
-                        print('                ', end=' ')
-            print('')
 
-        # Eigenvalues
-        print('')
-        print('Stiffness matrix eigenvalues (GPa):')
-        print((6*'% 8.2f') % tuple(np.sort(np.linalg.eigvals(Cmat))))
+    # Eigenvalues
+    print('')
+    print('Stiffness matrix eigenvalues (GPa):')
+    print((6*'% 8.2f') % tuple(np.sort(np.linalg.eigvals(Cmat))))
