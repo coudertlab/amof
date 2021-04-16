@@ -25,7 +25,7 @@ class Msd(object):
 
     def __init__(self):
         """default constructor"""
-        self.msd_data = []
+        self.msd_data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
     def from_trajectory(cls, trajectory, delta_Step = 1):
