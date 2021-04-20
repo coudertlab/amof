@@ -1,7 +1,10 @@
 """
-Fork from pysimm.appps.zeoplusplus
+Fork from pysimm.apps.zeoplusplus
 Modified:
     - introduced wait() in subprocess handling to avoid infinite loop
+    - print to logging
+    - removing everythin linked to pysimm to have an independant module
+    - removed nanohub
 """
 
 # ******************************************************************************
@@ -39,17 +42,9 @@ import sys, os
 from subprocess import Popen, PIPE
 from time import strftime
 import shlex
+import logging
 
-try:
-    from Rappture.tools import getCommandOutput as RapptureExec
-except ImportError:
-    pass
-
-try:
-    from pysimm import system
-except ImportError:
-    print("Pysimm is required to process pysimm system")
-    pass
+logger = logging.getLogger(__name__)
 
 ZEOpp_EXEC = os.environ.get('ZEOpp_EXEC')
 
@@ -58,12 +53,11 @@ def network(s, **kwargs):
 
     Perform 1. Pore diameters; 2. Channel identification and dimensionality; 3. Surface area;
             4. Accessible volume; 5. Pore size distribution calculation using zeo++ v2.2
-
-    with options to do 6. Probe-occupiable volume; 7. Stochastic ray tracing; 8. Blocking spheres;
-                       9. Distance grids; 10. Structure analysis
+            6. Probe-occupiable volume; 7. Stochastic ray tracing; 8. Blocking spheres;
+            9. Distance grids; 10. Structure analysis
 
     Args:
-        s: pysimm System object or filename of file in CSSR | CUC | V1 | CIF format
+        s: filename of file in CSSR | CUC | V1 | CIF format
         atype_name: True to use atom type as atom name (usually need radii and mass info), False to use atom element
         radii: file name that contain atom radii data (rad.rad)
         mass: file name that contain atom mass data (mass.mass)
@@ -72,13 +66,13 @@ def network(s, **kwargs):
         num_samples: number of Monte Carlo samples per unit cell (50000)
         option to include in the simulation: set True to activate
             ha: default=True, for using high accuracy,
-            res: default=True, for diameters of the largest included sphere, the largest free sphere and the largest included sphere along free sphere path
-            chan: default=True, for channel systems characterized by dimensionality as well as Di, Df and Dif
-            sa: default=True, for surface area accessible to a spherical probe, characterized by
+            res: default=False, for diameters of the largest included sphere, the largest free sphere and the largest included sphere along free sphere path
+            chan: default=False, for channel systems characterized by dimensionality as well as Di, Df and Dif
+            sa: default=False, for surface area accessible to a spherical probe, characterized by
                       accessible surface area (ASA) and non-accessible surface area (NASA)
-            vol: default=True, for accessible volume (AV) and non-accessible volume (NAV)
+            vol: default=False, for accessible volume (AV) and non-accessible volume (NAV)
             volpo: default=False, for accessible proce-occupiable volume (POAV) and non-accessible probe-occupiable volume (PONAV)
-            psd: default=True, for the "deriviative distribution" (change of AV w.r.t probe size) reported in the histogram file with 1000 bins of size of 0.1 Ang
+            psd: default=False, for the "deriviative distribution" (change of AV w.r.t probe size) reported in the histogram file with 1000 bins of size of 0.1 Ang
             ray_atom: default=False
             block: default=False
             extra: user provided options, such as -gridG, -gridBOV, -strinfo, -oms, etc.
@@ -91,9 +85,9 @@ def network(s, **kwargs):
     global ZEOpp_EXEC
 
     if ZEOpp_EXEC is None:
-        print('Please specify the environment variable ''ZEOpp_EXEC'' that points to '
-              'zeo++ executable (network)')
-        exit(1)
+        logger.debug('No environment variable ''ZEOpp_EXEC'' that points to '
+              'zeo++ executable (network) \n Using curie path')
+        ZEOpp_EXEC = '/home/nicolas/Applications/zeo++-0.3/network'
 
     probe_radius = kwargs.get('probe_radius', 1.2)
     chan_radius = kwargs.get('chan_radius', 1.2)
@@ -101,25 +95,17 @@ def network(s, **kwargs):
     atype_name = kwargs.get('atype_name', False)
 
     ha = kwargs.get('ha', True)
-    res = kwargs.get('res', True)
-    chan = kwargs.get('chan', True)
-    sa = kwargs.get('sa', True)
-    vol = kwargs.get('vol', True)
-    psd = kwargs.get('psd', True)
+    res = kwargs.get('res', False)
+    chan = kwargs.get('chan', False)
+    sa = kwargs.get('sa', False)
+    vol = kwargs.get('vol', False)
+    psd = kwargs.get('psd', False)
     volpo = kwargs.get('volpo', False)
     ray_atom = kwargs.get('ray_atom', False)
     block = kwargs.get('block', False)
     extra = kwargs.get('extra')
  
-    nanohub = kwargs.get('nanohub')
-
-    if isinstance(s, system.System):
-        if atype_name:
-            s.write_cssr('zeopp_data.cssr', aname=1)
-        else:
-            s.write_cssr('zeopp_data.cssr')
-        input_file = 'zeopp_data.cssr'
-    elif isinstance(s, str):
+    if isinstance(s, str):
         input_file = s
         
     args = ZEOpp_EXEC
@@ -154,35 +140,13 @@ def network(s, **kwargs):
 
     arg_list = shlex.split(args)
 
-    print('%s: starting simulation using zeo++'
+    logger.debug('%s: starting simulation using zeo++'
           % strftime('%H:%M:%S'))
+          
+    p = Popen(arg_list, stdin=PIPE, stdout=PIPE, stderr=PIPE) 
+    p.wait()
 
-    if nanohub:
-        print('%s: sending zeo++ simulation to computer cluster' % strftime('%H:%M:%S'))
-        sys.stdout.flush()
-        cmd = ('submit -n 1 -w %s ' % (24*60)) + ZEOpp_EXEC + args
-        cmd = shlex.split(cmd)
-        exit_status, stdo, stde = RapptureExec(cmd)
-    else:
-        # p = Popen(arg_list) 
-        # # p.wait()
-        p = Popen(arg_list, stdin=PIPE, stdout=PIPE, stderr=PIPE) 
-        p.wait()
-        # p.kill()
-        # p.communicate()
-        # while p.wait() == 0:
-        # # while p.wait():
-        #     stout = p.stdout.readline()
-        #     if stout == '' and p.poll() is not None:
-        #         break
-        #     if stout:
-        #         print(stout.strip())
-        # # print(stout)
-        # sterr = p.stderr.readlines()
-        # print(sterr)
-        # p.kill()
-
-    print('%s: zeo++ simulation successful'
+    logger.debug('%s: zeo++ simulation successful'
           % strftime('%H:%M:%S'))
 
 
