@@ -11,11 +11,13 @@ import numpy as np
 import pandas as pd
 import scipy.integrate
 import scipy.interpolate
+import joblib
 
 import logging
 
 import sadi.trajectory
 import sadi.files.path
+import sadi.atom as satom
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -27,8 +29,7 @@ class Rdf(object):
 
     def __init__(self):
         """default constructor"""
-        self.rdf_data = []
-        # self.struct = struct
+        self.rdf_data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
     def from_trajectory(cls, trajectory, dr = 0.01, rmax = 'half_cell'):
@@ -96,9 +97,9 @@ class Rdf(object):
             xx_str = ase.data.chemical_symbols[xx[0]] + "-" + ase.data.chemical_symbols[xx[1]]
             self.rdf_data[ase.data.chemical_symbols[xx[0]] + "-X"] = sum([partial_rdf[i][j] for j in range(N_species)])   
 
-    def write_to_file(self, path_to_output):
-        path_to_output = sadi.files.path.append_suffix(path_to_output, 'rdf')
-        self.rdf_data.to_feather(path_to_output)
+    def write_to_file(self, filename):
+        filename = sadi.files.path.append_suffix(filename, 'rdf')
+        self.rdf_data.to_feather(filename)
 
     def read_rdf_file(self, path_to_data):
         path_to_data = sadi.files.path.append_suffix(path_to_data, 'rdf')
@@ -113,41 +114,82 @@ class Rdf(object):
         """
         return get_coordination_number(self.rdf_data['r'], self.rdf_data[nn_set], cutoff, density)
 
-#region deprecated code
-    # # TBC
-    # def cutoff_from_rdf(x, rdf, a, b): 
-    #     """ return x such that rdf(x) global minimun between a and b of rdf"""
-    #     return x[np.argmin(rdf[(x>a)*(x<b)])+np.size(rdf[x<=a])]
 
-    # def plot(self):
-    #     plt.plot(r, rdf)
-    #     plt.xlabel("$r$ (${\AA}$)")
-    #     plt.ylabel("$g(r)$")
-        
-    #     cutoff = cutoff_from_rdf(x, rdf, 3, 3.8)
-    #     plt.axvline(cutoff, linestyle = '--', linewidth = 1)
-    #     plt.text(cutoff + 0.1, 0, "%.2f" % round(cutoff,2))
-    #     plt.savefig(output_path + ".rdf_X-X" + ".png")
-    #     plt.show()
 
-    # def average_rdfs(traj_names, output_name):
-    #     """not changed, may be deprecated when data struct turned to df"""
-    #     rdf_prefixes = ["X-X", "Ag-X", "Sb-X", "Te-X", "Ag-Ag", "Sb-Sb", "Te-Te", "Ag-Sb", "Sb-Ag", "Te-Ag", "Ag-Te", "Sb-Te", "Te-Sb"]
-    #     prefixes = [".x"]+[".rdf_" + x for x in rdf_prefixes]
-    #     input_path = "../analysis/data/rdf/"
-    #     output_path = input_path
-        
-    #     for p in prefixes:
-    #         rdf_l = [] 
-    #         for traj_name in traj_names:
-    #             rdf_l.append(np.load(input_path + traj_name + p + ".npy"))
-            
-    #         rdf_l=np.array(rdf_l)
-    #         rdf = np.average(rdf_l, axis=0)
-    #         np.save(output_path +  output_name + p, rdf)   
-    # #average_rdfs(["3.c1.pbe","3.c2.pbe","3.c3.pbe"], "3.c.pbe")
-#endregion
+class CoordinationNumber(object):
+    """
+    Main class to compute CoordinationNumber
+    """
 
+    def __init__(self):
+        """default constructor"""
+        self.cn_data = pd.DataFrame({"Step": np.empty([0])})
+
+    @classmethod
+    def from_trajectory(cls, trajectory, nn_set_and_cutoff, delta_Step = 1, dr = 0.01, parallel = False):
+        """
+        constructor of rdf class from an ase trajectory object
+        Args:
+            nn_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
+                values are cutoffs float, in Angstrom
+            dr: float, in Angstrom
+        """
+        rdf_class = cls() # initialize class
+        rdf_class.compute_cn(trajectory, nn_set_and_cutoff, delta_Step, dr, parallel)
+        return rdf_class # return class as it is a constructor
+
+    def compute_cn(self, trajectory, nn_set_and_cutoff, delta_Step, dr, parallel):
+        """
+        compute coordination from ase trajectory object
+        """
+        atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
+        N_species = len(atomic_numbers_unique) # number of different chemical species
+
+        rmax = np.max(list(nn_set_and_cutoff.values())) + 0.1 
+
+        logger.info("Start computing rdf for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
+        bins = int(rmax // dr)
+        r = np.arange(bins) * dr        
+
+        def compute_cn_for_frame(i):
+            """
+            compute coordination for ase atom object
+            """
+            atoms = trajectory[i]
+            dic = {'Step': i * delta_Step}
+            RDFobj = asap3.analysis.rdf.RadialDistributionFunction(atoms, rmax, bins)
+            density = satom.get_number_density(atoms)
+            for nn_set, cutoff in nn_set_and_cutoff.items():
+                xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
+                rdf = RDFobj.get_rdf(elements=xx, groups=0)
+                dic[nn_set] = get_coordination_number(r, rdf, cutoff, density)
+            return dic
+
+        if parallel == False:
+            list_of_dict = [compute_cn_for_frame(i) for i in range(len(trajectory))]
+        else:
+            num_cores = parallel if type(parallel) == int else 18
+            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_cn_for_frame)(i) for i in range(len(trajectory)))
+
+        self.cn_data = pd.DataFrame(list_of_dict)
+
+    @classmethod
+    def from_file(cls, filename):
+        """
+        constructor of pore class from msd file
+        """
+        cn_class = cls() # initialize class
+        cn_class.read_cn_file(filename)
+        return cn_class # return class as it is a constructor
+
+    def read_cn_file(self, filename):
+        """path_to_data: where the cn object is"""
+        filename = sadi.files.path.append_suffix(filename, 'cn')
+        self.cn_data = pd.read_feather(filename)
+
+    def write_to_file(self, filename):
+        filename = sadi.files.path.append_suffix(filename, 'cn')
+        self.cn_data.to_feather(filename)
 
 def get_coordination_number(r, rdf, cutoff, density):
     """
@@ -211,3 +253,40 @@ class RdfPlotter(object):
         # plt.savefig(path_to_plot+output_traj_name+"_rdf_"+prefix+".png", dpi = 300, bbox_inches='tight')
         plt.show()    
    
+
+
+#region deprecated code
+    # # TBC
+    # def cutoff_from_rdf(x, rdf, a, b): 
+    #     """ return x such that rdf(x) global minimun between a and b of rdf"""
+    #     return x[np.argmin(rdf[(x>a)*(x<b)])+np.size(rdf[x<=a])]
+
+    # def plot(self):
+    #     plt.plot(r, rdf)
+    #     plt.xlabel("$r$ (${\AA}$)")
+    #     plt.ylabel("$g(r)$")
+        
+    #     cutoff = cutoff_from_rdf(x, rdf, 3, 3.8)
+    #     plt.axvline(cutoff, linestyle = '--', linewidth = 1)
+    #     plt.text(cutoff + 0.1, 0, "%.2f" % round(cutoff,2))
+    #     plt.savefig(output_path + ".rdf_X-X" + ".png")
+    #     plt.show()
+
+    # def average_rdfs(traj_names, output_name):
+    #     """not changed, may be deprecated when data struct turned to df"""
+    #     rdf_prefixes = ["X-X", "Ag-X", "Sb-X", "Te-X", "Ag-Ag", "Sb-Sb", "Te-Te", "Ag-Sb", "Sb-Ag", "Te-Ag", "Ag-Te", "Sb-Te", "Te-Sb"]
+    #     prefixes = [".x"]+[".rdf_" + x for x in rdf_prefixes]
+    #     input_path = "../analysis/data/rdf/"
+    #     output_path = input_path
+        
+    #     for p in prefixes:
+    #         rdf_l = [] 
+    #         for traj_name in traj_names:
+    #             rdf_l.append(np.load(input_path + traj_name + p + ".npy"))
+            
+    #         rdf_l=np.array(rdf_l)
+    #         rdf = np.average(rdf_l, axis=0)
+    #         np.save(output_path +  output_name + p, rdf)   
+    # #average_rdfs(["3.c1.pbe","3.c2.pbe","3.c3.pbe"], "3.c.pbe")
+#endregion
+
