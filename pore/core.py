@@ -57,7 +57,7 @@ class Pore(object):
             if type(parallel) == int:
                 num_cores = parallel
             else:
-                num_cores = 16
+                num_cores = 18 # less than 20 and nice value for 50 steps
             list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.get_surface_volume)(trajectory[i], i * delta_Step) for i in range(len(trajectory)))
 
         df = pd.DataFrame(list_of_dict)
