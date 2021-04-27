@@ -147,7 +147,7 @@ class CoordinationNumber(object):
 
         rmax = np.max(list(nn_set_and_cutoff.values()))
 
-        logger.info("Start computing rdf for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
+        logger.info("Start computing coordination number for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
         bins = int(rmax // dr)
         r = np.arange(bins) * dr        
 
@@ -168,6 +168,7 @@ class CoordinationNumber(object):
         if parallel == False:
             list_of_dict = [compute_cn_for_frame(i) for i in range(len(trajectory))]
         else:
+            logger.warning("Parallel mode for coordination number very slow, best to use serial")
             num_cores = parallel if type(parallel) == int else 18
             list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_cn_for_frame)(i) for i in range(len(trajectory)))
 
