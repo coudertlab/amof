@@ -11,6 +11,8 @@ import pandas as pd
 import logging
 import os
 import pathlib
+import joblib
+from numba import jit
 
 import sadi.trajectory
 import sadi.atom
@@ -28,13 +30,17 @@ class Msd(object):
         self.msd_data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
-    def from_trajectory(cls, trajectory, delta_Step = 1):
+    def from_trajectory(cls, trajectory, delta_Step = 1, parallel = False):
         """
-        constructor of msd class from an ase trajectory object
+        constructor of msd class
 
+        Args:
+            trajectory: ase trajectory object
+            delta_Step: number of simulation steps between two frames
+            parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
         msd_class = cls() # initialize class
-        msd_class.compute_msd(trajectory, delta_Step)
+        msd_class.compute_msd(trajectory, delta_Step, parallel)
         return msd_class # return class as it is a constructor
 
     @staticmethod
@@ -61,11 +67,12 @@ class Msd(object):
             MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
         return MSD
 
-    def compute_msd(self, trajectory, delta_Step):
+    def compute_msd(self, trajectory, delta_Step, parallel):
         """
         Args:
             trajectory: ase trajectory object
             delta_Step: number of simulation steps between two frames
+            parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
         logger.info("Start computing msd for %s frames with delta_Step = %s", len(trajectory), delta_Step)
         
@@ -73,11 +80,24 @@ class Msd(object):
 
         Step = np.arange(len(trajectory)) * delta_Step        
         self.msd_data = pd.DataFrame({"Step": Step})
-        self.msd_data["X"] = self.compute_species_msd(trajectory)
+        if not parallel:
+            self.msd_data["X"] = self.compute_species_msd(trajectory)
 
-        for x in elements:
-            x_str = ase.data.chemical_symbols[x]
-            self.msd_data[x_str] = self.compute_species_msd(trajectory, x)
+            for x in elements:
+                x_str = ase.data.chemical_symbols[x]
+                self.msd_data[x_str] = self.compute_species_msd(trajectory, x)
+        else:
+            x_list = [None] + elements
+            num_cores = len(x_list) # default value
+            if type(parallel) == int and parallel < num_cores:
+                num_cores = parallel
+            msd_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_species_msd)(trajectory, x) for x in x_list)
+            self.msd_data["X"] = msd_list[0]
+            for i in range(1, len(x_list)):
+                x_str = ase.data.chemical_symbols[x_list[i]]
+                self.msd_data[x_str] = msd_list[i]               
+
+
 
     def write_to_file(self, path_to_output):
         """path_to_output: where the MSD object will be written"""

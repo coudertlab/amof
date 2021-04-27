@@ -134,9 +134,9 @@ class CoordinationNumber(object):
                 values are cutoffs float, in Angstrom
             dr: float, in Angstrom
         """
-        rdf_class = cls() # initialize class
-        rdf_class.compute_cn(trajectory, nn_set_and_cutoff, delta_Step, dr, parallel)
-        return rdf_class # return class as it is a constructor
+        cn_class = cls() # initialize class
+        cn_class.compute_cn(trajectory, nn_set_and_cutoff, delta_Step, dr, parallel)
+        return cn_class # return class as it is a constructor
 
     def compute_cn(self, trajectory, nn_set_and_cutoff, delta_Step, dr, parallel):
         """
@@ -145,7 +145,7 @@ class CoordinationNumber(object):
         atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
         N_species = len(atomic_numbers_unique) # number of different chemical species
 
-        rmax = np.max(list(nn_set_and_cutoff.values())) + 0.1 
+        rmax = np.max(list(nn_set_and_cutoff.values()))
 
         logger.info("Start computing rdf for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
         bins = int(rmax // dr)
@@ -198,9 +198,11 @@ def get_coordination_number(r, rdf, cutoff, density):
     cutoff: float, in Angstrom
     density: float, number density of the entire system (counting every species) in Angstrom^-3
     """
-    g = scipy.interpolate.interp1d(r, rdf)
-    integral = scipy.integrate.quad(lambda r: g(r)*(r**2), 0, cutoff)
-    return 4*np.pi*density*integral[0]
+    mask = (r > 0) & (r < cutoff)
+    r = r[mask]
+    rdf = rdf[mask]
+    integral = scipy.integrate.simps(rdf * (r**2), r)
+    return 4 * np.pi * density * integral
 
 
 class RdfPlotter(object):
