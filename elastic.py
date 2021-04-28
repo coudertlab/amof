@@ -227,12 +227,12 @@ def print_Cmat(Cmat):
     print('')
     print('Stiffness matrix C (GPa):')
     for i in range(6):
-        print('        ', end=' ')
+        print('    ', end=' ')
         for j in range(6):
             if j >= i:
                     print(('% 8.2f' % Cmat[i,j]), end=' ')
             else:
-                    print('                ', end=' ')
+                    print('        ', end=' ')
         print('')
 
     # Eigenvalues
