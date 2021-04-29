@@ -126,7 +126,7 @@ class CoordinationNumber(object):
         self.cn_data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
-    def from_trajectory(cls, trajectory, nn_set_and_cutoff, delta_Step = 1, dr = 0.01, parallel = False):
+    def from_trajectory(cls, trajectory, nn_set_and_cutoff, delta_Step = 1, first_frame = 0, dr = 0.01, parallel = False):
         """
         constructor of rdf class from an ase trajectory object
         Args:
@@ -135,10 +135,11 @@ class CoordinationNumber(object):
             dr: float, in Angstrom
         """
         cn_class = cls() # initialize class
-        cn_class.compute_cn(trajectory, nn_set_and_cutoff, delta_Step, dr, parallel)
+        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        cn_class.compute_cn(trajectory, nn_set_and_cutoff, step, dr, parallel)
         return cn_class # return class as it is a constructor
 
-    def compute_cn(self, trajectory, nn_set_and_cutoff, delta_Step, dr, parallel):
+    def compute_cn(self, trajectory, nn_set_and_cutoff, step, dr, parallel):
         """
         compute coordination from ase trajectory object
         """
@@ -156,7 +157,7 @@ class CoordinationNumber(object):
             compute coordination for ase atom object
             """
             atoms = trajectory[i]
-            dic = {'Step': i * delta_Step}
+            dic = {'Step': step[i]}
             RDFobj = asap3.analysis.rdf.RadialDistributionFunction(atoms, rmax, bins)
             density = satom.get_number_density(atoms)
             for nn_set, cutoff in nn_set_and_cutoff.items():

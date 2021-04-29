@@ -30,7 +30,7 @@ class Msd(object):
         self.msd_data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
-    def from_trajectory(cls, trajectory, delta_Step = 1, parallel = False):
+    def from_trajectory(cls, trajectory, delta_Step = 1, first_frame = 0, parallel = False):
         """
         constructor of msd class
 
@@ -40,7 +40,8 @@ class Msd(object):
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
         msd_class = cls() # initialize class
-        msd_class.compute_msd(trajectory, delta_Step, parallel)
+        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        msd_class.compute_msd(trajectory, step, parallel)
         return msd_class # return class as it is a constructor
 
     @staticmethod
@@ -67,18 +68,18 @@ class Msd(object):
             MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
         return MSD
 
-    def compute_msd(self, trajectory, delta_Step, parallel):
+    def compute_msd(self, trajectory, step, parallel):
         """
         Args:
             trajectory: ase trajectory object
-            delta_Step: number of simulation steps between two frames
+            step: np array, simulation steps
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
-        logger.info("Start computing msd for %s frames with delta_Step = %s", len(trajectory), delta_Step)
+        logger.info("Start computing msd for %s frames", len(trajectory))
         
         elements = sadi.atom.get_atomic_numbers_unique(trajectory[0])
 
-        Step = np.arange(len(trajectory)) * delta_Step        
+        Step = step     
         self.msd_data = pd.DataFrame({"Step": Step})
         if not parallel:
             self.msd_data["X"] = self.compute_species_msd(trajectory)

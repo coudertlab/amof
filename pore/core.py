@@ -31,34 +31,35 @@ class Pore(object):
         self.surface_volume = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
-    def from_trajectory(cls, trajectory, delta_Step = 1, parallel = False):
+    def from_trajectory(cls, trajectory, delta_Step = 1, first_frame = 0, parallel = False):
         """
-        constructor of msd class from an ase trajectory object
+        constructor of pore class from an ase trajectory object
 
         """
         pore_class = cls() # initialize class
-        pore_class.compute_surface_volume(trajectory, delta_Step, parallel)
+        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        pore_class.compute_surface_volume(trajectory, step, parallel)
         return pore_class # return class as it is a constructor
 
-    def compute_surface_volume(self, trajectory, delta_Step, parallel):
+    def compute_surface_volume(self, trajectory, step, parallel):
         """
         Args:
             trajectory: ase trajectory object
-            delta_Step: number of simulation steps between two frames
+            step: np array, simulation steps
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
-        logger.info("Start pore analysis for volume and surfaces for %s frames with delta_Step = %s", len(trajectory), delta_Step)
+        logger.info("Start pore analysis for volume and surfaces for %s frames", len(trajectory))
         list_of_dict = []
         if parallel == False:
             for i in range(len(trajectory)):
                 logger.debug('compute frame # %s out of %s', i + 1, len(trajectory))
-                list_of_dict.append(self.get_surface_volume(trajectory[i], i * delta_Step))
+                list_of_dict.append(self.get_surface_volume(trajectory[i], step[i]))
         else:
             if type(parallel) == int:
                 num_cores = parallel
             else:
                 num_cores = 18 # less than 20 and nice value for 50 steps
-            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.get_surface_volume)(trajectory[i], i * delta_Step) for i in range(len(trajectory)))
+            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.get_surface_volume)(trajectory[i], step[i]) for i in range(len(trajectory)))
 
         df = pd.DataFrame(list_of_dict)
         self.surface_volume = df

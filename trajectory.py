@@ -160,3 +160,45 @@ def get_density(trajectory, how = 'mean'):
 def get_number_density(trajectory, how = 'mean'):
     """return number density of ase trajectory object"""
     return apply_to_traj(trajectory, sadi.atom.get_number_density, how)
+
+def construct_step(**kwargs):
+    """
+    contruct step from various constructors
+
+    Args:
+        delta_Step: int, number of simulation steps between two frames
+        first_frame: int, first step
+        last_frame: int, first step
+        number_of_frames: int, number of frames
+        step: slice object or numpy array
+    
+    Return:
+        step: numpy array containing steps
+    """
+    delta_Step = kwargs.get('delta_Step', None)
+    first_frame = kwargs.get('first_frame', None)
+    last_frame = kwargs.get('last_frame', None)
+    number_of_frames = kwargs.get('number_of_frames', None)
+    step = kwargs.get('step', None)
+
+    try:
+        if step is not None:
+            if isinstance(step, slice):
+                return np.array(list(range(step.start or 0, step.stop, step.step or 1)))
+            else:
+                return np.array(step)
+        elif delta_Step is not None:
+            if first_frame is not None and last_frame is not None:
+                return np.arange(first_frame, last_frame, delta_Step)
+            elif number_of_frames is not None: 
+                if first_frame is None and last_frame is not None:
+                    first_frame = last_frame - number_of_frames * delta_Step
+                if first_frame is not None:
+                    return np.arange(first_frame, first_frame + number_of_frames * delta_Step, delta_Step)
+        elif number_of_frames is not None:
+            if first_frame is not None and last_frame is not None:
+                return np.linspace(first_frame, last_frame, number_of_frames)
+    except:
+        logger.exception("Cannot construct step from provided args")       
+        raise ValueError  
+        
