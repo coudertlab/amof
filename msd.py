@@ -54,14 +54,15 @@ class Msd(object):
         # test reducing mem usage
         # r = np.zeros((len(trajectory), len(r_0), 3))
         # r[0] = r_0 
-        r_t_minus_dt = None
         r_t = r_0
         MSD = np.zeros(len(trajectory))
         for t in range(1, len(trajectory)):
+            r_t_minus_dt = r_t
             dr = np.zeros((len(r_0), 3))
             for j in range(3): #x,y,z
                 a = trajectory[t].get_cell()[j,j]
-                dr[:,j] = (sadi.atom.select_species_positions(trajectory[t], atomic_number) - r[t-1]%a)[:,j]
+                # dr[:,j] = (sadi.atom.select_species_positions(trajectory[t], atomic_number) - r[t-1]%a)[:,j]
+                dr[:,j] = (sadi.atom.select_species_positions(trajectory[t], atomic_number) - r_t_minus_dt%a)[:,j]
                 for i in range(len(dr)):
                     if dr[i][j]>a/2:
                         dr[i][j] -= a
@@ -69,7 +70,6 @@ class Msd(object):
                         dr[i][j] += a
             # r[t] = dr + r[t-1]
             # MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
-            r_t_minus_dt = r_t
             r_t = dr + r_t_minus_dt
             MSD[t] = np.linalg.norm(r_t-r_0)**2/len(r_0)
         return MSD

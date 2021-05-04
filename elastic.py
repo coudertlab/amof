@@ -211,17 +211,17 @@ class ElasticConstant(object):
 
 
 
-    # not adapted
-    @staticmethod
-    def print_cell(abc):
-        print('Unit cell averages:')
-        print('            a = %.3f' % np.mean([x[0] for x in abc]))
-        print('            b = %.3f' % np.mean([x[1] for x in abc]))
-        print('            c = %.3f' % np.mean([x[2] for x in abc]))
-        print('    alpha = %.3f' % np.rad2deg(np.mean([x[3] for x in abc])))
-        print('        beta = %.3f' % np.rad2deg(np.mean([x[4] for x in abc])))
-        print('    gamma = %.3f' % np.rad2deg(np.mean([x[5] for x in abc])))
-        print('   volume = %.1f' % volume)
+    # # not adapted
+    # @staticmethod
+    # def print_cell(abc):
+    #     print('Unit cell averages:')
+    #     print('            a = %.3f' % np.mean([x[0] for x in abc]))
+    #     print('            b = %.3f' % np.mean([x[1] for x in abc]))
+    #     print('            c = %.3f' % np.mean([x[2] for x in abc]))
+    #     print('    alpha = %.3f' % np.rad2deg(np.mean([x[3] for x in abc])))
+    #     print('        beta = %.3f' % np.rad2deg(np.mean([x[4] for x in abc])))
+    #     print('    gamma = %.3f' % np.rad2deg(np.mean([x[5] for x in abc])))
+    #     print('   volume = %.1f' % volume)
 
 def print_Cmat(Cmat):
     print('')
