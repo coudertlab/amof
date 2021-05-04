@@ -51,8 +51,11 @@ class Msd(object):
         if atomic_number is None, compute MSD between all atoms
         """
         r_0 = sadi.atom.select_species_positions(trajectory[0], atomic_number)
-        r = np.zeros((len(trajectory), len(r_0), 3))
-        r[0] = r_0 
+        # test reducing mem usage
+        # r = np.zeros((len(trajectory), len(r_0), 3))
+        # r[0] = r_0 
+        r_t_minus_dt = None
+        r_t = r_0
         MSD = np.zeros(len(trajectory))
         for t in range(1, len(trajectory)):
             dr = np.zeros((len(r_0), 3))
@@ -64,8 +67,11 @@ class Msd(object):
                         dr[i][j] -= a
                     elif dr[i][j]<-a/2:
                         dr[i][j] += a
-            r[t] = dr + r[t-1]
-            MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
+            # r[t] = dr + r[t-1]
+            # MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
+            r_t_minus_dt = r_t
+            r_t = dr + r_t_minus_dt
+            MSD[t] = np.linalg.norm(r_t-r_0)**2/len(r_0)
         return MSD
 
     def compute_msd(self, trajectory, step, parallel):
