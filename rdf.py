@@ -126,27 +126,27 @@ class CoordinationNumber(object):
         self.cn_data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
-    def from_trajectory(cls, trajectory, nn_set_and_cutoff, delta_Step = 1, first_frame = 0, dr = 0.01, parallel = False):
+    def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, dr = 0.01, parallel = False):
         """
         constructor of rdf class from an ase trajectory object
         Args:
-            nn_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
+            nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
             dr: float, in Angstrom
         """
         cn_class = cls() # initialize class
         step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
-        cn_class.compute_cn(trajectory, nn_set_and_cutoff, step, dr, parallel)
+        cn_class.compute_cn(trajectory, nb_set_and_cutoff, step, dr, parallel)
         return cn_class # return class as it is a constructor
 
-    def compute_cn(self, trajectory, nn_set_and_cutoff, step, dr, parallel):
+    def compute_cn(self, trajectory, nb_set_and_cutoff, step, dr, parallel):
         """
         compute coordination from ase trajectory object
         """
         atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
         N_species = len(atomic_numbers_unique) # number of different chemical species
 
-        rmax = np.max(list(nn_set_and_cutoff.values()))
+        rmax = np.max(list(nb_set_and_cutoff.values()))
 
         logger.info("Start computing coordination number for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
         bins = int(rmax // dr)
@@ -160,7 +160,7 @@ class CoordinationNumber(object):
             dic = {'Step': step[i]}
             RDFobj = asap3.analysis.rdf.RadialDistributionFunction(atoms, rmax, bins)
             density = satom.get_number_density(atoms)
-            for nn_set, cutoff in nn_set_and_cutoff.items():
+            for nn_set, cutoff in nb_set_and_cutoff.items():
                 xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
                 rdf = RDFobj.get_rdf(elements=xx, groups=0)
                 dic[nn_set] = get_coordination_number(r, rdf, cutoff, density)
