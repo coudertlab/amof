@@ -12,6 +12,7 @@ import pandas as pd
 import scipy.integrate
 import scipy.interpolate
 import joblib
+import itertools
 
 import logging
 
@@ -31,15 +32,19 @@ class Bad(object):
         """default constructor"""
         self.bad_data = pd.DataFrame({"Step": np.empty([0])})
 
+
     @classmethod
-    def from_trajectory(cls, trajectory, dr = 0.01, rmax = 'half_cell'):
+    def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, dr = 0.01, parallel = False):
         """
-        constructor of bad class from an ase trajectory object
-        dr, rmax in Angstrom
-        If rmax is set to 'half_cell', then half of the minimum dimension of the cell is used to ensure no atom is taken into account twice for a given atom (computation is possible beyound this threeshold up to the min cell size)
+        constructor of rdf class from an ase trajectory object
+        Args:
+            nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
+                values are cutoffs float, in Angstrom
+            dr: float, in Angstrom
         """
         bad_class = cls() # initialize class
-        bad_class.compute_bad(trajectory, dr, rmax)
+        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        bad_class.compute_bad(trajectory, nb_set_and_cutoff, step, dr, parallel)
         return bad_class # return class as it is a constructor
 
     @classmethod
@@ -51,51 +56,74 @@ class Bad(object):
         bad_class.read_bad_file(filename)
         return bad_class # return class as it is a constructor
 
-    def compute_bad(self, trajectory, dr, rmax):
+    @staticmethod
+    def bad_BAB(atom, A, B, nl):
+        """Return BAD distribution of B-A-B angle.
+
+        Args:
+            atom: ase atom object
+            A, B: either int specifying atom numbers
+                    A and B can be "X" (str) and in that case every specie will be taken into account
+            nl: neighbor list used
+        
+        Returns:
+            angles: list of floats representing B-A-B angles
+                if B = "X", return X-A-Y angle. (all neighbours around A)
+                if A and B = "X", return BAD distribution of X-Z-Y angle. (all neighbours around Z, for every Z)
+        """    
+        atomic_numbers = atom.get_atomic_numbers()  
+        angles = [] #one set of 3 atoms will be comprised 1 time
+        for a in range(len(atomic_numbers)):
+            if A == "X" or atomic_numbers[a] == A:
+                indices, offsets = nl.get_neighbors(a)
+                B_neighbors = [i for i in indices if B == "X" or atomic_numbers[i] == B] #Take couples of B-B neighbours
+                comb = itertools.combinations(B_neighbors, 2) # Get all combinations of Bs
+                
+                angles_indices = []
+                for pair in list(comb): 
+                    i, j = pair
+                    angles_indices.append([i,a,j])
+    
+                if angles_indices != []: # get_angles() doesn't work with an empty list
+                    angles += list(atom.get_angles(angles_indices, mic=True))
+        return angles
+    
+    
+    def compute_bad(self, trajectory, nb_set_and_cutoff, step, dr, parallel):
         """
-        compute bad from ase trajectory object
+        compute compute_bad from ase trajectory object
         """
         atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
         N_species = len(atomic_numbers_unique) # number of different chemical species
 
-        # default option
-        if  rmax == 'half_cell':
-            rmax = np.min([a for t in trajectory for a in t.get_cell_lengths_and_angles()[0:3]]) / 2
+        rmax = np.max(list(nb_set_and_cutoff.values()))
 
-        logger.info("Start computing bad for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
+        logger.info("Start computing coordination number for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
         bins = int(rmax // dr)
         r = np.arange(bins) * dr        
-        self.bad_data = pd.DataFrame({"r": r})
 
-        # Code from the asap3 manual for a trajectory
-        badobj = None
-        for atoms in trajectory:
-            if badobj is None:
-                badobj = asap3.analysis.bad.RadialDistributionFunction(atoms, rmax, bins)
-            else:
-                badobj.atoms = atoms  # Fool badobj to use the new atoms
-            badobj.update()           # Collect data
-        
-        # Total bad        
-        bad = badobj.get_bad(groups=0)        
-        self.bad_data["X-X"] = bad
+        def compute_cn_for_frame(i):
+            """
+            compute coordination for ase atom object
+            """
+            atoms = trajectory[i]
+            dic = {'Step': step[i]}
+            RDFobj = asap3.analysis.rdf.RadialDistributionFunction(atoms, rmax, bins)
+            density = satom.get_number_density(atoms)
+            for nn_set, cutoff in nb_set_and_cutoff.items():
+                xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
+                rdf = RDFobj.get_rdf(elements=xx, groups=0)
+                dic[nn_set] = get_coordination_number(r, rdf, cutoff, density)
+            return dic
 
-        # Partial bads               
-        elements = [[(x, y) for y in atomic_numbers_unique] for x in atomic_numbers_unique] # cartesian product of very couple of  species
+        if parallel == False:
+            list_of_dict = [compute_cn_for_frame(i) for i in range(len(trajectory))]
+        else:
+            logger.warning("Parallel mode for coordination number very slow, best to use serial")
+            num_cores = parallel if type(parallel) == int else 18
+            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_cn_for_frame)(i) for i in range(len(trajectory)))
 
-        # change to np.like 
-        partial_bad = [[0 for y in atomic_numbers_unique] for x in atomic_numbers_unique] # need to have same structure as elements but any content is fine as it will be replaced
-
-        for i in range(N_species):
-            for j in range(N_species):
-                xx = elements[i][j]
-                xx_str = ase.data.chemical_symbols[xx[0]] + "-" + ase.data.chemical_symbols[xx[1]]
-                partial_bad[i][j] = badobj.get_bad(elements=xx,groups=0)
-                self.bad_data[xx_str] = partial_bad[i][j]    
-        for i in range(N_species):
-            xx = elements[i][i]
-            xx_str = ase.data.chemical_symbols[xx[0]] + "-" + ase.data.chemical_symbols[xx[1]]
-            self.bad_data[ase.data.chemical_symbols[xx[0]] + "-X"] = sum([partial_bad[i][j] for j in range(N_species)])   
+        self.cn_data = pd.DataFrame(list_of_dict)
 
     def write_to_file(self, filename):
         filename = sadi.files.path.append_suffix(filename, 'bad')
