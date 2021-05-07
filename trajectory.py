@@ -141,9 +141,15 @@ def read_cp2k_traj(path_to_xyz, path_to_cell, index = None, unzip_xyz = False):
         traj: ase.trajectory object
     """
     Traj = Trajectory.from_traj(path_to_xyz, index, format = 'xyz', unzip = unzip_xyz)
-    cell = np.genfromtxt(path_to_cell)[:,2:-1] 
-    cell = cell[index]
-    cell = np.array([c.reshape(3,3) for c in cell]) # reshape in 3*3 matrix cell format
+    cell = np.genfromtxt(path_to_cell)
+    if len(cell.shape) == 1: # corresponds to single frame in traj
+        cell = cell[2:-1] 
+        cell = cell[index]
+        cell = np.array([cell.reshape(3,3)]) # reshape in 3*3 matrix cell format
+    else:
+        cell = cell[:,2:-1] 
+        cell = cell[index]
+        cell = np.array([c.reshape(3,3) for c in cell]) # reshape in 3*3 matrix cell format
     Traj.set_cell(cell, set_pbc = True)
     return Traj.get_traj()
 

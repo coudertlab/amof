@@ -5,7 +5,6 @@ Module containing msd related methods
 import ase
 import ase.data
 
-# import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import logging
