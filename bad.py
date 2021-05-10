@@ -3,6 +3,7 @@ Module containing bond angle distribution related methods
 """
 
 import ase
+import ase.neighborlist
 import ase.data
 # import asap3.analysis.bad
 
@@ -30,21 +31,20 @@ class Bad(object):
 
     def __init__(self):
         """default constructor"""
-        self.bad_data = pd.DataFrame({"Step": np.empty([0])})
+        self.bad_data = pd.DataFrame({"theta": np.empty([0])})
 
 
     @classmethod
-    def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, dr = 0.01, parallel = False):
+    def from_trajectory(cls, trajectory, nb_set_and_cutoff, dtheta = 0.05, parallel = False):
         """
         constructor of rdf class from an ase trajectory object
         Args:
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
-            dr: float, in Angstrom
+            dtheta: float, in degrees, default value of 0.05degree similar to RG
         """
         bad_class = cls() # initialize class
-        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
-        bad_class.compute_bad(trajectory, nb_set_and_cutoff, step, dr, parallel)
+        bad_class.compute_bad(trajectory, nb_set_and_cutoff, dtheta, parallel)
         return bad_class # return class as it is a constructor
 
     @classmethod
@@ -75,7 +75,8 @@ class Bad(object):
         angles = [] #one set of 3 atoms will be comprised 1 time
         for a in range(len(atomic_numbers)):
             if A == "X" or atomic_numbers[a] == A:
-                indices, offsets = nl.get_neighbors(a)
+                indices = nl[a]
+                # indices, offsets = nl.get_neighbors(a)
                 B_neighbors = [i for i in indices if B == "X" or atomic_numbers[i] == B] #Take couples of B-B neighbours
                 comb = itertools.combinations(B_neighbors, 2) # Get all combinations of Bs
                 
@@ -88,42 +89,77 @@ class Bad(object):
                     angles += list(atom.get_angles(angles_indices, mic=True))
         return angles
     
+    def compute_bad_for_frame(self, atom, cutoff_dict, elements):
+        """
+        compute bad for ase atom object
+        """
+        # atom = trajectory[i]
+        dic = {}
+        nl_i, nl_j = ase.neighborlist.neighbor_list('ij', atom, cutoff_dict)
+        nl = [[] for i in range(atom.get_global_number_of_atoms())]
+        for k in range(len(nl_i)):
+            i, j = nl_i[k], nl_j[k]
+            nl[i].append(j)
+        # nl.update(atom)
+        
+        for A, B in elements:
+            aba_str = "-".join([ase.data.chemical_symbols[C] for C in [B, A, B]])
+            dic[aba_str] = self.bad_BAB(atom, A, B, nl)  
+
+        # for nn_set, cutoff in nb_set_and_cutoff.items():
+        #     xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
+        #     rdf = RDFobj.get_rdf(elements=xx, groups=0)
+        #     dic[nn_set] = get_coordination_number(r, rdf, cutoff, density)
+        return dic
     
-    def compute_bad(self, trajectory, nb_set_and_cutoff, step, dr, parallel):
+    def compute_bad(self, trajectory, nb_set_and_cutoff, dtheta, parallel):
         """
         compute compute_bad from ase trajectory object
         """
         atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
-        N_species = len(atomic_numbers_unique) # number of different chemical species
+
+        cutoff_dict = {} # dict in ase.nl cutoff format
+        elements_present_unique = []
+        for nn_set, cutoff in nb_set_and_cutoff.items():
+            xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
+            cutoff_dict[xx] = cutoff
+            elements_present_unique += [ase.data.atomic_numbers[i] for i in nn_set.split('-')]
+        elements_present_unique = list(set(elements_present_unique)) # rm duplicates
+
+        if len(elements_present_unique) == len(atomic_numbers_unique):
+            elements_present_unique.append("X")
+        N_species = len(elements_present_unique) # number of different chemical species
+            # N_species += 1 # include "X"
+
+        # Partial RDFs               
+        elements = [(a, b) for b in elements_present_unique for a in elements_present_unique if (a not in [b, "X"] or ((a, b) == ("X", "X"))) ]
+
+        # nl = ase.neighborlist.NeighborList(cutoff_dict, self_interaction = False, bothways = True)
+        # cutoffs = ase.neighborlist.natural_cutoffs(atom, mult = 1.2) # Generate a radial cutoff for every atom based on covalent radii ; mult is a multiplier for all cutoffs
+        # nl = ase.neighborlist.NeighborList(cutoffs, self_interaction = False, bothways = True)
 
         rmax = np.max(list(nb_set_and_cutoff.values()))
 
-        logger.info("Start computing coordination number for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
-        bins = int(rmax // dr)
-        r = np.arange(bins) * dr        
+        logger.info("Start computing bad for %s frames with dtheta = %s", len(trajectory), dtheta)
+        bins = int(180 // dtheta)
+        theta_bins = np.arange(bins + 1) * dtheta    
+        theta = np.arange(bins) * dtheta + dtheta / 2   
+        self.bad_data = pd.DataFrame({"theta": theta})    
 
-        def compute_cn_for_frame(i):
-            """
-            compute coordination for ase atom object
-            """
-            atoms = trajectory[i]
-            dic = {'Step': step[i]}
-            RDFobj = asap3.analysis.rdf.RadialDistributionFunction(atoms, rmax, bins)
-            density = satom.get_number_density(atoms)
-            for nn_set, cutoff in nb_set_and_cutoff.items():
-                xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
-                rdf = RDFobj.get_rdf(elements=xx, groups=0)
-                dic[nn_set] = get_coordination_number(r, rdf, cutoff, density)
-            return dic
 
         if parallel == False:
-            list_of_dict = [compute_cn_for_frame(i) for i in range(len(trajectory))]
+            list_of_dict = [self.compute_bad_for_frame(trajectory[i], cutoff_dict, elements) for i in range(len(trajectory))]
         else:
-            logger.warning("Parallel mode for coordination number very slow, best to use serial")
             num_cores = parallel if type(parallel) == int else 18
-            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_cn_for_frame)(i) for i in range(len(trajectory)))
+            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_bad_for_frame)(trajectory[i], cutoff_dict, elements) for i in range(len(trajectory)))
 
-        self.cn_data = pd.DataFrame(list_of_dict)
+        aba_str_keys = list_of_dict[0].keys()
+        for aba_str in aba_str_keys:
+            angles = []
+            for dic in list_of_dict:
+                angles += dic[aba_str]
+            self.bad_data[aba_str] = np.histogram(angles, bins = theta_bins, density=True)[0]
+
 
     def write_to_file(self, filename):
         filename = sadi.files.path.append_suffix(filename, 'bad')
