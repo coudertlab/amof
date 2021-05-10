@@ -142,8 +142,8 @@ class Bad(object):
 
         logger.info("Start computing bad for %s frames with dtheta = %s", len(trajectory), dtheta)
         bins = int(180 // dtheta)
-        theta_bins = np.arange(bins + 1) * dtheta    
-        theta = np.arange(bins) * dtheta + dtheta / 2   
+        theta_bins = np.arange(bins + 2) * dtheta    
+        theta = np.arange(bins + 1) * dtheta + dtheta / 2   
         self.bad_data = pd.DataFrame({"theta": theta})    
 
 
@@ -158,7 +158,8 @@ class Bad(object):
             angles = []
             for dic in list_of_dict:
                 angles += dic[aba_str]
-            self.bad_data[aba_str] = np.histogram(angles, bins = theta_bins, density=True)[0]
+            if angles != []:
+                self.bad_data[aba_str] = np.histogram(angles, bins = theta_bins, density=True)[0]
 
 
     def write_to_file(self, filename):

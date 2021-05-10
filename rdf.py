@@ -2,6 +2,9 @@
 Module containing rdf related methods
 """
 
+import os
+os.environ["OMP_NUM_THREADS"] = "1" # export OMP_NUM_THREADS=4
+
 import ase
 import ase.data
 import asap3.analysis.rdf
@@ -152,14 +155,14 @@ class CoordinationNumber(object):
         bins = int(rmax // dr)
         r = np.arange(bins) * dr        
 
-        def compute_cn_for_frame(i):
+        def compute_cn_for_frame(atom, step):
             """
             compute coordination for ase atom object
             """
-            atoms = trajectory[i]
-            dic = {'Step': step[i]}
-            RDFobj = asap3.analysis.rdf.RadialDistributionFunction(atoms, rmax, bins)
-            density = satom.get_number_density(atoms)
+            # atoms = trajectory[i]
+            dic = {'Step': step}
+            RDFobj = asap3.analysis.rdf.RadialDistributionFunction(atom, rmax, bins)
+            density = satom.get_number_density(atom)
             for nn_set, cutoff in nb_set_and_cutoff.items():
                 xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
                 rdf = RDFobj.get_rdf(elements=xx, groups=0)
@@ -167,11 +170,11 @@ class CoordinationNumber(object):
             return dic
 
         if parallel == False:
-            list_of_dict = [compute_cn_for_frame(i) for i in range(len(trajectory))]
+            list_of_dict = [compute_cn_for_frame(trajectory[i], step[i]) for i in range(len(trajectory))]
         else:
             logger.warning("Parallel mode for coordination number very slow, best to use serial")
             num_cores = parallel if type(parallel) == int else 18
-            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_cn_for_frame)(i) for i in range(len(trajectory)))
+            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_cn_for_frame)(trajectory[i], step[i]) for i in range(len(trajectory)))
 
         self.cn_data = pd.DataFrame(list_of_dict)
 
