@@ -4,10 +4,14 @@ Supported: ZIF-8
 """
 
 from sadi.coordination import *
+import buildingunits as bu
 
-class CustomSearchTwo(CoordinationSearch):
+class ZifSearch(CoordinationSearch):
     """
-    Only for ZIF8
+    Generic coordination search class for ZIFs comprised of 
+        single metal nodes
+        imid-based linkers
+    Provides generic methods used for all these systems
     Principle:
         1. find every cycle of CNCNC
         2. add H based on cov radii to single C and C bonded to one N
@@ -16,25 +20,25 @@ class CustomSearchTwo(CoordinationSearch):
         5. bind N and Zn
     """
 
-    def __init__(self, struct, dist_margin = 1.2, dist_margin_zn = 1.5):
+    def __init__(self, struct, dist_margin = 1.2, dist_margin_metal = 1.5):
         """
         Constructor for custom search 2 for ZIF8 glasses
         dist_margin is the default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
-        dist_margin_zn is the specific tolerance for Zn-X bonds as they're not covalent
+        dist_margin_metal is the specific tolerance for metal-X bonds as they're not covalent
         """
-        self.dist_margin_zn = dist_margin_zn # dist_maring is created in CoordinationSearch.__init__
-        neighb_max_distance = self.set_neighb_max_distance(dist_margin, dist_margin_zn)
+        self.dist_margin_metal = dist_margin_metal # dist_maring is created in CoordinationSearch.__init__
+        neighb_max_distance = self.set_neighb_max_distance(dist_margin, dist_margin_metal)
         CoordinationSearch.__init__(self, struct, neighb_max_distance, dist_margin)
         self.detect_conn()
         self.update_atypes()
 
-    def set_neighb_max_distance(self, dist_margin, dist_margin_zn):
+    def set_neighb_max_distance(self, dist_margin, dist_margin_metal):
         """set neighb_max_distance to compute all_neighb to the minimal necessary distance"""
         dist_margin_atoms = ['H', 'C', 'N']
-        dist_margin_zn_atoms = ['Zn']
+        dist_margin_metal_atoms = [self.metal]
         max_cov_organic = np.max([self.covalentradius[A]+self.covalentradius[B] for A in dist_margin_atoms for B in dist_margin_atoms])
-        max_cov_zn = np.max([self.covalentradius[A]+self.covalentradius[B] for A in dist_margin_zn_atoms for B in (dist_margin_atoms+dist_margin_zn_atoms)])
-        return max(max_cov_organic * dist_margin, max_cov_zn * dist_margin_zn)
+        max_cov_zn = np.max([self.covalentradius[A]+self.covalentradius[B] for A in dist_margin_metal_atoms for B in (dist_margin_atoms+dist_margin_metal_atoms)])
+        return max(max_cov_organic * dist_margin, max_cov_zn * dist_margin_metal)
 
     def detect_conn(self):
         """
@@ -48,8 +52,8 @@ class CustomSearchTwo(CoordinationSearch):
 
         ### Find imid cycles (C-N-C-N-C)
         graph = StructureGraph.with_empty_graph(self.struct)
-        self.add_ABbonds(graph,N, C)
-        self.add_ABbonds(graph,C, C)
+        self.add_ABbonds(graph, N, C)
+        self.add_ABbonds(graph, C, C)
         cycles = self.get_chain_decomposition(graph)
 
         # check sanity of found cycles
@@ -91,4 +95,43 @@ class CustomSearchTwo(CoordinationSearch):
         self.find_N_closest_cov_dist(lambda i: C_Nbonds[i]==0, lambda i: C_Nbonds[i]==2, 1, report_level='undercoordinated', report_entry="C in CHn not bonded to any C in imid")        
         
         ### link N to Zn with no constraint on the number of N to Zn
-        self.find_N_closest_cov_dist(lambda i: self.struct[i].species==Zn, lambda i: self.struct[i].species==N, 4, dist_margin=self.dist_margin_zn, report_level='undercoordinated', report_entry="undercoordinated Zn")        
+        self.find_N_closest_cov_dist(lambda i: self.struct[i].species==Zn, lambda i: self.struct[i].species==N, 4, dist_margin=self.dist_margin_metal, report_level='undercoordinated', report_entry="undercoordinated Zn")        
+
+class MetalmIm(ZifSearch):
+    """
+    Search coordination for ZIFs made of metallic node and mIm (methyldimidazolate, C4N2H5) ligands
+    Supports: ZIF8, SALEM-2
+    Principle:
+        1. find every cycle of CNCNC
+        2. add H based on cov radii to single C and C bonded to one N
+        3. bind the remaining H (there should be non for the crystal)
+        4. bind the CHn to CN2
+        5. bind N and Zn
+    """
+
+    def __init__(self, struct, metal, dist_margin = 1.2, dist_margin_metal = 1.5):
+        """
+        Constructor for coordination search for MetalmIm glasses
+
+        Args:
+            struct: pymatgen structure
+            metal: str representing metal node
+            dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
+            dist_margin_metal: float, specific tolerance for metal-X bonds as they're not covalent
+        """
+        self.metal = bu.SingleMetal(metal, 4)
+        self.linker = bu.ImidazoleBased("mIm", "C4N2H5")
+        ZifSearch.__init__(self, struct, metal, dist_margin, dist_margin_metal)
+
+
+class MetalIm(ZifSearch):
+    """
+    Search coordination for ZIFs made of metallic node and Im (imidazolate, C3N2H3) ligands
+    Supports: ZIF4-zni, salem
+    Principle:
+        1. find every cycle of CNCNC
+        2. add H based on cov radii to single C and C bonded to one N
+        3. bind the remaining H (there should be non for the crystal)
+        4. bind the CHn to CN2
+        5. bind N and Zn
+    """
