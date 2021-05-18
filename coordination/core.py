@@ -1,7 +1,7 @@
 #-*- coding: utf-8 -*-
 
 """
-Main file containing classes for custom neigbour search in ZIF8 glasses
+Main file containing classes for custom neigbour search
 """
 
 import numpy as np
