@@ -1,9 +1,8 @@
 """
-Main file containing classes for custom neigbour search in ZIF glasses
-Supported: ZIF-8
+Legacy version of custom search - need to be removed when sadi implementation working
 """
 
-from sadi.coordination import *
+from core import CoordinationSearch
 
 class CustomSearchTwo(CoordinationSearch):
     """
