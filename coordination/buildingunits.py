@@ -20,14 +20,15 @@ class SingleMetal(Node):
     """
     Class for representing single metal nodes
     """
-    def __init__(self, species, target_coordination) -> None:
+    def __init__(self, metal, target_coordination) -> None:
         """
         Args:
-            species: str, metal species (e.g. "Zn")
+            metal: str, metal species (e.g. "Zn")
             target_coordination: int
         """
         super().__init__()
-        self.species = species
+        self.name = metal
+        self.species = [metal]
         self.target_coordination = target_coordination
 
 class Linker(BuildingUnit):
