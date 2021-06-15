@@ -13,6 +13,7 @@ import networkx as nx
 from networkx.algorithms.chains import chain_decomposition
 from copy import deepcopy
 from collections import Counter
+import itertools
 
 import logging
 
@@ -82,7 +83,31 @@ class CoordinationSearch(object):
     def get_chain_decomposition(cls, graph):
         """return chain decomposition as list of list from pymatgen graph"""
         GG = cls.multigraph_to_graph(graph.graph) # pymatgen graph is a multigraph and directed, graph.graph is a nx object
+        # test = cls.find_one_cycle_per_node(graph)
         return list(chain_decomposition(GG)) # direct use of nx function
+
+    @classmethod
+    def find_one_cycle_per_node(cls, graph):
+        """for each node, if it exists return a cycle found via depth-first traversal in which node is included.
+        Returns:
+            cycles_list: list of list of edges"""
+        GG = cls.multigraph_to_graph(graph.graph) # pymatgen graph is a multigraph and directed, graph.graph is a nx object
+        cycles_list = []
+        nodes = list(set(GG.nodes))
+        node_in_cycle = {i:False for i in nodes}
+        for i in nodes:
+            if not node_in_cycle[i]:
+                try:
+                    cycle = nx.find_cycle(GG, i)
+                    cycle_edges = set(itertools.chain.from_iterable(cycle))
+                    if i in cycle_edges:
+                        for j in cycle_edges:
+                            node_in_cycle[j] = True
+                        cycles_list.append(cycle)
+                except nx.exception.NetworkXNoCycle:
+                    pass
+        return cycles_list
+
 
     def plot_conn_as_graph(self, filename = "graph_temp.png"):
         """create graph with every bond present in conn and print it in file"""

@@ -116,7 +116,7 @@ class ZifSearch(CoordinationSearch):
 class MetalmIm(ZifSearch):
     """
     Search coordination for ZIFs made of metallic node and mIm (methyldimidazolate, C4N2H5) ligands
-    Supports: ZIF8, SALEM-2
+    Supports: ZIF8
     Principle:
         1. find every cycle of CNCNC
         2. add H based on cov radii to single C and C bonded to one N
@@ -145,14 +145,14 @@ class MetalmIm(ZifSearch):
         main function to detect connectivity
         """
         # shorthand to select different atoms in pymatgen
-        Zn = pymatgen.core.Composition(f"{self.node.name}1")
+        metal_atom = pymatgen.core.Composition(f"{self.node.name}1")
         H = pymatgen.core.Composition("H1")
         C = pymatgen.core.Composition("C1")
         N = pymatgen.core.Composition("N1")
 
         # Find imid cycles (C-N-C-N-C)
         graph = StructureGraph.with_empty_graph(self.struct)
-        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = int(self.struct.num_sites*24/276))
+        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2)
 
         # add H based on cov radii to single C and C bonded to one N
         C_Nbonds = self.get_A_Bbonds(C, N)
@@ -173,22 +173,21 @@ class MetalmIm(ZifSearch):
         self.find_N_closest_cov_dist(lambda i: C_Nbonds[i] == 0, lambda i: C_Nbonds[i] == 2, 1,
                                      report_level='undercoordinated', report_entry="C in CHn not bonded to any C in imid")
 
-        # link N to Zn with no constraint on the number of N to Zn
-        self.find_N_closest_cov_dist(lambda i: self.struct[i].species == Zn, lambda i: self.struct[i].species == N,
-                                     4, dist_margin=self.dist_margin_metal, report_level='undercoordinated', report_entry="undercoordinated Zn")
+        # link N to metal_atom with no constraint on the number of N to metal_atom
+        self.find_N_closest_cov_dist(lambda i: self.struct[i].species == metal_atom, lambda i: self.struct[i].species == N,
+                                     self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated', report_entry=f"undercoordinated {self.node.name}")
 
 
 
 class MetalIm(ZifSearch):
     """
     Search coordination for ZIFs made of metallic node and Im (imidazolate, C3N2H3) ligands
-    Supports: ZIF4-zni, salem
+    Supports: ZIF4, ZIF-zni, SALEM-2
     Principle:
         1. find every cycle of CNCNC
-        2. add H based on cov radii to single C and C bonded to one N
+        2. add H based on cov radii to every C
         3. bind the remaining H (there should be non for the crystal)
-        4. bind the CHn to CN2
-        5. bind N and Zn
+        4. bind N and Zn
     """
 
     def __init__(self, struct, metal, dist_margin=1.2, dist_margin_metal=1.5):
@@ -211,23 +210,17 @@ class MetalIm(ZifSearch):
         main function to detect connectivity
         """
         # shorthand to select different atoms in pymatgen
-        Zn = pymatgen.core.Composition("Zn1")
+        metal_atom = pymatgen.core.Composition(f"{self.node.name}1")
         H = pymatgen.core.Composition("H1")
         C = pymatgen.core.Composition("C1")
         N = pymatgen.core.Composition("N1")
 
         # Find imid cycles (C-N-C-N-C)
         graph = StructureGraph.with_empty_graph(self.struct)
-        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = int(self.struct.num_sites*24/276))
+        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2)
 
-        # add H based on cov radii to single C and C bonded to one N
-        C_Nbonds = self.get_A_Bbonds(C, N)
-
-        logger.debug("number of N nn to C atoms")  # debug check
-        for i in range(3):
-            logger.debug("%s C atoms have %s N nn", C_Nbonds.count(i), i)
-
-        self.assign_B_uniquely_to_A_N_coordinated(lambda i: (C_Nbonds[i] in [0, 1]), lambda i: (
+        # add H based on cov radii to every C
+        self.assign_B_uniquely_to_A_N_coordinated(lambda i: (self.struct[i].species == C), lambda i: (
             self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours")
 
         # bind the remaining H (there should be non for the crystal)
@@ -235,11 +228,6 @@ class MetalIm(ZifSearch):
         self.find_N_closest_cov_dist(
             lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry="H atoms not bonded to C")
 
-        # link C in cycles (bonded to 2 N) to C bonded to H
-        self.find_N_closest_cov_dist(lambda i: C_Nbonds[i] == 0, lambda i: C_Nbonds[i] == 2, 1,
-                                     report_level='undercoordinated', report_entry="C in CHn not bonded to any C in imid")
-
-        # link N to Zn with no constraint on the number of N to Zn
-        self.find_N_closest_cov_dist(lambda i: self.struct[i].species == Zn, lambda i: self.struct[i].species == N,
-                                     4, dist_margin=self.dist_margin_metal, report_level='undercoordinated', report_entry="undercoordinated Zn")
-
+        # link N to metal_atom with no constraint on the number of N to metal_atom
+        self.find_N_closest_cov_dist(lambda i: self.struct[i].species == metal_atom, lambda i: self.struct[i].species == N,
+                                     self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated', report_entry=f"undercoordinated {self.node.name}")
