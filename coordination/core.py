@@ -17,6 +17,8 @@ import itertools
 
 import logging
 
+import sadi.files.path
+
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
 
@@ -167,6 +169,7 @@ class CoordinationSearch(object):
 
     def plot_conn_as_graph(self, filename = "graph_temp.png"):
         """create graph with every bond present in conn and print it in file"""
+        filename = sadi.files.path.append_suffix(filename, 'png')
         graph = StructureGraph.with_empty_graph(self.struct)
         for i in range(self.struct.num_sites):
             for j in self.conn[i]:
