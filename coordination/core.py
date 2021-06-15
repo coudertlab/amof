@@ -84,6 +84,7 @@ class CoordinationSearch(object):
         """return chain decomposition as list of list from pymatgen graph"""
         GG = cls.multigraph_to_graph(graph.graph) # pymatgen graph is a multigraph and directed, graph.graph is a nx object
         # test = cls.find_one_cycle_per_node(graph)
+        # testb = cls.find_rings(graph)
         return list(chain_decomposition(GG)) # direct use of nx function
 
     @classmethod
@@ -107,6 +108,61 @@ class CoordinationSearch(object):
                 except nx.exception.NetworkXNoCycle:
                     pass
         return cycles_list
+
+    @classmethod    
+    def find_rings(cls, graph, including=None):
+        """                
+        Find ring structures in the StructureGraph.
+
+        Forked from MoleculeGraph class in pymatgen.analysis.graph
+        A ring is defined as a simple cycle in networkx terms
+        A simple cycle, or elementary circuit, is a closed path where no node appears twice. Two elementary circuits are distinct if they are not cyclic permutations of each other.
+
+        :param including: list of site indices. If
+            including is not None, then find_rings will
+            only return those rings including the specified
+            sites. By default, this parameter is None, and
+            all rings will be returned.
+        :return: dict {index:cycle}. Each
+            entry will be a ring (cycle, in graph theory terms) including the index
+            found in the Molecule. If there is no cycle including an index, the
+            value will be an empty list.
+        """
+
+        # Copies graph such that all edges (u, v) matched by edges (v, u)
+        undirected = graph.graph.to_undirected()
+        directed = undirected.to_directed()
+
+        cycles_nodes = []
+        cycles_edges = []
+
+        # Remove all two-edge cycles
+        all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
+
+        # Using to_directed() will mean that each cycle always appears twice
+        # So, we must also remove duplicates
+        unique_sorted = []
+        unique_cycles = []
+        for cycle in all_cycles:
+            if sorted(cycle) not in unique_sorted:
+                unique_sorted.append(sorted(cycle))
+                unique_cycles.append(cycle)
+
+        if including is None:
+            cycles_nodes = unique_cycles
+        else:
+            for i in including:
+                for cycle in unique_cycles:
+                    if i in cycle and cycle not in cycles_nodes:
+                        cycles_nodes.append(cycle)
+
+        for cycle in cycles_nodes:
+            edges = []
+            for i, e in enumerate(cycle):
+                edges.append((cycle[i - 1], e))
+            cycles_edges.append(edges)
+
+        return cycles_edges
 
 
     def plot_conn_as_graph(self, filename = "graph_temp.png"):
