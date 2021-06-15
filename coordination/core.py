@@ -26,6 +26,10 @@ class CoordinationSearch(object):
     """
     Classes containing general methods to perform a coordination search
     The actual search is to be launched from a subclass mentionning specific species, etc.
+
+    Attributes:
+        fragments: list of dict;  element i of list is fragment of fragnumber i
+        atypes, fragtypes, fragnumbers, conn: same structure as molsys.mol object
     """
         
     def __init__(self, struct, neighb_max_distance, dist_margin):
@@ -33,10 +37,43 @@ class CoordinationSearch(object):
         self.struct = struct
         self.conn = [[] for i in range(struct.num_sites)]
         self.atypes = ["" for i in range(struct.num_sites)]
+        self.fragtypes = ["-1" for i in range(struct.num_sites)]
+        self.fragnumbers = [-1 for i in range(struct.num_sites)]
+        self.fragments = [] 
         self.all_neighb = self.struct.get_all_neighbors(neighb_max_distance)
         self.dist_margin = dist_margin
         # initialize report_search with useful descriptors of struct for subsequent report analysis
         self.report_search = {"number of atoms":self.struct.num_sites}
+
+    def create_fragment(self, fragtype, indices):
+        """
+        Create new fragment
+
+        Args:
+            fragtype: str
+            indices: list of int
+        """
+        fragnumber = len(self.fragments)
+        indices = list(set(indices)) # remove duplicates
+        fragment = {"fragnumbers":fragnumber, "fragtype":fragtype, "indices":indices}
+        for i in indices:
+            self.fragtypes[i] = fragtype
+            self.fragnumbers[i] = fragnumber
+        self.fragments.append(fragment)
+
+    def add_to_fragment(self, fragnumber, indices):
+        """
+        Add indices to fragment
+
+        Args:
+            fragnumber: int
+            indices: list of int
+        """
+        fragtype = self.fragments[fragnumber]['fragtype']
+        for i in indices:
+            self.fragtypes[i] = fragtype
+            self.fragnumbers[i] = fragnumber
+        self.fragments[fragnumber]['indices'] = list(set(self.fragments[fragnumber]['indices'] + indices))
 
     def get_atype(self, i):
         """return atype of atom i formatted as in molsys"""
