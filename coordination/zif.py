@@ -62,7 +62,8 @@ class ZifSearch(CoordinationSearch):
         self.add_ABbonds(graph, B, A)
         self.add_ABbonds(graph, A, A)
         cycles = self.get_chain_decomposition(graph)
-
+        cycles = self.find_one_cycle_per_node(graph)
+        cycles = self.find_rings(graph)
         # check sanity of found cycles
         self.report_search['imid_expected_number_of_cycles'] = (
             len(cycles) == target_number_of_cycles)
@@ -87,6 +88,8 @@ class ZifSearch(CoordinationSearch):
                     self.report_search['imid_atoms_appear_only_once_in_cycles'] = False
                 in_cycle[a] = True
 
+        self.plot_conn_as_graph('find_rings.png')
+        print(1)
 
     # def rest(self):
     #     # add H based on cov radii to single C and C bonded to one N
