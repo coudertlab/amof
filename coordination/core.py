@@ -55,7 +55,7 @@ class CoordinationSearch(object):
         """
         fragnumber = len(self.fragments)
         indices = list(set(indices)) # remove duplicates
-        fragment = {"fragnumbers":fragnumber, "fragtype":fragtype, "indices":indices}
+        fragment = {"fragnumber":fragnumber, "fragtype":fragtype, "indices":indices}
         for i in indices:
             self.fragtypes[i] = fragtype
             self.fragnumbers[i] = fragnumber

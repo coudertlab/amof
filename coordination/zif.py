@@ -45,17 +45,19 @@ class ZifSearch(CoordinationSearch):
                                 for A in dist_margin_metal_atoms for B in (dist_margin_atoms+dist_margin_metal_atoms)])
         return max(max_cov_linker * dist_margin, max_cov_metal * dist_margin_metal)
 
-    def find_ABAcycles(self, A, B, cycle_length, target_number_of_cycles):
+    def find_ABAcycles(self, A, B, cycle_length, target_number_of_cycles, fragtype = None):
         """
         Find every cycle of the form ABA...BA of length cycle_length for species A and B
         Add the bonds thus found to self.conn
         A can be neighbour to A and B, and B only to A. 
         NOT IMPLEMENTED YET: Only one A-A bond is allowed > check
         For imid, A is C and B is N
+        If fragtype is not None, will create new fragments with this fragmame
 
         Args:
             A, B: pymatgen.Composition objects, species of A and B
             cycle_length: int
+            fragtype: str
         """
         # Find cycles (C-N-C-N-C)
         graph = StructureGraph.with_empty_graph(self.struct)
@@ -87,31 +89,10 @@ class ZifSearch(CoordinationSearch):
                     logger.warning("atom %s appears in more than one cycle", a)
                     self.report_search['imid_atoms_appear_only_once_in_cycles'] = False
                 in_cycle[a] = True
-
-    # def rest(self):
-    #     # add H based on cov radii to single C and C bonded to one N
-    #     C_Nbonds = self.get_A_Bbonds(C, N)
-
-    #     logger.debug("number of N nn to C atoms")  # debug check
-    #     for i in range(3):
-    #         logger.debug("%s C atoms have %s N nn", C_Nbonds.count(i), i)
-
-    #     self.assign_B_uniquely_to_A_N_coordinated(lambda i: (C_Nbonds[i] in [0, 1]), lambda i: (
-    #         self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours")
-
-    #     # bind the remaining H (there should be non for the crystal)
-    #     H_Cbonds = self.get_A_Bbonds(H, C)
-    #     self.find_N_closest_cov_dist(
-    #         lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry="H atoms not bonded to C")
-
-    #     # link C in cycles (bonded to 2 N) to C bonded to H
-    #     self.find_N_closest_cov_dist(lambda i: C_Nbonds[i] == 0, lambda i: C_Nbonds[i] == 2, 1,
-    #                                  report_level='undercoordinated', report_entry="C in CHn not bonded to any C in imid")
-
-    #     # link N to Zn with no constraint on the number of N to Zn
-    #     self.find_N_closest_cov_dist(lambda i: self.struct[i].species == Zn, lambda i: self.struct[i].species == N,
-    #                                  4, dist_margin=self.dist_margin_metal, report_level='undercoordinated', report_entry="undercoordinated Zn")
-
+        if fragtype is not None:
+            for c in cycles:
+                indices = list(set(itertools.chain.from_iterable(c)))
+                self.create_fragment(fragtype, indices)
 
 class MetalmIm(ZifSearch):
     """
@@ -152,7 +133,7 @@ class MetalmIm(ZifSearch):
 
         # Find imid cycles (C-N-C-N-C)
         graph = StructureGraph.with_empty_graph(self.struct)
-        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2)
+        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2, fragtype = self.linker.name)
 
         # add H based on cov radii to single C and C bonded to one N
         C_Nbonds = self.get_A_Bbonds(C, N)
