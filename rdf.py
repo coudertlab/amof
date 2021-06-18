@@ -46,13 +46,21 @@ class Rdf(object):
         return rdf_class # return class as it is a constructor
 
     @classmethod
-    def from_rdf(cls, path_to_rdf):
+    def from_rdf(cls, *args):
+        """
+        constructor of rdf class from rdf file
+        """
+        logger.exception('from_rdf is deprecated, use from_file instead')
+
+    @classmethod
+    def from_file(cls, path_to_rdf):
         """
         constructor of rdf class from rdf file
         """
         rdf_class = cls() # initialize class
         rdf_class.read_rdf_file(path_to_rdf)
         return rdf_class # return class as it is a constructor
+
 
     def compute_rdf(self, trajectory, dr, rmax):
         """
