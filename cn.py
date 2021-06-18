@@ -62,7 +62,7 @@ class CoordinationNumber(object):
             # atoms = trajectory[i]
             dic = {'Step': step}
 
-            nl = satom.get_neighborlist(atom, cutoff_dict)
+            nl = satom.get_neighborlist(atom, cutoff_dict) # 92% of computation time is spent in ase neighbour list search (profiled on ZIF8_15glass01)
             atomic_numbers = atom.get_atomic_numbers()  
             for nb_set, cutoff in nb_set_and_cutoff.items():
                 a, b = tuple(ase.data.atomic_numbers[i] for i in nb_set.split('-'))
@@ -76,7 +76,6 @@ class CoordinationNumber(object):
         if parallel == False:
             list_of_dict = [compute_cn_for_frame(trajectory[i], step[i]) for i in range(len(trajectory))]
         else:
-            logger.warning("Parallel mode for coordination number very slow, best to use serial")
             num_cores = parallel if type(parallel) == int else 18
             list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_cn_for_frame)(trajectory[i], step[i]) for i in range(len(trajectory)))
 

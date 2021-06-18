@@ -121,15 +121,19 @@ class Rdf(object):
 
 class CoordinationNumber(object):
     """
-    Main class to compute CoordinationNumber
+    Class to compute CoordinationNumber from RDF
+    
+    Subjected to numerical errors in the integration step
+    Best to use sadi.cn.CoordinationNumber
     """
 
     def __init__(self):
         """default constructor"""
+        logger.warning('Compute CoordinationNumber from RDF, best to use sadi.cn.CoordinationNumber')
         self.cn_data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
-    def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, dr = 0.01, parallel = False):
+    def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, dr = 0.0001, parallel = False):
         """
         constructor of rdf class from an ase trajectory object
         Args:
