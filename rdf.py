@@ -166,7 +166,7 @@ class CoordinationNumber(object):
             for nn_set, cutoff in nb_set_and_cutoff.items():
                 xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
                 rdf = RDFobj.get_rdf(elements=xx, groups=0)
-                dic[nn_set] = get_coordination_number(r, rdf, cutoff, density)
+                dic[nn_set] = get_coordination_number(r, rdf, cutoff, density)            
             return dic
 
         if parallel == False:
