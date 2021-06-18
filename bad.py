@@ -104,22 +104,12 @@ class Bad(object):
         compute bad for ase atom object
         """
         # atom = trajectory[i]
+        nl = satom.get_neighborlist(atom, cutoff_dict)
         dic = {}
-        nl_i, nl_j = ase.neighborlist.neighbor_list('ij', atom, cutoff_dict)
-        nl = [[] for i in range(atom.get_global_number_of_atoms())]
-        for k in range(len(nl_i)):
-            i, j = nl_i[k], nl_j[k]
-            nl[i].append(j)
-        # nl.update(atom)
-        
         for A, B in elements:
             aba_str = "-".join([ase.data.chemical_symbols[C] for C in [B, A, B]])
             dic[aba_str] = self.bad_BAB(atom, A, B, nl)  
 
-        # for nn_set, cutoff in nb_set_and_cutoff.items():
-        #     xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
-        #     rdf = RDFobj.get_rdf(elements=xx, groups=0)
-        #     dic[nn_set] = get_coordination_number(r, rdf, cutoff, density)
         return dic
     
     def compute_bad(self, trajectory, nb_set_and_cutoff, dtheta, parallel):
@@ -128,13 +118,8 @@ class Bad(object):
         """
         atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
 
-        cutoff_dict = {} # dict in ase.nl cutoff format
-        elements_present_unique = []
-        for nn_set, cutoff in nb_set_and_cutoff.items():
-            xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
-            cutoff_dict[xx] = cutoff
-            elements_present_unique += [ase.data.atomic_numbers[i] for i in nn_set.split('-')]
-        elements_present_unique = list(set(elements_present_unique)) # rm duplicates
+        cutoff_dict = satom.format_cutoff(nb_set_and_cutoff)
+        elements_present_unique =  list(set([ase.data.atomic_numbers[i] for nb_set in nb_set_and_cutoff.keys() for i in nb_set.split('-') ]))
 
         if len(elements_present_unique) == len(atomic_numbers_unique):
             elements_present_unique.append("X")

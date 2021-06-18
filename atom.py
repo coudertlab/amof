@@ -3,7 +3,9 @@ Module containing everythong related to atoms:
 - wrapper for ase atom module
 """
 
+import ase
 import ase.atoms
+import ase.neighborlist
 import numpy as np
 
 def get_density(atom):
