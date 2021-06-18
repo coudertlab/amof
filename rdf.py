@@ -47,9 +47,6 @@ class Rdf(object):
 
     @classmethod
     def from_rdf(cls, *args):
-        """
-        constructor of rdf class from rdf file
-        """
         logger.exception('from_rdf is deprecated, use from_file instead')
 
     @classmethod

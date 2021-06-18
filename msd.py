@@ -111,7 +111,11 @@ class Msd(object):
         self.msd_data.to_feather(path_to_output)
 
     @classmethod
-    def from_msd(cls, path_to_msd):
+    def from_msd(cls, *args):
+        logger.exception('from_msd is deprecated, use from_file instead')
+
+    @classmethod
+    def from_file(cls, path_to_msd):
         """
         constructor of msd class from msd file
         """
