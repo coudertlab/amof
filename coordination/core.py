@@ -334,6 +334,7 @@ class CoordinationSearch(object):
                 if not self.in_fragment(a):
                     self.create_fragment(new_fragments_name, [a])
         
+        # Propagate fragments
         if propagate_fragments:
             for i in range(len(A_indices)): 
                 a = A_indices[i]
@@ -350,20 +351,31 @@ class CoordinationSearch(object):
             dist_margin = self.dist_margin
         return [n for n in self.all_neighb[i] if n.nn_distance < dist_margin * self.get_covdist(i, n.index)]
 
-    def find_N_closest_cov_dist(self, conditionA, conditionB, target_N, dist_margin = None, verbose = False, report_level = None, report_entry = None):
+    def find_N_closest_cov_dist(self, conditionA, conditionB, target_N, dist_margin = None, verbose = False, report_level = None, report_entry = None, propagate_fragments = False, new_fragments_name = None):
         """
         Find target_N nearest neighbours respecting conditionB to conditionA atoms
         The search for each A is independant, as a result the same B atom can be bonded to several A atoms
         report_level can be 'full' (report every bond formed) or 'undercoordinated' (only those without enough nn)
 
+        Args:
+            propagate_fragments: Bool or str if True will include every atom of frag(B) in fragment of A if frag(A) exists
+                If atom B was in a fragment F, F will be removed
+                If 'reverse' and target_N = 1, will propagate from B to A
+            new_fragments_name: str, if not None will create fragments for atoms A not currently in a fragment with fragname "new_fragments_name". 
+                To include B atoms in this new fragment, propagate_fragments must be set to True
         """
         if dist_margin is None:
             dist_margin = self.dist_margin
 
         list_of_undercoordinated = []
 
+        A_indices = [] # index of A atom in struct
+        A_new_nb = [] # contains B atoms that will be bounded to A (were not previously in conn)
+
         for i in range(self.struct.num_sites):
             if conditionA(i):
+                A_indices.append(i)
+                new_nb = []
                 neighb_set = self.get_neighb_cov_dist(i, dist_margin)
                 neighb_set = [s for s in neighb_set if conditionB(s.index)]
                 if len(neighb_set)<target_N:
@@ -376,8 +388,10 @@ class CoordinationSearch(object):
                 sorted_index = np.argsort(nn_distances)
                 for j in range(min(target_N, len(neighb_set))):
                     nn=neighb_set[sorted_index[j]]
+                    new_nb.append(nn.index)
                     self.conn[i].append(nn.index)
                     self.conn[nn.index].append(i)
+                A_new_nb.append(new_nb)
         
         if report_level=='full':
             list_of_atypes = [self.get_atype(i) for i in range(self.struct.num_sites) if conditionA(i)]
@@ -388,4 +402,36 @@ class CoordinationSearch(object):
             list_of_atypes = [self.get_atype(i) for i in list_of_undercoordinated]
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
             logger.info("%s: %s", report_entry, self.report_search[report_entry])
+        
+        # Create new fragments for A atoms
+        if new_fragments_name is not None:
+            for a in A_indices:
+                if not self.in_fragment(a):
+                    self.create_fragment(new_fragments_name, [a])
+
+        # Propagate fragments
+        if propagate_fragments == True:
+            for i in range(len(A_indices)): 
+                a = A_indices[i]
+                if self.in_fragment(a):
+                    for b in A_new_nb[i]:
+                        if not self.in_fragment(b):
+                            self.add_to_fragment(self.fragnumbers[a], [b])
+                        else:
+                            self.merge_fragments(self.fragnumbers[a], self.fragnumbers[b])
+        elif propagate_fragments == 'reverse':
+            if target_N != 1:
+                raise ValueError("Propagation ambiguous: Tried to propagate fragment from B to A with target_N not equal to 1") 
+            else:
+                for i in range(len(A_indices)): 
+                    a = A_indices[i]
+                    if len(A_new_nb[i]) == 1:
+                        b = A_new_nb[i][0]
+                        if not self.in_fragment(a):
+                            self.add_to_fragment(self.fragnumbers[b], [a])
+                        else:
+                            self.merge_fragments(self.fragnumbers[b], self.fragnumbers[a])
+                        
+
+
 

@@ -146,17 +146,18 @@ class MetalmIm(ZifSearch):
             self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours", propagate_fragments = True, new_fragments_name = 'methyl')
 
         # bind the remaining H (there should be non for the crystal)
+        # create a new fragment called irregular_H that can propagate to the entire imid or to Zn
         H_Cbonds = self.get_A_Bbonds(H, C)
         self.find_N_closest_cov_dist(
-            lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry="H atoms not bonded to C")
+            lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry="H atoms not bonded to C", propagate_fragments = True, new_fragments_name = 'irregular_H')
 
         # link C in cycles (bonded to 2 N) to C bonded to H
         self.find_N_closest_cov_dist(lambda i: C_Nbonds[i] == 0, lambda i: C_Nbonds[i] == 2, 1,
-                                     report_level='undercoordinated', report_entry="C in CHn not bonded to any C in imid")
+                                     report_level='undercoordinated', report_entry="C in CHn not bonded to any C in imid", propagate_fragments = 'reverse')
 
         # link N to metal_atom with no constraint on the number of N to metal_atom
         self.find_N_closest_cov_dist(lambda i: self.struct[i].species == metal_atom, lambda i: self.struct[i].species == N,
-                                     self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated', report_entry=f"undercoordinated {self.node.name}")
+                                     self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated', report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)
 
 
 
