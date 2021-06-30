@@ -33,6 +33,7 @@ class ZifSearch(CoordinationSearch):
         CoordinationSearch.__init__(
             self, struct, neighb_max_distance, dist_margin)
         self.detect_conn()
+        self.clean_fragments()
         self.update_atypes()
 
     def find_neighb_max_distance(self, dist_margin, dist_margin_metal):

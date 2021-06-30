@@ -49,15 +49,19 @@ class CoordinationSearch(object):
         """Return True IFF atom at indice 'indice' is in a fragment"""
         return self.fragnumbers[indice] != -1
 
-    def create_fragment(self, fragtype, indices):
+    def create_fragment(self, fragtype, indices, fragnumber = 'auto'):
         """
         Create new fragment
 
         Args:
             fragtype: str
             indices: list of int
+            fragnumber: int or str. 
+                If int, this fragnumber will be used
+                If 'auto' will choose the max value (+1) of existing keys
         """
-        fragnumber = 0 if len(self.fragments.keys()) == 0 else max(self.fragments.keys()) + 1
+        if fragnumber == 'auto':
+            fragnumber = 0 if len(self.fragments.keys()) == 0 else max(self.fragments.keys()) + 1
         indices = list(set(indices)) # remove duplicates
         fragment = {"fragnumber":fragnumber, "fragtype":fragtype, "indices":indices}
         for i in indices:
@@ -89,6 +93,36 @@ class CoordinationSearch(object):
         """
         self.fragments[fragnumber]['indices'] = list(set(self.fragments[fragnumber]['indices'] + self.fragments[fragnumber_to_absorb]['indices']))
         self.fragments.pop(fragnumber_to_absorb)
+    
+    def change_fragnumber(self, fragnumber_old, fragnumber_new):
+        """
+        Replace fragnumber if fragnumber_new isn't used
+
+        Args:
+            fragnumber_old, fragnumber_new: int
+        """
+        if fragnumber_new in self.fragments.keys():
+            raise ValueError('Cannot change fragnumber: not empty in fragment')
+        else:
+            fragment = self.fragments.pop(fragnumber_old)
+            self.create_fragment(fragment['fragtype'], fragment['indices'], fragnumber = fragnumber_new)
+
+    def clean_fragments(self):
+        """
+        Perform a sequence of clean-up task in fragments
+            - Remove empty fragments
+            - Renumber fragments to remove gaps between two frag numbers
+        """
+        # remove empty fragments
+        for fragnumber, fragment in self.fragments.items():
+            if len(fragment['indices']) == 0:
+                self.fragments.pop(fragnumber)
+
+        # Renumber fragments
+        fragnumbers_old = list(self.fragments.keys())
+        for i in range(len(fragnumbers_old)):
+            if i != fragnumbers_old[i]:
+                self.change_fragnumber(fragnumbers_old[i], i)
 
     def get_atype(self, i):
         """return atype of atom i formatted as in molsys"""
