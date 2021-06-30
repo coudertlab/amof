@@ -79,6 +79,17 @@ class CoordinationSearch(object):
             self.fragnumbers[i] = fragnumber
         self.fragments[fragnumber]['indices'] = list(set(self.fragments[fragnumber]['indices'] + indices))
 
+    def merge_fragments(self, fragnumber, fragnumber_to_absorb):
+        """
+        Merge fragments by including fragnumber_to_absorb into fragnumber
+
+        Args:
+            fragnumber: int
+            fragnumber_to_absorb: int
+        """
+        self.fragments[fragnumber]['indices'] = list(set(self.fragments[fragnumber]['indices'] + self.fragments[fragnumber_to_absorb]['indices']))
+        self.fragments.pop(fragnumber_to_absorb)
+
     def get_atype(self, i):
         """return atype of atom i formatted as in molsys"""
         atype = str(self.struct[i].species)[:-1].lower() + str(len(self.conn[i])) 
@@ -327,7 +338,11 @@ class CoordinationSearch(object):
             for i in range(len(A_indices)): 
                 a = A_indices[i]
                 if self.in_fragment(a):
-                    a = 1
+                    for b in A_new_nb[i]:
+                        if not self.in_fragment(b):
+                            self.add_to_fragment(self.fragnumbers[a], [b])
+                        else:
+                            self.merge_fragments(self.fragnumbers[a], self.fragnumbers[b])
 
     def get_neighb_cov_dist(self, i, dist_margin=None):
         """return list of nn of atom i using a cutoff based on covalent radii * dist_margin"""
@@ -340,6 +355,7 @@ class CoordinationSearch(object):
         Find target_N nearest neighbours respecting conditionB to conditionA atoms
         The search for each A is independant, as a result the same B atom can be bonded to several A atoms
         report_level can be 'full' (report every bond formed) or 'undercoordinated' (only those without enough nn)
+
         """
         if dist_margin is None:
             dist_margin = self.dist_margin
