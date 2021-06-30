@@ -28,7 +28,7 @@ class CoordinationSearch(object):
     The actual search is to be launched from a subclass mentionning specific species, etc.
 
     Attributes:
-        fragments: list of dict;  element i of list is fragment of fragnumber i
+        fragments: dict of dict;  key i of encompassing dict is fragment of fragnumber i
         atypes, fragtypes, fragnumbers, conn: same structure as molsys.mol object
     """
         
@@ -39,11 +39,15 @@ class CoordinationSearch(object):
         self.atypes = ["" for i in range(struct.num_sites)]
         self.fragtypes = ["-1" for i in range(struct.num_sites)]
         self.fragnumbers = [-1 for i in range(struct.num_sites)]
-        self.fragments = [] 
+        self.fragments = {} 
         self.all_neighb = self.struct.get_all_neighbors(neighb_max_distance)
         self.dist_margin = dist_margin
         # initialize report_search with useful descriptors of struct for subsequent report analysis
         self.report_search = {"number of atoms":self.struct.num_sites}
+
+    def in_fragment(self, indice):
+        """Return True IFF atom at indice 'indice' is in a fragment"""
+        return self.fragnumbers[indice] != -1
 
     def create_fragment(self, fragtype, indices):
         """
@@ -53,13 +57,13 @@ class CoordinationSearch(object):
             fragtype: str
             indices: list of int
         """
-        fragnumber = len(self.fragments)
+        fragnumber = 0 if len(self.fragments.keys()) == 0 else max(self.fragments.keys()) + 1
         indices = list(set(indices)) # remove duplicates
         fragment = {"fragnumber":fragnumber, "fragtype":fragtype, "indices":indices}
         for i in indices:
             self.fragtypes[i] = fragtype
             self.fragnumbers[i] = fragnumber
-        self.fragments.append(fragment)
+        self.fragments[fragnumber] = fragment
 
     def add_to_fragment(self, fragnumber, indices):
         """
@@ -228,7 +232,7 @@ class CoordinationSearch(object):
                         A_Bbonds[i] += 1
         return A_Bbonds
 
-    def assign_B_uniquely_to_A_N_coordinated(self, conditionA, conditionB, target_N, use_cov_dist = True, dist_margin=None, report_entry = None):
+    def assign_B_uniquely_to_A_N_coordinated(self, conditionA, conditionB, target_N, use_cov_dist = True, dist_margin=None, report_entry = None, propagate_fragments = False, new_fragments_name = None):
         """
         assign atoms B to atoms A so that B is only assigned once and A end up being target_N coordinated. 
         At each step, the closest pair A-B is added to conn
@@ -237,6 +241,12 @@ class CoordinationSearch(object):
         allowed to exit if not enough nn
         use_cov_dist can be used to further restrict the search using cov radii, if False, every nn in all_neighb used
         if a string report_entry is supplied, will use it to add as an entry details about the missing nn
+        
+        Args:
+            propagate_fragments: Bool, if True will include every atom of frag(B) in fragment of A if frag(A) exists
+                If atom B was in a fragment F, F will be removed
+            new_fragments_name: str, if not None will create fragments for atoms A not currently in a fragment with fragname "new_fragments_name". 
+                To include B atoms in this new fragment, propagate_fragments must be set to True
         """
         if dist_margin is None:
             dist_margin = self.dist_margin
@@ -254,11 +264,13 @@ class CoordinationSearch(object):
         A_nn_distances = [] # corresponding distances
         A_conn = [] # contains a temporary copy of conn
         A_enough_nn = [] # True iff A_nn_distances is not empty
+        A_new_nb = [] # contains B atoms that will be bounded to A (were not previously in conn)
         
         for i in range(self.struct.num_sites):
             if conditionA(i): 
                 A_indices.append(i)
                 A_conn.append(deepcopy(self.conn[i])) # starts with preexisting conn
+                A_new_nb.append([])
                 neighb_set = self.all_neighb[i]
                 neighb_set = [n for n in neighb_set if conditionB(n.index)] 
                 if use_cov_dist==True:
@@ -280,6 +292,7 @@ class CoordinationSearch(object):
             imin = np.argmin(choose_min)
             B_imin = A_neighb_indices[imin][0]
             A_conn[imin].append(B_imin) # add to A_conn
+            A_new_nb[imin].append(B_imin)
             for i in range(len(A_indices)): # remove B_imin as potential candidate for every A atom
                 while B_imin in A_neighb_indices[i]:
                     A_nn_distances[i].pop(A_neighb_indices[i].index(B_imin))
@@ -303,6 +316,18 @@ class CoordinationSearch(object):
             list_of_atypes = [self.get_atype(A_indices[i]) for i in range(len(A_indices)) if A_enough_nn[i]==False]
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
             logger.info("%s: %s", report_entry, self.report_search[report_entry])
+
+        # Create new fragments for A atoms
+        if new_fragments_name is not None:
+            for a in A_indices:
+                if not self.in_fragment(a):
+                    self.create_fragment(new_fragments_name, [a])
+        
+        if propagate_fragments:
+            for i in range(len(A_indices)): 
+                a = A_indices[i]
+                if self.in_fragment(a):
+                    a = 1
 
     def get_neighb_cov_dist(self, i, dist_margin=None):
         """return list of nn of atom i using a cutoff based on covalent radii * dist_margin"""

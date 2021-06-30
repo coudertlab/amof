@@ -143,7 +143,7 @@ class MetalmIm(ZifSearch):
             logger.debug("%s C atoms have %s N nn", C_Nbonds.count(i), i)
 
         self.assign_B_uniquely_to_A_N_coordinated(lambda i: (C_Nbonds[i] in [0, 1]), lambda i: (
-            self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours")
+            self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours", propagate_fragments = True, new_fragments_name = 'methyl')
 
         # bind the remaining H (there should be non for the crystal)
         H_Cbonds = self.get_A_Bbonds(H, C)
