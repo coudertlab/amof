@@ -91,8 +91,9 @@ class CoordinationSearch(object):
             fragnumber: int
             fragnumber_to_absorb: int
         """
-        self.fragments[fragnumber]['indices'] = list(set(self.fragments[fragnumber]['indices'] + self.fragments[fragnumber_to_absorb]['indices']))
+        self.add_to_fragment(fragnumber, self.fragments[fragnumber_to_absorb]['indices'])
         self.fragments.pop(fragnumber_to_absorb)
+        
     
     def change_fragnumber(self, fragnumber_old, fragnumber_new):
         """
@@ -123,6 +124,39 @@ class CoordinationSearch(object):
         for i in range(len(fragnumbers_old)):
             if i != fragnumbers_old[i]:
                 self.change_fragnumber(fragnumbers_old[i], i)
+
+    def reduce_system(self):
+        """
+        Reduce the system by turning fragments into atoms 
+            - reduce connectivity
+            - change structure by creating a pymatgen site per fragment and removing the individual atoms
+        """
+        a = 1
+
+    def make_frag_conn(self):
+        """
+        generate a fragment connectivity
+
+        Adapted from molsys
+        """
+        self.frag_conn = []        # fragment connectivity (indices of fragments)
+        self.frag_conn_atoms = []  # atoms making the fragemnt connectivity (tuples of atom indices: first in frgmnt, second in other fragmnt)
+        # prepare the atom list for the fragments
+        for i in range(len(self.fragments)):
+            self.frag_conn.append([])
+            self.frag_conn_atoms.append([])
+        for i, fragment in self.fragments.items():
+        # for i,f in enumerate(self.fraglist):
+            # determine all external bonds of this fragment
+            for ia in fragment['indices']:
+                for ja in self.conn[ia]:
+                    j = self.fragnumbers[ja]
+                    if i != j:
+                        # this is an external bond
+                        self.frag_conn[i].append(j)
+                        self.frag_conn_atoms[i].append((ia,ja))
+                        # logger.debug("fragment %d (%s) bonds to fragment %d (%s) %s - %s" %\
+                        #               (i, fragment['fragtype'], j, self.fraglist[j], self._mol.atypes[ia], self._mol.atypes[ja]))
 
     def get_atype(self, i):
         """return atype of atom i formatted as in molsys"""
