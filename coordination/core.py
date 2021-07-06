@@ -137,21 +137,10 @@ class CoordinationSearch(object):
         coords = [[0. ,0., 0.]] * len(self.fragments)
         for fragnumber, fragment in self.fragments.items():
             species[fragnumber] = fragment['fragtype']
-            # # species[fragnumber] = pymatgen.core.Composition(self.linker.formula)
-            # frag_species = []
-            # frag_coords = []
-            # reference_site = fragment['indices'][0] # coord will be computed in a frame
-            # for i in fragment['indices']:
-            #     frag_species.append(self.struct.sites[i].species)
-            #     # frag_coords_old.append(self.struct.sites[i].coords) # don't take pbc into account
-            #     frag_coords_from_ref_to_i = pymatgen.util.coord.pbc_diff(self.struct.sites[i].frac_coords, self.struct.sites[reference_site].frac_coords)
-            #     frag_coords.append(self.struct.lattice.get_cartesian_coords(frag_coords_from_ref_to_i)) # to cartesian coords
-            # coords[fragnumber] = pymatgen.core.Molecule(frag_species, frag_coords).center_of_mass + self.struct.sites[reference_site].coords # add reference_coords
             coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])
-            a = 1
 
         reduced_struct = Structure(self.struct.lattice, species, coords, coords_are_cartesian = True)
-        a = 1
+        return reduced_struct
 
     def make_frag_conn(self):
         """
