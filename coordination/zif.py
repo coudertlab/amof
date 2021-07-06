@@ -134,7 +134,9 @@ class MetalmIm(ZifSearch):
 
         # Find imid cycles (C-N-C-N-C)
         graph = StructureGraph.with_empty_graph(self.struct)
-        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2, fragtype = self.linker.name)
+        self.find_ABAcycles(C, N, cycle_length = 5, 
+            target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2, 
+            fragtype = self.linker.name)
 
         # add H based on cov radii to single C and C bonded to one N
         C_Nbonds = self.get_A_Bbonds(C, N)
@@ -144,21 +146,26 @@ class MetalmIm(ZifSearch):
             logger.debug("%s C atoms have %s N nn", C_Nbonds.count(i), i)
 
         self.assign_B_uniquely_to_A_N_coordinated(lambda i: (C_Nbonds[i] in [0, 1]), lambda i: (
-            self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours", propagate_fragments = True, new_fragments_name = 'methyl')
+            self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours", 
+            propagate_fragments = True, new_fragments_name = 'methyl')
 
         # bind the remaining H (there should be non for the crystal)
         # create a new fragment called irregular_H that can propagate to the entire imid or to Zn
         H_Cbonds = self.get_A_Bbonds(H, C)
         self.find_N_closest_cov_dist(
-            lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry="H atoms not bonded to C", propagate_fragments = True, new_fragments_name = 'irregular_H')
+            lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', 
+            report_entry="H atoms not bonded to C", 
+            propagate_fragments = True, new_fragments_name = 'irregular_H')
 
         # link C in cycles (bonded to 2 N) to C bonded to H
         self.find_N_closest_cov_dist(lambda i: C_Nbonds[i] == 0, lambda i: C_Nbonds[i] == 2, 1,
-                                     report_level='undercoordinated', report_entry="C in CHn not bonded to any C in imid", propagate_fragments = 'reverse')
+            report_level='undercoordinated', report_entry="C in CHn not bonded to any C in imid", 
+            propagate_fragments = 'reverse')
 
         # link N to metal_atom with no constraint on the number of N to metal_atom
         self.find_N_closest_cov_dist(lambda i: self.struct[i].species == metal_atom, lambda i: self.struct[i].species == N,
-                                     self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated', report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)
+            self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated', 
+            report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)
 
 
 
@@ -200,17 +207,21 @@ class MetalIm(ZifSearch):
 
         # Find imid cycles (C-N-C-N-C)
         graph = StructureGraph.with_empty_graph(self.struct)
-        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2)
+        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2,
+            fragtype = self.linker.name)
 
         # add H based on cov radii to every C
         self.assign_B_uniquely_to_A_N_coordinated(lambda i: (self.struct[i].species == C), lambda i: (
-            self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours")
+            self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours",
+            propagate_fragments = True, new_fragments_name = 'irregular_C')
 
         # bind the remaining H (there should be non for the crystal)
         H_Cbonds = self.get_A_Bbonds(H, C)
         self.find_N_closest_cov_dist(
-            lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry="H atoms not bonded to C")
+            lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry="H atoms not bonded to C",
+            propagate_fragments = True, new_fragments_name = 'irregular_H')
 
         # link N to metal_atom with no constraint on the number of N to metal_atom
         self.find_N_closest_cov_dist(lambda i: self.struct[i].species == metal_atom, lambda i: self.struct[i].species == N,
-                                     self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated', report_entry=f"undercoordinated {self.node.name}")
+            self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated',
+            report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)

@@ -126,20 +126,29 @@ class CoordinationSearch(object):
             if i != fragnumbers_old[i]:
                 self.change_fragnumber(fragnumbers_old[i], i)
 
-    def reduce_structure(self):
+    def reduce_structure(self, preserve_single_fragments = True):
         """
         Reduce the system by turning fragments into atoms 
             - reduce connectivity
             - change structure by creating a pymatgen site per fragment
+
+        Args:
+            preserve_single_fragments: Bool, if True, will not rename fragments comprised of a single site
         """
         self.make_frag_conn()
         species = [''] * len(self.fragments)
         coords = [[0. ,0., 0.]] * len(self.fragments)
         for fragnumber, fragment in self.fragments.items():
-            species[fragnumber] = fragment['fragtype']
-            # species[fragnumber] = {fragment['fragtype']:1}
-            # pymatgen.core.Composition({'mIm':1})
-            coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])
+            if preserve_single_fragments and len(fragment['indices']) == 1:
+                i = fragment['indices'][0]
+                species[fragnumber] = self.struct.sites[i].species
+                coords[fragnumber] = self.struct.sites[i].coords
+            else:
+                # species[fragnumber] = fragment['fragtype']
+                # species[fragnumber] = {fragment['fragtype']:1}
+                species[fragnumber] = pymatgen.core.DummySpecies('XX' + fragment['fragtype']) 
+                # The dummy symbol cannot have any part of first two letters that will constitute an Element symbol. Check DummySpecies description for further info
+                coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])
 
         reduced_struct = Structure(self.struct.lattice, species, coords, coords_are_cartesian = True)
         return reduced_struct
