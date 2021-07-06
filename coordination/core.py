@@ -137,6 +137,8 @@ class CoordinationSearch(object):
         coords = [[0. ,0., 0.]] * len(self.fragments)
         for fragnumber, fragment in self.fragments.items():
             species[fragnumber] = fragment['fragtype']
+            # species[fragnumber] = {fragment['fragtype']:1}
+            # pymatgen.core.Composition({'mIm':1})
             coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])
 
         reduced_struct = Structure(self.struct.lattice, species, coords, coords_are_cartesian = True)
