@@ -18,6 +18,7 @@ import itertools
 import logging
 
 import sadi.files.path
+import sadi.structure
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -129,24 +130,24 @@ class CoordinationSearch(object):
         """
         Reduce the system by turning fragments into atoms 
             - reduce connectivity
-            - change structure by creating a pymatgen site per fragment and removing the individual atoms
+            - change structure by creating a pymatgen site per fragment
         """
         self.make_frag_conn()
         species = [''] * len(self.fragments)
         coords = [[0. ,0., 0.]] * len(self.fragments)
         for fragnumber, fragment in self.fragments.items():
             species[fragnumber] = fragment['fragtype']
-            # species[fragnumber] = pymatgen.core.Composition(self.linker.formula)
-            frag_species = []
-            frag_coords = []
-            frag_coords_old = []
-            reference_site = fragment['indices'][0] # coord will be computed in a frame
-            for i in fragment['indices']:
-                frag_species.append(self.struct.sites[i].species)
-                frag_coords_old.append(self.struct.sites[i].coords)
-                frag_coords_from_ref_to_i = pymatgen.util.coord.pbc_diff(self.struct.sites[i].frac_coords, self.struct.sites[reference_site].frac_coords)
-                frag_coords.append(self.struct.lattice.get_cartesian_coords(frag_coords_from_ref_to_i)) # to cartesian coords
-            coords[fragnumber] = pymatgen.core.Molecule(frag_species, frag_coords).center_of_mass + self.struct.sites[reference_site].coords # add reference_coords
+            # # species[fragnumber] = pymatgen.core.Composition(self.linker.formula)
+            # frag_species = []
+            # frag_coords = []
+            # reference_site = fragment['indices'][0] # coord will be computed in a frame
+            # for i in fragment['indices']:
+            #     frag_species.append(self.struct.sites[i].species)
+            #     # frag_coords_old.append(self.struct.sites[i].coords) # don't take pbc into account
+            #     frag_coords_from_ref_to_i = pymatgen.util.coord.pbc_diff(self.struct.sites[i].frac_coords, self.struct.sites[reference_site].frac_coords)
+            #     frag_coords.append(self.struct.lattice.get_cartesian_coords(frag_coords_from_ref_to_i)) # to cartesian coords
+            # coords[fragnumber] = pymatgen.core.Molecule(frag_species, frag_coords).center_of_mass + self.struct.sites[reference_site].coords # add reference_coords
+            coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])
             a = 1
 
         reduced_struct = Structure(self.struct.lattice, species, coords, coords_are_cartesian = True)
