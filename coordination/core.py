@@ -418,7 +418,8 @@ class CoordinationSearch(object):
         if report_entry is not None:
             list_of_atypes = [self.get_atype(A_indices[i]) for i in range(len(A_indices)) if A_enough_nn[i]==False]
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
-            logger.info("%s: %s", report_entry, self.report_search[report_entry])
+            if self.report_search[report_entry] != []:
+                logger.info("%s: %s", report_entry, self.report_search[report_entry])
 
         # Create new fragments for A atoms
         if new_fragments_name is not None:
@@ -488,12 +489,14 @@ class CoordinationSearch(object):
         if report_level=='full':
             list_of_atypes = [self.get_atype(i) for i in range(self.struct.num_sites) if conditionA(i)]
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
-            logger.info("%s: %s", report_entry, self.report_search[report_entry])
+            if self.report_search[report_entry] != []:
+                logger.info("%s: %s", report_entry, self.report_search[report_entry])
 
         if report_level=='undercoordinated':
             list_of_atypes = [self.get_atype(i) for i in list_of_undercoordinated]
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
-            logger.info("%s: %s", report_entry, self.report_search[report_entry])
+            if self.report_search[report_entry] != []:
+                logger.info("%s: %s", report_entry, self.report_search[report_entry])
         
         # Create new fragments for A atoms
         if new_fragments_name is not None:
