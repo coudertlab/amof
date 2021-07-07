@@ -213,13 +213,16 @@ class MetalIm(ZifSearch):
         # add H based on cov radii to every C
         self.assign_B_uniquely_to_A_N_coordinated(lambda i: (self.struct[i].species == C), lambda i: (
             self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours",
-            propagate_fragments = True, new_fragments_name = 'irregular_C')
+
+            propagate_fragments = True, new_fragments_name = 'irregular_C',
+            dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
 
         # bind the remaining H (there should be non for the crystal)
         H_Cbonds = self.get_A_Bbonds(H, C)
         self.find_N_closest_cov_dist(
             lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry="H atoms not bonded to C",
-            propagate_fragments = True, new_fragments_name = 'irregular_H')
+            propagate_fragments = True, new_fragments_name = 'irregular_H',
+            dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
 
         # link N to metal_atom with no constraint on the number of N to metal_atom
         self.find_N_closest_cov_dist(lambda i: self.struct[i].species == metal_atom, lambda i: self.struct[i].species == N,
