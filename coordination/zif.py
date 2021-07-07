@@ -228,3 +228,9 @@ class MetalIm(ZifSearch):
         self.find_N_closest_cov_dist(lambda i: self.struct[i].species == metal_atom, lambda i: self.struct[i].species == N,
             self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated',
             report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)
+
+    def is_reduced_structure_valid(self):
+        """
+        For now, only accept the search if nothing else then Im and Zn are found
+        """
+        return len(self.symbols.from_name_to_symbol) == 2
