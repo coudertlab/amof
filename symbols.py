@@ -12,7 +12,7 @@ import json
 from ase.data import chemical_symbols
 # Seventh line of the periodic table (from ase.data)
 # Arbitrary list for now with elements unlikely to be present in ZIFs, need to be expanded if not long enough
-available_chemical_symbols = ['Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk',
+chemical_symbols_seventh_period = ['Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk',
     'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr',
     'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn', 'Nh', 'Fl', 'Mc',
     'Lv', 'Ts', 'Og']    
@@ -32,6 +32,7 @@ class DummySymbols(object):
         self.from_symbol_to_name = {}
         if names is not None:
             nb_changed_names = 0    
+            available_chemical_symbols = [s for s in chemical_symbols_seventh_period if s not in names]
             for name in names:
                 if name in chemical_symbols:
                     pt_symbol = name

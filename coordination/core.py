@@ -19,6 +19,7 @@ import logging
 
 import sadi.files.path
 import sadi.structure
+import sadi.symbols
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -136,19 +137,22 @@ class CoordinationSearch(object):
             preserve_single_fragments: Bool, if True, will not rename fragments comprised of a single site
         """
         self.make_frag_conn()
+        self.symbols = sadi.symbols.DummySymbols(list(set(self.fragtypes)))
         species = [''] * len(self.fragments)
         coords = [[0. ,0., 0.]] * len(self.fragments)
         for fragnumber, fragment in self.fragments.items():
-            if preserve_single_fragments and len(fragment['indices']) == 1:
-                i = fragment['indices'][0]
-                species[fragnumber] = self.struct.sites[i].species
-                coords[fragnumber] = self.struct.sites[i].coords
-            else:
-                # species[fragnumber] = fragment['fragtype']
-                # species[fragnumber] = {fragment['fragtype']:1}
-                species[fragnumber] = pymatgen.core.DummySpecies('XX' + fragment['fragtype']) 
-                # The dummy symbol cannot have any part of first two letters that will constitute an Element symbol. Check DummySpecies description for further info
-                coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])
+            # if preserve_single_fragments and len(fragment['indices']) == 1:
+            #     i = fragment['indices'][0]
+            #     species[fragnumber] = self.struct.sites[i].species
+            #     coords[fragnumber] = self.struct.sites[i].coords
+            # else:
+            #     # species[fragnumber] = fragment['fragtype']
+            #     # species[fragnumber] = {fragment['fragtype']:1}
+            #     species[fragnumber] = pymatgen.core.DummySpecies('XX' + fragment['fragtype']) 
+            #     # The dummy symbol cannot have any part of first two letters that will constitute an Element symbol. Check DummySpecies description for further info
+            #     coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])
+            species[fragnumber] = self.symbols.get_symbol(fragment['fragtype'])
+            coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])            
 
         reduced_struct = Structure(self.struct.lattice, species, coords, coords_are_cartesian = True)
         return reduced_struct
