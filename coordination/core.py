@@ -42,6 +42,7 @@ class CoordinationSearch(object):
         self.fragtypes = ["-1" for i in range(struct.num_sites)]
         self.fragnumbers = [-1 for i in range(struct.num_sites)]
         self.fragments = {} 
+        self.symbols = sadi.symbols.DummySymbols()
         self.all_neighb = self.struct.get_all_neighbors(neighb_max_distance)
         self.dist_margin = dist_margin
         # initialize report_search with useful descriptors of struct for subsequent report analysis
@@ -137,7 +138,7 @@ class CoordinationSearch(object):
             preserve_single_fragments: Bool, if True, will not rename fragments comprised of a single site
         """
         self.make_frag_conn()
-        self.symbols = sadi.symbols.DummySymbols(list(set(self.fragtypes)))
+        self.symbols.add_names(list(set(self.fragtypes)))
         species = [''] * len(self.fragments)
         coords = [[0. ,0., 0.]] * len(self.fragments)
         for fragnumber, fragment in self.fragments.items():
@@ -153,8 +154,8 @@ class CoordinationSearch(object):
             #     coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])
             species[fragnumber] = self.symbols.get_symbol(fragment['fragtype'])
             coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])            
-
         reduced_struct = Structure(self.struct.lattice, species, coords, coords_are_cartesian = True)
+        self.report_search['symbols'] = str(self.symbols)
         return reduced_struct
 
     def make_frag_conn(self):

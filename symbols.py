@@ -85,3 +85,5 @@ class DummySymbols(object):
         with open(filename, 'w') as fp:
             json.dump(self.from_name_to_symbol, fp)
 
+    def __str__(self):
+        return ', '.join([':'.join([k, v]) for k, v in self.from_name_to_symbol.items()])

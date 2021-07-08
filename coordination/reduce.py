@@ -3,26 +3,69 @@ Module containing functions to reduce a trajectory to its fragments
 """
 
 import pandas as pd
+import logging
+import joblib
+
+import ase.io
 from pymatgen.io.ase import AseAtomsAdaptor
 
 import sadi.symbols
+import sadi.files.path as spath
 
-def reduce_trajectory(trajectory, structure_reducer, filename = None):
+logger = logging.getLogger(__name__)
+
+def reduce_trajectory(trajectory, structure_reducer, symbols, delta_Step = 1, first_frame = 0, filename = None, parallel = False):
         """
         Args:
             trajectory: ase trajectory object
             structure_reducer: a function taking a pymatgen structure as input and returning a CoordinationSearch object
+            symbols: a DummySymbol object containing the representation to use for all frames 
+                (no option atm to include additionnal symbols on specific frames,
+                 parralelisation issues + not adapted to analysis tools to have variable number of atoms)
+            delta_Step: number of simulation steps between two frames
             filename: str, where to write output files
                 If None doesn't write
+        
+        Return:
+            reduced_trajectory
+            df_report_search
         """
-        symbols = sadi.symbols.DummySymbols()
-        for atom in trajectory:
+        logger.info("Start computing coordination number for %s frames", len(trajectory))
 
-        df = pd.DataFrame(list_of_dict)
-        df.to_csv(results + mof+".csv")
-        print(df)
+        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
 
-        ase.io.write("ZIF4_15glass01_reduced_traj.xyz", reduced_traj)
+        def per_atom(atom, step):
+            report_search = {'Step': step}
+            try:
+                reduced_atom, report_search_atom = reduce_atom(atom, structure_reducer, symbols, filename = None)
+                report_search['in_reduced_trajectory'] = reduced_atom is not None
+                report_search = {**report_search, **report_search_atom}
+            except BaseException as e:
+                logger.info('Failed to do reduce frame with error message: ' + str(e))        
+                report_search['in_reduced_trajectory'] = False       
+                report_search['Error_message'] = str(e)
+                reduced_atom = None
+            return reduced_atom, report_search
+
+        if parallel == False:
+            result_list = [per_atom(trajectory[i], step[i]) for i in range(len(trajectory))]
+        else:
+            num_cores = parallel if type(parallel) == int else 18
+            result_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(per_atom)(trajectory[i], step[i]) for i in range(len(trajectory)))
+
+        list_report_search = []
+        reduced_trajectory = []
+        for reduced_atom, report_search in result_list:
+            list_report_search.append(report_search)
+            if report_search['in_reduced_trajectory'] == True:
+                reduced_trajectory.append(reduced_atom)
+        
+        df_report_search = pd.DataFrame(list_report_search)
+        if filename is not None:
+            df_report_search.to_csv(spath.append_suffix(filename, 'report_search.csv'))
+            ase.io.write(spath.append_suffix(filename, 'xyz'), reduced_trajectory)
+            symbols.write_to_file(filename)
+        return reduced_trajectory, df_report_search
 
 def reduce_atom(atom, structure_reducer, symbols, filename = None):
     """
@@ -36,16 +79,18 @@ def reduce_atom(atom, structure_reducer, symbols, filename = None):
     Return:
         reduced_atom: ase atom with fragments instead of atoms
         report_search: dic
-
     """
     struct = AseAtomsAdaptor.get_structure(atom)
 
     searcher = structure_reducer(struct)
+    
     reduced_struct = searcher.reduce_structure()
-
+    report_search = {**{"is_reduced_structure_valid": searcher.is_reduced_structure_valid()}, **searcher.report_search}
     if searcher.is_reduced_structure_valid():
         reduced_atom = AseAtomsAdaptor.get_atoms(reduced_struct)
-        report_search = searcher.report_search
+    else:
+        reduced_atom = None
+    return reduced_atom, report_search
 
 
     # logger.info(conn)
