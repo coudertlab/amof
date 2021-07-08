@@ -71,13 +71,13 @@ class ZifSearch(CoordinationSearch):
         self.report_search['imid_expected_number_of_cycles'] = (
             len(cycles) == target_number_of_cycles)
         if not self.report_search['imid_expected_number_of_cycles']:
-            logger.warning("number of cycles incorrect")
+            logger.debug("number of cycles incorrect")
 
         cycles_of_wrong_size = [c for c in cycles if len(c) != cycle_length]
         self.report_search['imid_expected_length_of_cycles'] = (
             len(cycles_of_wrong_size) == 0)
         if not self.report_search['imid_expected_length_of_cycles']:
-            logger.warning("cycle not of %s atoms found: %s", cycle_length, 
+            logger.debug("cycle not of %s atoms found: %s", cycle_length, 
                            cycles_of_wrong_size)
 
         in_cycle = [False for i in range(self.struct.num_sites)]
@@ -87,7 +87,7 @@ class ZifSearch(CoordinationSearch):
                 self.conn[a].append(b)
                 self.conn[b].append(a)
                 if in_cycle[a] == True:
-                    logger.warning("atom %s appears in more than one cycle", a)
+                    logger.debug("atom %s appears in more than one cycle", a)
                     self.report_search['imid_atoms_appear_only_once_in_cycles'] = False
                 in_cycle[a] = True
         if fragtype is not None:

@@ -405,7 +405,7 @@ class CoordinationSearch(object):
             for i in range(len(A_indices)):
                 if A_enough_nn[i]==True and len(A_conn[i])<target_N and len(A_nn_distances[i])==0:
                     A_enough_nn[i]=False
-                    # logger.info("not enough nn for atom id:", A_indices[i], "; N bonds:", C_Nbonds[A_indices[i]], "; missing bonds:", target_N - len(A_conn[i]))
+                    # logger.debug("not enough nn for atom id:", A_indices[i], "; N bonds:", C_Nbonds[A_indices[i]], "; missing bonds:", target_N - len(A_conn[i]))
         
         # add A_conn to self.conn
         for i in range(len(A_indices)): 
@@ -420,7 +420,7 @@ class CoordinationSearch(object):
             list_of_atypes = [self.get_atype(A_indices[i]) for i in range(len(A_indices)) if A_enough_nn[i]==False]
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
             if self.report_search[report_entry] != []:
-                logger.info("%s: %s", report_entry, self.report_search[report_entry])
+                logger.debug("%s: %s", report_entry, self.report_search[report_entry])
 
         # Create new fragments for A atoms
         if new_fragments_name is not None:
@@ -491,13 +491,13 @@ class CoordinationSearch(object):
             list_of_atypes = [self.get_atype(i) for i in range(self.struct.num_sites) if conditionA(i)]
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
             if self.report_search[report_entry] != []:
-                logger.info("%s: %s", report_entry, self.report_search[report_entry])
+                logger.debug("%s: %s", report_entry, self.report_search[report_entry])
 
         if report_level=='undercoordinated':
             list_of_atypes = [self.get_atype(i) for i in list_of_undercoordinated]
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
             if self.report_search[report_entry] != []:
-                logger.info("%s: %s", report_entry, self.report_search[report_entry])
+                logger.debug("%s: %s", report_entry, self.report_search[report_entry])
         
         # Create new fragments for A atoms
         if new_fragments_name is not None:
