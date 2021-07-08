@@ -30,17 +30,31 @@ class DummySymbols(object):
         """ 
         self.from_name_to_symbol = {}     
         self.from_symbol_to_name = {}
+        self.names = [] # list of names
+        self.nb_changed_names = 0  
+        self.available_chemical_symbols = chemical_symbols_seventh_period
         if names is not None:
-            nb_changed_names = 0    
-            available_chemical_symbols = [s for s in chemical_symbols_seventh_period if s not in names]
-            for name in names:
-                if name in chemical_symbols:
-                    pt_symbol = name
-                else:
-                    pt_symbol = available_chemical_symbols[nb_changed_names] # will raise error if insufficient available names
-                    nb_changed_names += 1
-                self.from_name_to_symbol[name] = pt_symbol
-                self.from_symbol_to_name[pt_symbol] = name
+            self.add_names(names)
+
+    def add_names(self, names):
+        """
+        Add names if not already present
+
+        Args:
+            symbol_names: list of str, names used in an atom/structure object
+                if None, will create empty class
+        """ 
+        new_names = [n for n in names if n not in self.names]
+        for name in new_names:
+            if name in chemical_symbols:
+                pt_symbol = name
+                if name in self.available_chemical_symbols:
+                    self.available_chemical_symbols.pop(name)
+            else:
+                pt_symbol = self.available_chemical_symbols[self.nb_changed_names] # will raise error if insufficient available names
+                self.nb_changed_names += 1
+            self.from_name_to_symbol[name] = pt_symbol
+            self.from_symbol_to_name[pt_symbol] = name
 
     def get_symbol(self, name):
         return self.from_name_to_symbol[name]
@@ -62,6 +76,9 @@ class DummySymbols(object):
         filename = sadi.files.path.append_suffix(filename, 'symbols')
         self.from_name_to_symbol = json.load(open(filename))
         self.from_symbol_to_name = {v: k for k, v in self.from_name_to_symbol.items()}
+        self.names = list(self.from_name_to_symbol.keys())
+        self.nb_changed_names = sum([v == k for k, v in self.from_name_to_symbol.items()])
+        self.available_chemical_symbols = [s for s in self.available_chemical_symbols if s not in self.names]
 
     def write_to_file(self, filename):
         filename = sadi.files.path.append_suffix(filename, 'symbols')
