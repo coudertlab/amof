@@ -11,10 +11,32 @@ from pymatgen.io.ase import AseAtomsAdaptor
 
 import sadi.symbols
 import sadi.files.path as spath
+import sadi.coordination.zif
 
 logger = logging.getLogger(__name__)
 
-def reduce_trajectory(trajectory, structure_reducer, symbols, filename, delta_Step = 1, first_frame = 0, parallel = False):
+def reduce_trajectory(trajectory, mof, filename, delta_Step = 1, first_frame = 0, parallel = False):
+    """
+    Conveniant wrapper to reduce trajectory by specifying a specific mof
+    For now works for 'ZIF-4', 'ZIF-8', 'ZIF-zni' and 'SALEM-2'
+
+    Args:
+        trajectory: ase trajectory object
+        mof: str specifying the mof
+        filename: str, where to write output files, specify None to avoid writing
+        delta_Step: number of simulation steps between two frames
+    """
+    if mof in ['ZIF-4', 'ZIF-zni', 'SALEM-2']:
+        structure_reducer = lambda struct: sadi.coordination.zif.MetalIm(struct, "Zn", dist_margin=1.2)
+        symbols = sadi.symbols.DummySymbols(['Zn', 'Im']) 
+    elif mof in  ['ZIF-8']:
+        structure_reducer = lambda struct: sadi.coordination.zif.MetalmIm(struct, "Zn", dist_margin=1.2)
+        symbols = sadi.symbols.DummySymbols(['Zn', 'mIm']) 
+    else:
+        logger.exception('Structure search not available for the mof %s', mof)
+    return reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, delta_Step, first_frame, parallel)
+
+def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, delta_Step = 1, first_frame = 0, parallel = False):
         """
         Args:
             trajectory: ase trajectory object
@@ -29,7 +51,7 @@ def reduce_trajectory(trajectory, structure_reducer, symbols, filename, delta_St
             reduced_trajectory
             df_report_search
         """
-        logger.info("Start reducin coordination number for %s frames", len(trajectory))
+        logger.info("Start reducing trajectory for %s frames", len(trajectory))
 
         step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
 

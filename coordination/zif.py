@@ -98,7 +98,7 @@ class ZifSearch(CoordinationSearch):
 class MetalmIm(ZifSearch):
     """
     Search coordination for ZIFs made of metallic node and mIm (methyldimidazolate, C4N2H5) ligands
-    Supports: ZIF8
+    Supports: ZIF-8
     Principle:
         1. find every cycle of CNCNC
         2. add H based on cov radii to single C and C bonded to one N
@@ -172,7 +172,7 @@ class MetalmIm(ZifSearch):
 class MetalIm(ZifSearch):
     """
     Search coordination for ZIFs made of metallic node and Im (imidazolate, C3N2H3) ligands
-    Supports: ZIF4, ZIF-zni, SALEM-2
+    Supports: ZIF-4, ZIF-zni, SALEM-2
     Principle:
         1. find every cycle of CNCNC
         2. add H based on cov radii to every C
