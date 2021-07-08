@@ -14,7 +14,7 @@ import sadi.files.path as spath
 
 logger = logging.getLogger(__name__)
 
-def reduce_trajectory(trajectory, structure_reducer, symbols, delta_Step = 1, first_frame = 0, filename = None, parallel = False):
+def reduce_trajectory(trajectory, structure_reducer, symbols, filename, delta_Step = 1, first_frame = 0, parallel = False):
         """
         Args:
             trajectory: ase trajectory object
@@ -23,14 +23,13 @@ def reduce_trajectory(trajectory, structure_reducer, symbols, delta_Step = 1, fi
                 (no option atm to include additionnal symbols on specific frames,
                  parralelisation issues + not adapted to analysis tools to have variable number of atoms)
             delta_Step: number of simulation steps between two frames
-            filename: str, where to write output files
-                If None doesn't write
+            filename: str, where to write output files, specify None to avoid writing
         
         Return:
             reduced_trajectory
             df_report_search
         """
-        logger.info("Start computing coordination number for %s frames", len(trajectory))
+        logger.info("Start reducin coordination number for %s frames", len(trajectory))
 
         step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
 
@@ -83,7 +82,7 @@ def reduce_atom(atom, structure_reducer, symbols, filename = None):
     struct = AseAtomsAdaptor.get_structure(atom)
 
     searcher = structure_reducer(struct)
-    
+    searcher.symbols = symbols # enforce symbols; TBD: add option to get around, 'auto' setup, etc.
     reduced_struct = searcher.reduce_structure()
     report_search = {**{"is_reduced_structure_valid": searcher.is_reduced_structure_valid()}, **searcher.report_search}
     if searcher.is_reduced_structure_valid():
@@ -91,11 +90,3 @@ def reduce_atom(atom, structure_reducer, symbols, filename = None):
     else:
         reduced_atom = None
     return reduced_atom, report_search
-
-
-    # logger.info(conn)
-    list_of_dict.append(searcher.report_search)
-    logger.info(searcher.report_search)
-            # final check, view entire conn
-    # for i in range(len(conn)):
-    #     print(i, struct[i].species, conn[i], [str(struct[j].species) for j in conn[i]])

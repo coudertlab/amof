@@ -55,6 +55,7 @@ class DummySymbols(object):
                 self.nb_changed_names += 1
             self.from_name_to_symbol[name] = pt_symbol
             self.from_symbol_to_name[pt_symbol] = name
+            self.names.append(name)
 
     def get_symbol(self, name):
         return self.from_name_to_symbol[name]
