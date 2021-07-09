@@ -12,6 +12,7 @@ from pymatgen.io.ase import AseAtomsAdaptor
 import sadi.symbols
 import sadi.files.path as spath
 import sadi.coordination.zif
+import sadi.trajectory
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def reduce_trajectory(trajectory, mof, filename, delta_Step = 1, first_frame = 0
         symbols = sadi.symbols.DummySymbols(['Zn', 'mIm']) 
     else:
         logger.exception('Structure search not available for the mof %s', mof)
-    return reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, delta_Step, first_frame, parallel)
+    return reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, delta_Step = delta_Step, first_frame = first_frame, parallel = parallel)
 
 def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, delta_Step = 1, first_frame = 0, parallel = False):
         """
