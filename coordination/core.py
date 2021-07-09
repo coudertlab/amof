@@ -392,6 +392,8 @@ class CoordinationSearch(object):
                 if len(A_conn[i])==target_N or A_enough_nn[i]==False:
                     choose_min.append(np.inf) # so that it is not chosen as min
                 else:
+                    if A_enough_nn[i] == True and len(A_nn_distances[i]) == 0:
+                        a = 1
                     choose_min.append(A_nn_distances[i][0]) # the closest nn is the first as A_nn_distances is sorted
             imin = np.argmin(choose_min)
             B_imin = A_neighb_indices[imin][0]
@@ -403,7 +405,8 @@ class CoordinationSearch(object):
                     A_neighb_indices[i].remove(B_imin)
             # flag A atoms missing nn
             for i in range(len(A_indices)):
-                if A_enough_nn[i]==True and len(A_conn[i])<target_N and len(A_nn_distances[i])==0:
+                # if A_enough_nn[i]==True and len(A_conn[i])<target_N and len(A_nn_distances[i])==0:
+                if A_enough_nn[i]==True and len(A_nn_distances[i])==0:
                     A_enough_nn[i]=False
                     # logger.debug("not enough nn for atom id:", A_indices[i], "; N bonds:", C_Nbonds[A_indices[i]], "; missing bonds:", target_N - len(A_conn[i]))
         
