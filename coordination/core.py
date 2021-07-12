@@ -17,6 +17,8 @@ import itertools
 
 import logging
 
+from xarray.core import dataset
+
 import sadi.files.path
 import sadi.structure
 import sadi.symbols
@@ -311,6 +313,12 @@ class CoordinationSearch(object):
 
         return cycles_edges
 
+    def clean_conn(self):
+        """
+        Remove duplicates indices in conn
+        """
+        for i in range(len(self.conn)):
+            self.conn[i] = list(set(self.conn[i]))
 
     def plot_conn_as_graph(self, filename = "graph_temp.png"):
         """create graph with every bond present in conn and print it in file"""
@@ -338,11 +346,12 @@ class CoordinationSearch(object):
 
     def assign_B_uniquely_to_A_N_coordinated(self, conditionA, conditionB, target_N, use_cov_dist = True, dist_margin=None, report_entry = None, propagate_fragments = False, new_fragments_name = None):
         """
-        assign atoms B to atoms A so that B is only assigned once and A end up being target_N coordinated. 
+        assign atoms B to atoms A so that B is only assigned once and A end up being at least target_N coordinated. 
         At each step, the closest pair A-B is added to conn
         B can only form new bonds with A.
         conditionA/B are functions of index i in struct
-        allowed to exit if not enough nn
+        allowed to exit if not enough nn available
+        If an A atom already has more than target_n neighbours, will do nothing
         use_cov_dist can be used to further restrict the search using cov radii, if False, every nn in all_neighb used
         if a string report_entry is supplied, will use it to add as an entry details about the missing nn
         
@@ -358,7 +367,10 @@ class CoordinationSearch(object):
         def are_A_Ncoordinated(A_conn, A_enough_nn):
             """return False as long as the main loop should keep running"""
             for i in range(len(A_conn)):
-                if (len(A_conn[i])!=target_N) and (A_enough_nn[i]==True):
+                # if len(A_conn[i])>target_N:
+                #     logger.warning('len(A_conn[i])>target_N')
+                # if (len(A_conn[i])!=target_N) and (A_enough_nn[i]==True):
+                if (len(A_conn[i])<target_N) and (A_enough_nn[i]==True):
                     return False
             return True
 
@@ -389,7 +401,8 @@ class CoordinationSearch(object):
             # take the closest A-B pair and bond them 
             choose_min = [] # candidate of atom A i to be selected
             for i in range(len(A_indices)):
-                if len(A_conn[i])==target_N or A_enough_nn[i]==False:
+                # if len(A_conn[i])==target_N or A_enough_nn[i]==False:
+                if len(A_conn[i])>=target_N or A_enough_nn[i]==False:
                     choose_min.append(np.inf) # so that it is not chosen as min
                 else:
                     if A_enough_nn[i] == True and len(A_nn_distances[i]) == 0:

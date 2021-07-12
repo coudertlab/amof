@@ -90,10 +90,13 @@ class ZifSearch(CoordinationSearch):
                     logger.debug("atom %s appears in more than one cycle", a)
                     self.report_search['imid_atoms_appear_only_once_in_cycles'] = False
                 in_cycle[a] = True
+        self.clean_conn()
         if fragtype is not None:
             for c in cycles:
                 indices = list(set(itertools.chain.from_iterable(c)))
                 self.create_fragment(fragtype, indices)
+        
+        self.report_search['imid_search_successful'] = self.report_search['imid_atoms_appear_only_once_in_cycles'] and self.report_search['imid_expected_number_of_cycles'] and self.report_search['imid_expected_length_of_cycles']
 
 class MetalmIm(ZifSearch):
     """
@@ -137,6 +140,10 @@ class MetalmIm(ZifSearch):
         self.find_ABAcycles(C, N, cycle_length = 5, 
             target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2, 
             fragtype = self.linker.name)
+
+        # hard way to force the reduction to work by ignoring the failed imid search: to be investigated
+        if not self.report_search['imid_search_successful']:
+            raise ValueError('Imid search failed')
 
         # add H based on cov radii to single C and C bonded to one N
         C_Nbonds = self.get_A_Bbonds(C, N)
