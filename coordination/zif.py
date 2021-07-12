@@ -141,10 +141,6 @@ class MetalmIm(ZifSearch):
             target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2, 
             fragtype = self.linker.name)
 
-        # hard way to force the reduction to work by ignoring the failed imid search: to be investigated
-        if not self.report_search['imid_search_successful']:
-            raise ValueError('Imid search failed')
-
         # add H based on cov radii to single C and C bonded to one N
         C_Nbonds = self.get_A_Bbonds(C, N)
 
@@ -216,6 +212,10 @@ class MetalIm(ZifSearch):
         graph = StructureGraph.with_empty_graph(self.struct)
         self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2,
             fragtype = self.linker.name)
+
+        # hard way to force the reduction to work by ignoring the failed imid search: to be investigated
+        if not self.report_search['imid_search_successful']:
+            raise Exception('Imid search failed')
 
         # add H based on cov radii to every C
         self.assign_B_uniquely_to_A_N_coordinated(lambda i: (self.struct[i].species == C), lambda i: (

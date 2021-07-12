@@ -62,6 +62,7 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, del
                 reduced_atom, report_search_atom = reduce_atom(atom, structure_reducer, symbols, filename = None)
                 report_search['in_reduced_trajectory'] = reduced_atom is not None
                 report_search = {**report_search, **report_search_atom}
+                # logger.info(str(report_search))
             except BaseException as e:
                 logger.info('Failed to do reduce frame with error message: ' + str(e))        
                 report_search['in_reduced_trajectory'] = False       
