@@ -270,8 +270,7 @@ class CoordinationSearch(object):
                     pass
         return cycles_list
 
-    @classmethod    
-    def find_rings(cls, graph, including=None, max_depth = None, exit_if_large_cycle = False):
+    def find_rings(self, graph, including=None, max_depth = None, exit_if_large_cycle = False):
         """                
         Find ring structures in the StructureGraph.
 
@@ -307,7 +306,7 @@ class CoordinationSearch(object):
                 if len(c) > 2 and len(c) <= max_depth:
                     all_cycles.append(c)
                 elif exit_if_large_cycle and len(c) > max_depth:
-                    raise SearchError('max_depth exceeded in cycle search')
+                    raise SearchError('max_depth exceeded in cycle search', self.report_search)
         else:
             all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
 
