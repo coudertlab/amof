@@ -26,6 +26,18 @@ import sadi.symbols
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
 
+class SearchError(Exception):
+    """Exception raised when coordination search failed.
+
+    Attributes:
+        message -- explanation of the error
+        report_search -- dictionary describing the search when the error occurred
+    """
+
+    def __init__(self, message, report_search = {}):
+        self.message = message
+        self.report_search = report_search
+
 class CoordinationSearch(object):
     """
     Classes containing general methods to perform a coordination search
@@ -295,7 +307,7 @@ class CoordinationSearch(object):
                 if len(c) > 2 and len(c) <= max_depth:
                     all_cycles.append(c)
                 elif exit_if_large_cycle and len(c) > max_depth:
-                    raise Exception('max_depth exceeded in cycle search')
+                    raise SearchError('max_depth exceeded in cycle search')
         else:
             all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
 

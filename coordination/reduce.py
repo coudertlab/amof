@@ -8,6 +8,7 @@ import joblib
 
 import ase.io
 from pymatgen.io.ase import AseAtomsAdaptor
+from sadi.coordination.core import SearchError
 
 import sadi.symbols
 import sadi.files.path as spath
@@ -63,6 +64,8 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, del
                 report_search['in_reduced_trajectory'] = reduced_atom is not None
                 report_search = {**report_search, **report_search_atom}
                 # logger.info(str(report_search))
+            except SearchError as e:
+                print(e)
             except BaseException as e:
                 logger.info('Failed to do reduce frame with error message: ' + str(e))        
                 report_search['in_reduced_trajectory'] = False       
