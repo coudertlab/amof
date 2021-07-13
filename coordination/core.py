@@ -258,6 +258,38 @@ class CoordinationSearch(object):
                     pass
         return cycles_list
 
+    @classmethod
+    def simple_cycles(cls, G, limit):
+        subG = type(G)(G.edges())
+        sccs = list(nx.strongly_connected_components(subG))
+        while sccs:
+            scc = sccs.pop()
+            startnode = scc.pop()
+            path = [startnode]
+            blocked = set()
+            blocked.add(startnode)
+            stack = [(startnode, list(subG[startnode]))]
+
+            while stack:
+                thisnode, nbrs = stack[-1]
+
+                if nbrs and len(path) < limit:
+                    nextnode = nbrs.pop()
+                    if nextnode == startnode:
+                        yield path[:]
+                    elif nextnode not in blocked:
+                        path.append(nextnode)
+                        stack.append((nextnode, list(subG[nextnode])))
+                        blocked.add(nextnode)
+                        continue
+                if not nbrs or len(path) >= limit:
+                    blocked.remove(thisnode)
+                    stack.pop()
+                    path.pop()
+            subG.remove_node(startnode)
+            H = subG.subgraph(scc)
+            sccs.extend(list(nx.strongly_connected_components(H)))
+
     @classmethod    
     def find_rings(cls, graph, including=None):
         """                
@@ -286,7 +318,10 @@ class CoordinationSearch(object):
         cycles_edges = []
 
         # Remove all two-edge cycles
-        all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
+        all_cycles = [c for c in cls.simple_cycles(directed, 5) if len(c) > 2]
+        all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2 and len(c)<=5]
+        a = 1
+        # all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
 
         # Using to_directed() will mean that each cycle always appears twice
         # So, we must also remove duplicates
