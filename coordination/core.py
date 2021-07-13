@@ -120,7 +120,7 @@ class CoordinationSearch(object):
             fragnumber_old, fragnumber_new: int
         """
         if fragnumber_new in self.fragments.keys():
-            raise ValueError('Cannot change fragnumber: not empty in fragment')
+            raise SearchError('Cannot change fragnumber: not empty in fragment', self.report_search)
         else:
             fragment = self.fragments.pop(fragnumber_old)
             self.create_fragment(fragment['fragtype'], fragment['indices'], fragnumber = fragnumber_new)
@@ -299,7 +299,7 @@ class CoordinationSearch(object):
         cycles_edges = []
 
         # Remove all two-edge cycles
-        all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
+        # all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
         if max_depth is not None:
             all_cycles = []
             for c in nx.simple_cycles(directed):
@@ -555,7 +555,7 @@ class CoordinationSearch(object):
                             self.merge_fragments(self.fragnumbers[a], self.fragnumbers[b])
         elif propagate_fragments == 'reverse':
             if target_N != 1:
-                raise ValueError("Propagation ambiguous: Tried to propagate fragment from B to A with target_N not equal to 1") 
+                raise SearchError("Propagation ambiguous: Tried to propagate fragment from B to A with target_N not equal to 1", self.report_search) 
             else:
                 for i in range(len(A_indices)): 
                     a = A_indices[i]

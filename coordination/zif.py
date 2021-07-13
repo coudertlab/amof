@@ -215,7 +215,7 @@ class MetalIm(ZifSearch):
 
         # hard way to force the reduction to work by ignoring the failed imid search: to be investigated
         if not self.report_search['imid_search_successful']:
-            raise Exception('Imid search failed')
+            raise SearchError('Imid search failed', self.report_search)
 
         # add H based on cov radii to every C
         self.assign_B_uniquely_to_A_N_coordinated(lambda i: (self.struct[i].species == C), lambda i: (
