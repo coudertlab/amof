@@ -66,7 +66,7 @@ class ZifSearch(CoordinationSearch):
         self.add_ABbonds(graph, A, A)
         # cycles = self.get_chain_decomposition(graph) # give same results for the tested files
         # cycles = self.find_one_cycle_per_node(graph) # give same results for the tested files
-        cycles = self.find_rings(graph)
+        cycles = self.find_rings(graph, max_depth=cycle_length, exit_if_large_cycle=True)
         # check sanity of found cycles
         self.report_search['imid_expected_number_of_cycles'] = (
             len(cycles) == target_number_of_cycles)

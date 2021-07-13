@@ -258,40 +258,8 @@ class CoordinationSearch(object):
                     pass
         return cycles_list
 
-    @classmethod
-    def simple_cycles(cls, G, limit):
-        subG = type(G)(G.edges())
-        sccs = list(nx.strongly_connected_components(subG))
-        while sccs:
-            scc = sccs.pop()
-            startnode = scc.pop()
-            path = [startnode]
-            blocked = set()
-            blocked.add(startnode)
-            stack = [(startnode, list(subG[startnode]))]
-
-            while stack:
-                thisnode, nbrs = stack[-1]
-
-                if nbrs and len(path) < limit:
-                    nextnode = nbrs.pop()
-                    if nextnode == startnode:
-                        yield path[:]
-                    elif nextnode not in blocked:
-                        path.append(nextnode)
-                        stack.append((nextnode, list(subG[nextnode])))
-                        blocked.add(nextnode)
-                        continue
-                if not nbrs or len(path) >= limit:
-                    blocked.remove(thisnode)
-                    stack.pop()
-                    path.pop()
-            subG.remove_node(startnode)
-            H = subG.subgraph(scc)
-            sccs.extend(list(nx.strongly_connected_components(H)))
-
     @classmethod    
-    def find_rings(cls, graph, including=None):
+    def find_rings(cls, graph, including=None, max_depth = None, exit_if_large_cycle = False):
         """                
         Find ring structures in the StructureGraph.
 
@@ -304,6 +272,8 @@ class CoordinationSearch(object):
             only return those rings including the specified
             sites. By default, this parameter is None, and
             all rings will be returned.
+            max_depth: int, maximum cycle size to be found
+            exit_if_large_cycle: Bool, if True will raise an Exception if a cycle larger than max_depth is found
         :return: dict {index:cycle}. Each
             entry will be a ring (cycle, in graph theory terms) including the index
             found in the Molecule. If there is no cycle including an index, the
@@ -318,10 +288,16 @@ class CoordinationSearch(object):
         cycles_edges = []
 
         # Remove all two-edge cycles
-        all_cycles = [c for c in cls.simple_cycles(directed, 5) if len(c) > 2]
-        all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2 and len(c)<=5]
-        a = 1
-        # all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
+        all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
+        if max_depth is not None:
+            all_cycles = []
+            for c in nx.simple_cycles(directed):
+                if len(c) > 2 and len(c) <= max_depth:
+                    all_cycles.append(c)
+                elif exit_if_large_cycle and len(c) > max_depth:
+                    raise Exception('max_depth exceeded in cycle search')
+        else:
+            all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
 
         # Using to_directed() will mean that each cycle always appears twice
         # So, we must also remove duplicates
