@@ -28,7 +28,7 @@ class Rings(object):
 
     def __init__(self):
         """default constructor"""
-        self.surface_volume = pd.DataFrame({"Step": np.empty([0])})
+        self.rings_data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
     def from_trajectory(cls, trajectory, delta_Step = 1, first_frame = 0, parallel = False):
@@ -38,10 +38,10 @@ class Rings(object):
         """
         rings_class = cls() # initialize class
         step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
-        rings_class.compute_surface_volume(trajectory, step, parallel)
+        rings_class.compute_rings(trajectory, step, parallel)
         return rings_class # return class as it is a constructor
 
-    def compute_surface_volume(self, trajectory, step, parallel):
+    def compute_rings(self, trajectory, step, parallel):
         """
         Args:
             trajectory: ase trajectory object
@@ -53,13 +53,13 @@ class Rings(object):
         if parallel == False:
             for i in range(len(trajectory)):
                 logger.debug('compute frame # %s out of %s', i + 1, len(trajectory))
-                list_of_dict.append(self.get_surface_volume(trajectory[i], step[i]))
+                list_of_dict.append(self.compute_rings_for_frame(trajectory[i], step[i]))
         else:
             if type(parallel) == int:
                 num_cores = parallel
             else:
                 num_cores = 18 # less than 20 and nice value for 50 steps
-            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.get_surface_volume)(trajectory[i], step[i]) for i in range(len(trajectory)))
+            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_rings_for_frame)(trajectory[i], step[i]) for i in range(len(trajectory)))
 
         df = pd.DataFrame(list_of_dict)
         self.surface_volume = df
@@ -78,7 +78,7 @@ class Rings(object):
         dic = dict(zip(list_of_keys, list_of_values))
         return dic
 
-    def get_surface_volume(self, atom, step):
+    def compute_rings_for_frame(self, atom, step):
         """
         Args:
             atom: ase atom object
@@ -107,7 +107,7 @@ class Rings(object):
         rings_class.read_surface_volume_file(filename)
         return rings_class # return class as it is a constructor
 
-    def read_surface_volume_file(self, filename):
-        """path_to_data: where the MSD object is"""
+    def read_rings_file(self, filename):
+        """path_to_data: where the rings object is"""
         filename = sadi.files.path.append_suffix(filename, 'rings')
         self.surface_volume = pd.read_feather(filename)
