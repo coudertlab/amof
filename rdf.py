@@ -37,9 +37,14 @@ class Rdf(object):
     @classmethod
     def from_trajectory(cls, trajectory, dr = 0.01, rmax = 'half_cell'):
         """
-        constructor of rdf class from an ase trajectory object
-        dr, rmax in Angstrom
-        If rmax is set to 'half_cell', then half of the minimum dimension of the cell is used to ensure no atom is taken into account twice for a given atom (computation is possible beyound this threeshold up to the min cell size)
+        Constructor of rdf class 
+        
+        Args:
+            trajectory: an ase trajectory object
+            dr, rmax: floats in Angstrom
+                If rmax is set to 'half_cell', then half of the minimum dimension of the cell is used 
+                to ensure no atom is taken into account twice for a given atom 
+                (computation is possible beyond this threeshold up to the min cell size)
         """
         rdf_class = cls() # initialize class
         rdf_class.compute_rdf(trajectory, dr, rmax)
@@ -66,9 +71,12 @@ class Rdf(object):
         atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
         N_species = len(atomic_numbers_unique) # number of different chemical species
 
-        # default option
-        if  rmax == 'half_cell':
-            rmax = np.min([a for t in trajectory for a in t.get_cell_lengths_and_angles()[0:3]]) / 2
+        rmax_half_cell = np.min([a for t in trajectory for a in t.get_cell_lengths_and_angles()[0:3]]) / 2
+        if  rmax == 'half_cell':        # default option
+            rmax = rmax_half_cell
+        elif rmax > rmax_half_cell:
+            logger.info("Specified rmax %s is larger than half cell; will use half_cell rmax", rmax)
+            rmax = rmax_half_cell
 
         logger.info("Start computing rdf for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
         bins = int(rmax // dr)
