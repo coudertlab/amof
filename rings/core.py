@@ -15,6 +15,9 @@ import re
 import joblib
 import atomman
 import itertools
+from subprocess import Popen, PIPE
+import shlex
+import xarray as xr
 
 import sadi.trajectory
 import sadi.atom as satom
@@ -30,7 +33,11 @@ class Rings(object):
 
     def __init__(self):
         """default constructor"""
-        self.rings_data = pd.DataFrame({"Step": np.empty([0])})
+        self.rings_data = xr.DataArray(np.empty([0,0,0]), 
+            coords = [('Step', np.empty([0], dtype='int64')), 
+                ('ring_size', np.empty([0], dtype='int64')), 
+                ('ring_var', np.empty([0], dtype='str'))], 
+            name = 'rings')
 
     @classmethod
     def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, parallel = False):
@@ -53,7 +60,7 @@ class Rings(object):
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
         logger.info("Start rings analysis for volume and surfaces for %s frames", len(trajectory))
-        list_of_dict = []
+        list_of_xarray = []
 
         cutoff_dict = satom.format_cutoff(nb_set_and_cutoff)
         # add 0 where cutoff is not defined
@@ -66,30 +73,38 @@ class Rings(object):
         if parallel == False:
             for i in range(len(trajectory)):
                 logger.debug('compute frame # %s out of %s', i + 1, len(trajectory))
-                list_of_dict.append(self.compute_rings_for_frame(trajectory[i], step[i], cutoff_dict))
+                list_of_xarray.append(self.compute_rings_for_frame(trajectory[i], step[i], cutoff_dict))
         else:
             if type(parallel) == int:
                 num_cores = parallel
             else:
                 num_cores = 18 # less than 20 and nice value for 50 steps
-            list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_rings_for_frame)(trajectory[i], step[i], cutoff_dict) for i in range(len(trajectory)))
+            list_of_xarray = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_rings_for_frame)(trajectory[i], step[i], cutoff_dict) for i in range(len(trajectory)))
 
-        df = pd.DataFrame(list_of_dict)
-        self.surface_volume = df
+        dic_of_xarray = dict(zip(step, list_of_xarray))
+        xa = xr.Dataset(dic_of_xarray)
+        xa = xa.to_array("Step", "Step")
+        xa = xr.Dataset({'rings': xa}) # one large data_array containing thermo variables
+        # xa = xa.to_dataset(dim='thermo') # separate thermo variables
+        self.rings_data = xa
 
     @staticmethod
-    def read_zeopp(filename):
+    def read_rings_output(rstat_path):
         """
-        read surface (sa) and volume (vol) zeopp output
+        read rings output from RINGS-res-N.dat whit largest possible N
+
+        Args:
+            rstat_path: pathlib path leading to rstat, containing evol-RINGS files
         """
-        with open(filename) as f:
-            first_line = f.readline().strip('\n')
-        split_line = re.split('\ +', first_line)
-        split_line = split_line[6:] # remove file name, density and unit cell volume
-        list_of_keys = [s.strip(':') for s in split_line[::2]]
-        list_of_values = [float(s) for s in split_line[1::2]]
-        dic = dict(zip(list_of_keys, list_of_values))
-        return dic
+        evol_numbers = []
+        for file in rstat_path.glob('RINGS-res-*.dat'):
+            evol_numbers.append(int(re.search('RINGS-res-(.*).dat', file.name).group(1)))
+        N = max(evol_numbers)
+        # df = pd.read_csv(rstat_path / f'evol-RINGS-{N}.dat', skiprows = list(range(1,5)), escapechar='#', sep='\s+')
+        df = pd.read_csv(rstat_path / f'RINGS-res-{N}.dat', header = 1, escapechar='#', sep='\s+')
+        df = df.set_index(' n')
+        ar = xr.DataArray(df, dims=("ring_size", "ring_var"))
+        return ar
 
     @staticmethod
     def fill_template(template_name, parameters, path):
@@ -147,10 +162,16 @@ class Rings(object):
             (tmpdirpath / 'data').mkdir(parents=True, exist_ok=True)
             atom.write(tmpdirname + '/data/atom.xyz')
             self.write_input_files(atom, cutoff_dict, tmpdirpath)
-            sadi.pore.pysimmzeopp.network(tmpdirname + 'atom.cif', sa = True, vol = True)
-            sa = self.read_zeopp(tmpdirname + 'atom.sa')
-            vol = self.read_zeopp(tmpdirname + 'atom.vol')
-        return {'Step': step, **sa, **vol}
+
+            arg_list = shlex.split("rings "+ str(tmpdirpath / 'input.inp'))  
+            arg_list = shlex.split(f"cd {tmpdirname} && rings input.inp")                              
+            p = Popen(arg_list, stdin=PIPE, stdout=PIPE, stderr=PIPE) 
+            p.wait()
+
+            os.system(f"cd {tmpdirname} && rings input.inp")            
+
+            rings_xarray = self.read_rings_output(tmpdirpath / 'rstat')
+        return rings_xarray
 
     def write_to_file(self, filename):
         """path_to_output: where the rings object will be written"""
