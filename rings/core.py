@@ -56,6 +56,21 @@ class Ring(object):
         ring_class.compute_ring(trajectory, nb_set_and_cutoff, step, parallel)
         return ring_class # return class as it is a constructor
 
+    @classmethod
+    def from_reduced_trajectory(cls, reduced_trajectory, nb_set_and_cutoff, parallel = False):
+        """
+        constructor of ring class from a sadi ReducedTrajectory object
+        
+        Args:
+            reduced_trajectory: sadi ReducedTrajectory object
+            nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
+                values are cutoffs float, in Angstrom
+        """
+        ring_class = cls() # initialize class
+        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        ring_class.compute_ring(reduced_trajectory.trajectory, nb_set_and_cutoff, step, parallel)
+        return ring_class # return class as it is a constructor
+
     def compute_ring(self, trajectory, nb_set_and_cutoff, step, parallel):
         """
         Args:

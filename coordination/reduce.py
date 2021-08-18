@@ -89,7 +89,7 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
             if report_search['in_reduced_trajectory'] == True:
                 reduced_traj.append(reduced_atom)
         
-        df_report_search = pd.DataFrame(list_report_search)
+        df_report_search = pd.DataFrame(list_report_search).set_index('Step')
 
         reduced_trajectory = sadi.trajectory.ReducedTrajectory(reduced_traj, df_report_search, symbols)
         if filename is not None:
