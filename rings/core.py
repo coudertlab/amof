@@ -67,7 +67,7 @@ class Ring(object):
                 values are cutoffs float, in Angstrom
         """
         ring_class = cls() # initialize class
-        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        step = np.array(reduced_trajectory.report_search[reduced_trajectory.report_search['in_reduced_trajectory']==True].index)
         ring_class.compute_ring(reduced_trajectory.trajectory, nb_set_and_cutoff, step, parallel)
         return ring_class # return class as it is a constructor
 

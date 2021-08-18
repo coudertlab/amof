@@ -306,6 +306,7 @@ class CoordinationSearch(object):
                 if len(c) > 2 and len(c) <= max_depth:
                     all_cycles.append(c)
                 elif exit_if_large_cycle and len(c) > max_depth:
+                    # print(c)
                     raise SearchError('max_depth exceeded in cycle search', self.report_search)
         else:
             all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
