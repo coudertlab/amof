@@ -1,5 +1,9 @@
 """
-Module containing rings analysis related methods
+Module containing ring statistics analysis related methods
+
+Terminology: 
+    singular form 'ring' is employed by default to talk about ring statistics analysis
+    plural form 'rings' or 'RINGS' refers to the Rigorous Investigation of Networks Generated using Simulations or ‘RINGS’ code
 """
 
 import ase
@@ -15,7 +19,7 @@ import re
 import joblib
 import atomman
 import itertools
-from subprocess import Popen, PIPE
+import subprocess
 import shlex
 import xarray as xr
 
@@ -26,40 +30,40 @@ import sadi.pore.pysimmzeopp
 
 logger = logging.getLogger(__name__)
 
-class Rings(object):
+class Ring(object):
     """
-    Main class for rings analysis
+    Main class for ring statistics analysis analysis
     """
 
     def __init__(self):
         """default constructor"""
-        self.rings_data = xr.DataArray(np.empty([0,0,0]), 
+        self.ring_data = xr.DataArray(np.empty([0,0,0]), 
             coords = [('Step', np.empty([0], dtype='int64')), 
                 ('ring_size', np.empty([0], dtype='int64')), 
                 ('ring_var', np.empty([0], dtype='str'))], 
-            name = 'rings')
+            name = 'ring')
 
     @classmethod
     def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, parallel = False):
         """
-        constructor of rings class from an ase trajectory object
+        constructor of ring class from an ase trajectory object
         Args:
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
         """
-        rings_class = cls() # initialize class
+        ring_class = cls() # initialize class
         step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
-        rings_class.compute_rings(trajectory, nb_set_and_cutoff, step, parallel)
-        return rings_class # return class as it is a constructor
+        ring_class.compute_ring(trajectory, nb_set_and_cutoff, step, parallel)
+        return ring_class # return class as it is a constructor
 
-    def compute_rings(self, trajectory, nb_set_and_cutoff, step, parallel):
+    def compute_ring(self, trajectory, nb_set_and_cutoff, step, parallel):
         """
         Args:
             trajectory: ase trajectory object
             step: np array, simulation steps
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
-        logger.info("Start rings analysis for volume and surfaces for %s frames", len(trajectory))
+        logger.info("Start ring analysis for volume and surfaces for %s frames", len(trajectory))
         list_of_xarray = []
 
         cutoff_dict = satom.format_cutoff(nb_set_and_cutoff)
@@ -73,25 +77,25 @@ class Rings(object):
         if parallel == False:
             for i in range(len(trajectory)):
                 logger.debug('compute frame # %s out of %s', i + 1, len(trajectory))
-                list_of_xarray.append(self.compute_rings_for_frame(trajectory[i], step[i], cutoff_dict))
+                list_of_xarray.append(self.compute_ring_for_atom(trajectory[i], cutoff_dict))
         else:
             if type(parallel) == int:
                 num_cores = parallel
             else:
                 num_cores = 18 # less than 20 and nice value for 50 steps
-            list_of_xarray = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_rings_for_frame)(trajectory[i], step[i], cutoff_dict) for i in range(len(trajectory)))
+            list_of_xarray = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_ring_for_atom)(trajectory[i], cutoff_dict) for i in range(len(trajectory)))
 
         dic_of_xarray = dict(zip(step, list_of_xarray))
         xa = xr.Dataset(dic_of_xarray)
         xa = xa.to_array("Step", "Step")
-        xa = xr.Dataset({'rings': xa}) # one large data_array containing thermo variables
+        xa = xr.Dataset({'ring': xa}) # one large data_array containing thermo variables
         # xa = xa.to_dataset(dim='thermo') # separate thermo variables
-        self.rings_data = xa
+        self.ring_data = xa
 
     @staticmethod
     def read_rings_output(rstat_path):
         """
-        read rings output from RINGS-res-N.dat whit largest possible N
+        read RINGS output from RINGS-res-N.dat whit largest possible N
 
         Args:
             rstat_path: pathlib path leading to rstat, containing evol-RINGS files
@@ -124,7 +128,7 @@ class Rings(object):
 
     def write_input_files(self, atom, cutoff_dict, path):
         """
-        Write Rings input and option files in path
+        Write RINGS input and option files in path
 
         Args:
             atom: ase atom object
@@ -147,13 +151,11 @@ class Rings(object):
         parameters['Grtot'] = max(cutoff_dict.values())
         self.fill_template('input.inp', parameters, path)
         self.fill_template('options', parameters, path)
-        a = 1
 
-    def compute_rings_for_frame(self, atom, step, cutoff_dict):
+    def compute_ring_for_atom(self, atom, cutoff_dict):
         """
         Args:
             atom: ase atom object
-            step: int, represent step of frame
         Returns:
             dic: dictionary with output from zeopp vol and sa
         """
@@ -162,32 +164,38 @@ class Rings(object):
             (tmpdirpath / 'data').mkdir(parents=True, exist_ok=True)
             atom.write(tmpdirname + '/data/atom.xyz')
             self.write_input_files(atom, cutoff_dict, tmpdirpath)
-
-            arg_list = shlex.split("rings "+ str(tmpdirpath / 'input.inp'))  
-            arg_list = shlex.split(f"cd {tmpdirname} && rings input.inp")                              
-            p = Popen(arg_list, stdin=PIPE, stdout=PIPE, stderr=PIPE) 
+            
+            # warning, make sure no user input is possible inside arg. 
+            # Here shlex.quote is used as precaution in the only possible variable of the string
+            arg = f"cd {shlex.quote(tmpdirname)} && rings input.inp"
+            p = subprocess.Popen(arg, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
             p.wait()
 
-            os.system(f"cd {tmpdirname} && rings input.inp")            
+            # arg_list = shlex.split(arg)  # if no need to use shell=True                            
+            # p = Popen(arg_list, stdin=PIPE, stdout=PIPE, stderr=PIPE) 
 
-            rings_xarray = self.read_rings_output(tmpdirpath / 'rstat')
-        return rings_xarray
+
+            # os.system(f"cd {tmpdirname} && rings input.inp")            
+
+            ring_ar = self.read_rings_output(tmpdirpath / 'rstat')
+            a=1
+        return ring_ar
 
     def write_to_file(self, filename):
-        """path_to_output: where the rings object will be written"""
-        filename = sadi.files.path.append_suffix(filename, 'rings')
+        """path_to_output: where the ring object will be written"""
+        filename = sadi.files.path.append_suffix(filename, 'ring')
         self.surface_volume.to_feather(filename)
 
     @classmethod
     def from_file(cls, filename):
         """
-        constructor of rings class from msd file
+        constructor of ring class from ring file
         """
-        rings_class = cls() # initialize class
-        rings_class.read_surface_volume_file(filename)
-        return rings_class # return class as it is a constructor
+        ring_class = cls() # initialize class
+        ring_class.read_surface_volume_file(filename)
+        return ring_class # return class as it is a constructor
 
-    def read_rings_file(self, filename):
-        """path_to_data: where the rings object is"""
-        filename = sadi.files.path.append_suffix(filename, 'rings')
+    def read_ring_file(self, filename):
+        """path_to_data: where the ring object is"""
+        filename = sadi.files.path.append_suffix(filename, 'ring')
         self.surface_volume = pd.read_feather(filename)
