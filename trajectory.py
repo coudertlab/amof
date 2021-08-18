@@ -1,7 +1,8 @@
 """
-Module containing everythong related to trajectories: 
+Module containing everything related to trajectories: 
 - wrapper for ase trajectory module
 - constructor from different files used
+- ReducedTrajectory class
 """
 
 # import ase.io.trajectory
@@ -12,8 +13,11 @@ import numpy as np
 import gzip
 import shutil
 import tempfile
+import pandas as pd
 
 import sadi.atom
+import sadi.files.path as spath
+import sadi.symbols
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +112,47 @@ class Trajectory(object):
 
     def get_traj(self):
         return self.traj
+
+
+class ReducedTrajectory(object):
+    """
+    Class representing a reduced trajectory
+
+    Attributes:
+        trajectory: ase trajectory object containing the positions of the reduced trajectory
+        report_search: pandas dataframe with information per Step of trajectory
+        symbols: sadi DummySymbols object
+    """
+    def __init__(self, trajectory, report_search, symbols):
+        """Default constructor from attributes"""
+        self.trajectory = trajectory
+        self.report_search = report_search
+        self.symbols = symbols
+
+    @classmethod
+    def from_file(cls, filename):
+        """
+        constructor of class from files
+
+        Args: 
+            filename: str or path to files without the final suffixes (ie no '.xyz' or '.symbols')
+        """
+        report_search = pd.read_csv(spath.append_suffix(filename, 'report_search.csv'))
+        trajectory = ase.io.read(spath.append_suffix(filename, 'xyz'), ':', 'xyz')
+        symbols = sadi.symbols.DummySymbols.from_file(filename)
+        cn_class = cls(trajectory, report_search, symbols) # initialize class
+        return cn_class # return class as it is a constructor
+
+    def write_to_file(self, filename):
+        """
+        Args: 
+            filename: str or path to files without the final suffixes (ie no '.xyz' or '.symbols')
+        """
+        self.report_search.to_csv(spath.append_suffix(filename, 'report_search.csv'))
+        ase.io.write(spath.append_suffix(filename, 'xyz'), self.trajectory)
+        self.symbols.write_to_file(filename)
+
+
 
 def read_lammps_data(filename, atom_style):
     """

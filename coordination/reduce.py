@@ -11,13 +11,13 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from sadi.coordination.core import SearchError
 
 import sadi.symbols
-import sadi.files.path as spath
+# import sadi.files.path as spath
 import sadi.coordination.zif
 import sadi.trajectory
 
 logger = logging.getLogger(__name__)
 
-def reduce_trajectory(trajectory, mof, filename, delta_Step = 1, first_frame = 0, parallel = False):
+def reduce_trajectory(trajectory, mof, filename = None, delta_Step = 1, first_frame = 0, parallel = False):
     """
     Conveniant wrapper to reduce trajectory by specifying a specific mof
     For now works for 'ZIF-4', 'ZIF-8', 'ZIF-zni' and 'SALEM-2'
@@ -38,20 +38,19 @@ def reduce_trajectory(trajectory, mof, filename, delta_Step = 1, first_frame = 0
         logger.exception('Structure search not available for the mof %s', mof)
     return reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, delta_Step = delta_Step, first_frame = first_frame, parallel = parallel)
 
-def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, delta_Step = 1, first_frame = 0, parallel = False):
+def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = None, delta_Step = 1, first_frame = 0, parallel = False):
         """
         Args:
             trajectory: ase trajectory object
             structure_reducer: a function taking a pymatgen structure as input and returning a CoordinationSearch object
             symbols: a DummySymbol object containing the representation to use for all frames 
                 (no option atm to include additionnal symbols on specific frames,
-                 parralelisation issues + not adapted to analysis tools to have variable number of atoms)
+                 parallelisation issues + not adapted to analysis tools to have variable number of atoms)
             delta_Step: number of simulation steps between two frames
             filename: str, where to write output files, specify None to avoid writing
         
         Return:
-            reduced_trajectory
-            df_report_search
+            reduced_traj: sadi ReducedTrajectory object
         """
         logger.info("Start reducing trajectory for %s frames", len(trajectory))
 
@@ -84,18 +83,18 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, del
             result_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(per_atom)(trajectory[i], step[i]) for i in range(len(trajectory)))
 
         list_report_search = []
-        reduced_trajectory = []
+        reduced_traj = []
         for reduced_atom, report_search in result_list:
             list_report_search.append(report_search)
             if report_search['in_reduced_trajectory'] == True:
-                reduced_trajectory.append(reduced_atom)
+                reduced_traj.append(reduced_atom)
         
         df_report_search = pd.DataFrame(list_report_search)
+
+        reduced_trajectory = sadi.trajectory.ReducedTrajectory(reduced_traj, df_report_search, symbols)
         if filename is not None:
-            df_report_search.to_csv(spath.append_suffix(filename, 'report_search.csv'))
-            ase.io.write(spath.append_suffix(filename, 'xyz'), reduced_trajectory)
-            symbols.write_to_file(filename)
-        return reduced_trajectory, df_report_search
+            reduced_trajectory.write_to_file(filename)
+        return reduced_trajectory
 
 def reduce_atom(atom, structure_reducer, symbols, filename = None):
     """
