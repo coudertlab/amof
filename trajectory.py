@@ -14,6 +14,7 @@ import gzip
 import shutil
 import tempfile
 import pandas as pd
+import pathlib
 
 import sadi.atom
 import sadi.files.path as spath
@@ -137,6 +138,7 @@ class ReducedTrajectory(object):
         Args: 
             filename: str or path to files without the final suffixes (ie no '.xyz' or '.symbols')
         """
+        logger.info("Read reduced trajectory %s", pathlib.Path(filename).name)
         report_search = pd.read_csv(spath.append_suffix(filename, 'report_search.csv'), index_col=0)
         trajectory = ase.io.read(spath.append_suffix(filename, 'xyz'), ':', 'xyz')
         symbols = sadi.symbols.DummySymbols.from_file(filename)

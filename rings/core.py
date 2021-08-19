@@ -199,7 +199,8 @@ class Ring(object):
     def write_to_file(self, filename):
         """path_to_output: where the ring object will be written"""
         filename = sadi.files.path.append_suffix(filename, 'ring')
-        self.surface_volume.to_feather(filename)
+        self.ring_data.to_netcdf(filename)
+
 
     @classmethod
     def from_file(cls, filename):
@@ -207,10 +208,10 @@ class Ring(object):
         constructor of ring class from ring file
         """
         ring_class = cls() # initialize class
-        ring_class.read_surface_volume_file(filename)
+        ring_class.read_ring_file(filename)
         return ring_class # return class as it is a constructor
 
     def read_ring_file(self, filename):
         """path_to_data: where the ring object is"""
         filename = sadi.files.path.append_suffix(filename, 'ring')
-        self.surface_volume = pd.read_feather(filename)
+        self.ring_data = xr.open_dataset(filename)
