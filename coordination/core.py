@@ -4,6 +4,7 @@
 Main file containing classes for custom neigbour search
 """
 
+from re import L
 import numpy as np
 import pymatgen
 from pymatgen.core.structure import Structure
@@ -14,6 +15,7 @@ from networkx.algorithms.chains import chain_decomposition
 from copy import deepcopy
 from collections import Counter
 import itertools
+from scipy import stats
 
 import logging
 
@@ -60,7 +62,7 @@ class CoordinationSearch(object):
         self.all_neighb = self.struct.get_all_neighbors(neighb_max_distance)
         self.dist_margin = dist_margin
         # initialize report_search with useful descriptors of struct for subsequent report analysis
-        self.report_search = {"number of atoms":self.struct.num_sites}
+        self.report_search = {"number_of_atoms":self.struct.num_sites}
 
     def in_fragment(self, indice):
         """Return True IFF atom at indice 'indice' is in a fragment"""
@@ -169,6 +171,33 @@ class CoordinationSearch(object):
             species[fragnumber] = self.symbols.get_symbol(fragment['fragtype'])
             coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])            
         reduced_struct = Structure(self.struct.lattice, species, coords, coords_are_cartesian = True)
+
+        # compute cutoffs defining nb with reduced structure from frag_conn
+        list_of_nb = list(set([tuple(sorted((i, j))) for i in range(len(self.frag_conn)) for j in self.frag_conn[i]])) # no duplicates
+        bonds = np.array(['-'.join(sorted([species[i], species[j]])) for (i, j) in list_of_nb])
+        bonds_unique = list(set(bonds))
+        distances = np.array([reduced_struct.get_distance(i, j) for (i, j) in list_of_nb])
+        nb_set_and_cutoff = {}
+        for nb_set in bonds_unique:
+            nb_set_and_cutoff[nb_set] = np.max(distances[bonds==nb_set])
+        self.report_search['nb_set_and_cutoff'] = str(nb_set_and_cutoff)
+        
+        # check that every fragment B within A-B cutoff of A is nb of A in frag_conn
+        irregular_nb = []
+        irregular_nb_offset = []
+        nb_list = reduced_struct.get_neighbor_list(max(nb_set_and_cutoff.values()))
+        for k in range(len(nb_list)):
+            i, j, distance = nb_list[0][k], nb_list[1][k], nb_list[3][k]
+            nb_set = '-'.join(sorted([species[i], species[j]]))
+            if (j not in self.frag_conn[i]) and (distance < nb_set_and_cutoff[nb_set]):
+                irregular_nb.append(nb_set)
+                irregular_nb_offset.append(nb_set_and_cutoff[nb_set] - distance)
+        self.report_search['connectivity_constructible_with_cutoffs'] = (len(irregular_nb) == 0)
+        if len(irregular_nb) != 0:
+            self.report_search['connectivity_wrongly_inferred_from_cutoffs'] = str(dict(Counter(irregular_nb).items()))
+            self.report_search['connectivity_wrong_offsets'] = str(stats.describe(irregular_nb_offset))
+                
+        self.report_search['number_of_nodes'] = reduced_struct.num_sites
         self.report_search['symbols'] = str(self.symbols)
         return reduced_struct
 

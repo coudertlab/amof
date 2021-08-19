@@ -23,7 +23,7 @@ class ZifSearch(CoordinationSearch):
 
     def __init__(self, struct, dist_margin=1.2, dist_margin_metal=1.5):
         """
-        Constructor for custom search 2 for ZIF8 glasses
+        Constructor for custom search 2 for ZIF glasses
         dist_margin is the default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
         dist_margin_metal is the specific tolerance for metal-X bonds as they're not covalent
         """
