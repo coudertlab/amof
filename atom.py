@@ -45,7 +45,7 @@ def get_atomic_numbers_unique(atom):
     """return list of atomic numbers present in atom"""
     return list(set(atom.get_atomic_numbers()))
 
-def format_cutoff(nb_set_and_cutoff, format='ase'):
+def format_cutoff(nb_set_and_cutoff, format='ase', sort_pair = False):
     """
     Return cutoff formated for different purposes
 
@@ -53,6 +53,7 @@ def format_cutoff(nb_set_and_cutoff, format='ase'):
         nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
             values are cutoffs float, in Angstrom
         format: str, can be 'ase'
+        sort_pair: Bool, if True will sort the tuple of the nb atomic numbers
 
     Return:
         cutoff_dict: list of cutoff in ase.neighborlist format if format=='ase'
@@ -62,6 +63,8 @@ def format_cutoff(nb_set_and_cutoff, format='ase'):
         elements_present_unique = []
         for nn_set, cutoff in nb_set_and_cutoff.items():
             xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
+            if sort_pair == True:
+                xx = tuple(sorted(xx))
             cutoff_dict[xx] = cutoff
             elements_present_unique += [ase.data.atomic_numbers[i] for i in nn_set.split('-')]
         return cutoff_dict

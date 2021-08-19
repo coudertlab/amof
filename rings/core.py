@@ -52,12 +52,13 @@ class Ring(object):
                 values are cutoffs float, in Angstrom
         """
         ring_class = cls() # initialize class
+        nb_set_and_cutoff_list = [nb_set_and_cutoff for i in range(len(trajectory))]
         step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
-        ring_class.compute_ring(trajectory, nb_set_and_cutoff, step, parallel)
+        ring_class.compute_ring(trajectory, nb_set_and_cutoff_list, step, parallel)
         return ring_class # return class as it is a constructor
 
     @classmethod
-    def from_reduced_trajectory(cls, reduced_trajectory, nb_set_and_cutoff, parallel = False):
+    def from_reduced_trajectory(cls, reduced_trajectory, parallel = False):
         """
         constructor of ring class from a sadi ReducedTrajectory object
         
@@ -67,38 +68,38 @@ class Ring(object):
                 values are cutoffs float, in Angstrom
         """
         ring_class = cls() # initialize class
-        step = np.array(reduced_trajectory.report_search[reduced_trajectory.report_search['in_reduced_trajectory']==True].index)
-        ring_class.compute_ring(reduced_trajectory.trajectory, nb_set_and_cutoff, step, parallel)
+        rs = reduced_trajectory.report_search
+        compute_ring = (rs['in_reduced_trajectory']==True) & (rs['connectivity_constructible_with_cutoffs']==True)
+        rs_traj = rs[rs['in_reduced_trajectory']==True]
+        subset_reduced_traj = rs_traj['connectivity_constructible_with_cutoffs']==True
+        nb_set_and_cutoff_list = [eval(i) for i in rs[compute_ring]['nb_set_and_cutoff']]
+        step = np.array(rs[compute_ring].index)
+        traj = list(itertools.compress(reduced_trajectory.trajectory, subset_reduced_traj))
+        ring_class.compute_ring(traj, nb_set_and_cutoff_list, step, parallel)
         return ring_class # return class as it is a constructor
 
-    def compute_ring(self, trajectory, nb_set_and_cutoff, step, parallel):
+    def compute_ring(self, trajectory, nb_set_and_cutoff_list, step, parallel):
         """
         Args:
             trajectory: ase trajectory object
+                nb_set_and_cutoff_list: list of dict, one per frame in trajectory
             step: np array, simulation steps
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
+            
         """
         logger.info("Start ring analysis for volume and surfaces for %s frames", len(trajectory))
         list_of_xarray = []
 
-        cutoff_dict = satom.format_cutoff(nb_set_and_cutoff)
-        # add 0 where cutoff is not defined
-        atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
-        for pair in itertools.combinations_with_replacement(atomic_numbers_unique, 2):
-            if pair not in cutoff_dict.keys():
-                cutoff_dict[pair] = 0
-
-        # enlarge cutoff dict with 0 for every other values
         if parallel == False:
             for i in range(len(trajectory)):
                 logger.debug('compute frame # %s out of %s', i + 1, len(trajectory))
-                list_of_xarray.append(self.compute_ring_for_atom(trajectory[i], cutoff_dict))
+                list_of_xarray.append(self.compute_ring_for_atom(trajectory[i], nb_set_and_cutoff_list[i]))
         else:
             if type(parallel) == int:
                 num_cores = parallel
             else:
                 num_cores = 18 # less than 20 and nice value for 50 steps
-            list_of_xarray = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_ring_for_atom)(trajectory[i], cutoff_dict) for i in range(len(trajectory)))
+            list_of_xarray = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_ring_for_atom)(trajectory[i], nb_set_and_cutoff_list[i]) for i in range(len(trajectory)))
 
         dic_of_xarray = dict(zip(step, list_of_xarray))
         xa = xr.Dataset(dic_of_xarray)
@@ -167,13 +168,22 @@ class Ring(object):
         self.fill_template('input.inp', parameters, path)
         self.fill_template('options', parameters, path)
 
-    def compute_ring_for_atom(self, atom, cutoff_dict):
+    def compute_ring_for_atom(self, atom, nb_set_and_cutoff):
         """
         Args:
             atom: ase atom object
         Returns:
             dic: dictionary with output from zeopp vol and sa
         """
+        cutoff_dict = satom.format_cutoff(nb_set_and_cutoff, sort_pair = True)
+        # add 0 where cutoff is not defined
+        atomic_numbers_unique = list(set(atom.get_atomic_numbers()))
+        for pair in itertools.combinations_with_replacement(atomic_numbers_unique, 2):
+            if pair not in cutoff_dict.keys():
+                cutoff_dict[pair] = 0
+        a = 1
+        # enlarge cutoff dict with 0 for every other values
+
         with tempfile.TemporaryDirectory() as tmpdirname:
             tmpdirpath = pathlib.Path(tmpdirname)
             (tmpdirpath / 'data').mkdir(parents=True, exist_ok=True)
