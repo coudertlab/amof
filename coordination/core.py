@@ -196,7 +196,10 @@ class CoordinationSearch(object):
         if len(irregular_nb) != 0:
             self.report_search['connectivity_wrongly_inferred_from_cutoffs'] = str(dict(Counter(irregular_nb).items()))
             self.report_search['connectivity_wrong_offsets'] = str(stats.describe(irregular_nb_offset))
-                
+
+        # self.struct.to(filename='vesta/not_constructible_connectivity/before_reduction.cif')
+        # reduced_struct.to(filename='vesta/not_constructible_connectivity/reduced.cif')
+
         self.report_search['number_of_nodes'] = reduced_struct.num_sites
         self.report_search['symbols'] = str(self.symbols)
         return reduced_struct
@@ -241,7 +244,7 @@ class CoordinationSearch(object):
 
     covalentradius = CovalentRadius().radius # private class variable exclusively used in get_covdist
 
-    def get_covdist(self, i, j): # turn to class at some poitn to have struct as self. 
+    def get_covdist(self, i, j): # turn to class at some point to have struct as self. 
         """return sum of covalent radii of the two atoms referenced by their index i and j"""
         return self.covalentradius[str(self.struct[i].specie)] + self.covalentradius[str(self.struct[j].specie)]
 
@@ -396,7 +399,7 @@ class CoordinationSearch(object):
                         A_Bbonds[i] += 1
         return A_Bbonds
 
-    def assign_B_uniquely_to_A_N_coordinated(self, conditionA, conditionB, target_N, use_cov_dist = True, dist_margin=None, report_entry = None, propagate_fragments = False, new_fragments_name = None):
+    def assign_B_uniquely_to_A_N_coordinated(self, conditionA, conditionB, target_N, use_cov_dist = True, dist_margin=None, report_level = None, report_entry = None, propagate_fragments = False, new_fragments_name = None):
         """
         assign atoms B to atoms A so that B is only assigned once and A end up being at least target_N coordinated. 
         At each step, the closest pair A-B is added to conn
@@ -406,7 +409,8 @@ class CoordinationSearch(object):
         If an A atom already has more than target_n neighbours, will do nothing
         use_cov_dist can be used to further restrict the search using cov radii, if False, every nn in all_neighb used
         if a string report_entry is supplied, will use it to add as an entry details about the missing nn
-        
+        report_level can be 'full' (report every bond formed) or 'undercoordinated' (only those without enough nn)
+
         Args:
             propagate_fragments: Bool, if True will include every atom of frag(B) in fragment of A if frag(A) exists
                 If atom B was in a fragment F, F will be removed
@@ -483,12 +487,25 @@ class CoordinationSearch(object):
                 if A not in self.conn[n]: # if conn wasn't empty at the beginning
                     self.conn[n].append(A)
         
-        # report coordination (formatted as atype) of every atom that endup not having enough nn
-        if report_entry is not None:
-            list_of_atypes = [self.get_atype(A_indices[i]) for i in range(len(A_indices)) if A_enough_nn[i]==False]
+
+        if report_level=='full':
+            list_of_atypes = [self.get_atype(i) for i in range(self.struct.num_sites) if conditionA(i)]
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
             if self.report_search[report_entry] != []:
                 logger.debug("%s: %s", report_entry, self.report_search[report_entry])
+
+        if report_level=='undercoordinated':
+            list_of_atypes = [self.get_atype(i) for i in range(len(A_indices)) if (len(A_conn[i])!=target_N)]
+            self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
+            if self.report_search[report_entry] != []:
+                logger.debug("%s: %s", report_entry, self.report_search[report_entry])
+
+        # # report coordination (formatted as atype) of every atom that endup not having enough nn
+        # if report_entry is not None:
+        #     list_of_atypes = [self.get_atype(A_indices[i]) for i in range(len(A_indices)) if A_enough_nn[i]==False]
+        #     self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
+        #     if self.report_search[report_entry] != []:
+        #         logger.debug("%s: %s", report_entry, self.report_search[report_entry])
 
         # Create new fragments for A atoms
         if new_fragments_name is not None:

@@ -29,7 +29,7 @@ def reduce_trajectory(trajectory, mof, filename = None, delta_Step = 1, first_fr
         delta_Step: number of simulation steps between two frames
     """
     if mof in ['ZIF-4', 'ZIF-zni', 'SALEM-2']:
-        structure_reducer = lambda struct: sadi.coordination.zif.MetalIm(struct, "Zn", dist_margin=1.2)
+        structure_reducer = lambda struct: sadi.coordination.zif.MetalIm(struct, "Zn", dist_margin=1.2, dist_margin_metal=1.6) # 1.6 means 3.088 for Zn-N (one case of 2.92 was observed)
         symbols = sadi.symbols.DummySymbols(['Zn', 'Im']) 
     elif mof in  ['ZIF-8']:
         structure_reducer = lambda struct: sadi.coordination.zif.MetalmIm(struct, "Zn", dist_margin=1.2)

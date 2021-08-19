@@ -21,29 +21,36 @@ class ZifSearch(CoordinationSearch):
         5. bind N and Zn
     """
 
-    def __init__(self, struct, dist_margin=1.2, dist_margin_metal=1.5):
+    def __init__(self, struct, dist_margin=1.2, dist_margin_metal=1.5, cutoff_metal = None):
         """
         Constructor for custom search 2 for ZIF glasses
-        dist_margin is the default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
-        dist_margin_metal is the specific tolerance for metal-X bonds as they're not covalent
+
+        Args:
+            dist_margin is the default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
+            dist_margin_metal is the specific tolerance for metal-X bonds as they're not covalent
+            cutoff_metal: float, overide dist_margin_metal if not None 
+                option added but not used so far
         """
         self.dist_margin_metal = dist_margin_metal  # dist_maring is created in CoordinationSearch.__init__
         neighb_max_distance = self.find_neighb_max_distance(
-            dist_margin, dist_margin_metal)
+            dist_margin, dist_margin_metal, cutoff_metal)
         CoordinationSearch.__init__(
             self, struct, neighb_max_distance, dist_margin)
         self.detect_conn()
         self.clean_fragments()
         self.update_atypes()
 
-    def find_neighb_max_distance(self, dist_margin, dist_margin_metal):
+    def find_neighb_max_distance(self, dist_margin, dist_margin_metal, cutoff_metal):
         """return neighb_max_distance to compute all_neighb to the minimal necessary distance"""
         dist_margin_atoms = self.linker.species
         dist_margin_metal_atoms = self.node.species
         max_cov_linker = np.max([self.covalentradius[A]+self.covalentradius[B]
                                  for A in dist_margin_atoms for B in dist_margin_atoms])
-        max_cov_metal = np.max([self.covalentradius[A]+self.covalentradius[B]
+        if cutoff_metal is None:
+            max_cov_metal = np.max([self.covalentradius[A]+self.covalentradius[B]
                                 for A in dist_margin_metal_atoms for B in (dist_margin_atoms+dist_margin_metal_atoms)])
+        else: 
+            max_cov_metal = cutoff_metal
         return max(max_cov_linker * dist_margin, max_cov_metal * dist_margin_metal)
 
     def find_ABAcycles(self, A, B, cycle_length, target_number_of_cycles, fragtype = None):
@@ -219,7 +226,7 @@ class MetalIm(ZifSearch):
 
         # add H based on cov radii to every C
         self.assign_B_uniquely_to_A_N_coordinated(lambda i: (self.struct[i].species == C), lambda i: (
-            self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours",
+            self.struct[i].species == H),   3, report_level = 'undercoordinated', report_entry="C atoms missing H neighbours",
 
             propagate_fragments = True, new_fragments_name = 'irregular_C',
             dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
