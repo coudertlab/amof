@@ -156,7 +156,7 @@ class Ring(object):
             path: pathlib path
         """
         parameters = {}
-        parameters['number_of_atoms'] = atom.get_number_of_atoms()
+        parameters['number_of_atoms'] = atom.get_global_number_of_atoms()
         atomic_numbers_unique = list(set(atom.get_atomic_numbers()))
         elements_present_unique =  [ase.data.chemical_symbols[i] for i in atomic_numbers_unique]
         parameters['number_of_chemical_species'] = len(elements_present_unique)
