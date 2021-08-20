@@ -74,6 +74,11 @@ class ZifSearch(CoordinationSearch):
         # cycles = self.get_chain_decomposition(graph) # give same results for the tested files
         # cycles = self.find_one_cycle_per_node(graph) # give same results for the tested files
         cycles = self.find_rings(graph, max_depth=cycle_length, exit_if_large_cycle=True)
+
+        # # currently very slow
+        # pattern = [A.elements[0].number] + [B.elements[0].number, A.elements[0].number] * int((cycle_length - 1) / 2)
+        # cycles = self.find_rings(graph, pattern=pattern, target_number_of_rings = target_number_of_cycles, exit_if_too_many_rings=True)
+
         # check sanity of found cycles
         self.report_search['imid_expected_number_of_cycles'] = (
             len(cycles) == target_number_of_cycles)

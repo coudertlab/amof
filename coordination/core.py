@@ -4,7 +4,7 @@
 Main file containing classes for custom neigbour search
 """
 
-from re import L
+# from re import L
 import numpy as np
 import pymatgen
 from pymatgen.core.structure import Structure
@@ -19,7 +19,7 @@ from scipy import stats
 
 import logging
 
-from xarray.core import dataset
+# from xarray.core import dataset
 
 import sadi.files.path
 import sadi.structure
@@ -302,7 +302,25 @@ class CoordinationSearch(object):
                     pass
         return cycles_list
 
-    def find_rings(self, graph, including=None, max_depth = None, exit_if_large_cycle = False):
+    @staticmethod
+    def are_circularly_identical(arr1, arr2):
+        """
+        Checks whether two lists of int are circularly identical
+
+        Code from https://stackoverflow.com/a/26924896/8288189
+        """
+        if len(arr1) != len(arr2):
+            return False
+
+        str1 = ' '.join(map(str, arr1))
+        str2 = ' '.join(map(str, arr2))
+        if len(str1) != len(str2):
+            return False
+
+        return str1 in str2 + ' ' + str2
+
+    def find_rings(self, graph, including=None, max_depth = None, exit_if_large_cycle = False, 
+            pattern=None, target_number_of_rings = None, exit_if_too_many_rings=False):
         """                
         Find ring structures in the StructureGraph.
 
@@ -317,6 +335,7 @@ class CoordinationSearch(object):
             all rings will be returned.
             max_depth: int, maximum cycle size to be found
             exit_if_large_cycle: Bool, if True will raise an Exception if a cycle larger than max_depth is found
+            
         :return: dict {index:cycle}. Each
             entry will be a ring (cycle, in graph theory terms) including the index
             found in the Molecule. If there is no cycle including an index, the
@@ -337,9 +356,20 @@ class CoordinationSearch(object):
             for c in nx.simple_cycles(directed):
                 if len(c) > 2 and len(c) <= max_depth:
                     all_cycles.append(c)
+                    print(len(all_cycles))
                 elif exit_if_large_cycle and len(c) > max_depth:
                     # print(c)
                     raise SearchError('max_depth exceeded in cycle search', self.report_search)
+        elif pattern is not None:
+            all_cycles = []
+            for c in nx.simple_cycles(directed):
+                if len(c) == len(pattern):
+                    c_pattern = [self.struct.species[i].number for i in c]
+                    if self.are_circularly_identical(c_pattern, pattern):
+                        all_cycles.append(c)
+                        print(len(all_cycles))
+                if exit_if_too_many_rings and len(all_cycles) > target_number_of_rings * 2:
+                    raise SearchError('target_number_of_rings exceeded in pattern cycle search', self.report_search)            
         else:
             all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
 
