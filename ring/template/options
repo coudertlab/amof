@@ -1,0 +1,54 @@
+####################################
+        R.I.N.G.S. options file       #
+#######################################
+ PBC             .true.               #
+ Frac            .false.              #
+ g(r)            .false.              #
+ S(q)            .false.              #
+ S(k)            .false.              #
+ gfft(r)         .false.              #
+ MSD             .false.              #
+ atMSD           .false.              #
+ Bonds           .true.               #
+ Angles          .false.              #
+ Chains          .true.               #
+---- ! Chain statistics options ! -----
+ Species           0                  #
+ AAAA            .false.              #
+ ABAB            .false.              #
+ 1221            .false.              #
+---------------------------------------
+ Rings           .true.               #
+---- ! Ring statistics options ! -----
+ Species           0                  #
+ ABAB            .true.               #
+ Rings0          .false.              #
+ Rings1          .false.              #
+ Rings2          .false.              #
+ Rings3          .true.               #
+ Rings4          .true.               #
+ Prim_Rings      .true.               #
+ Str_Rings       .true.               #
+ BarycRings      .true.               #
+ Prop-1          .true.               #
+ Prop-2          .false.              #
+ Prop-3          .false.              #
+ Prop-4          .false.              #
+ Prop-5          .false.              #
+---------------------------------------
+ Vacuum          .false.              #
+#######################################
+         Outputting options           #
+#######################################
+ Evol            .false.              #
+ Dxout           .false.              #
+! OpenDX visualization options !  --
+ RadOut          .false.              #
+ RingsOut        .false.              #
+ DRngOut         .false.              #
+ VoidsOut        .false.              #
+ TetraOut        .false.              #
+ TrajOut         .false.              #
+------------------------------------ 
+ Output        output.outrings        #
+#######################################

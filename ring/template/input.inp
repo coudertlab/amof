@@ -1,0 +1,27 @@
+#######################################
+#       R.I.N.G.S. input file         #
+#######################################
+system_name                           #
+{number_of_atoms}                             #
+{number_of_chemical_species}                                       #
+{list_of_chemical_species}                                #
+1                                     #
+1                                     #
+{cella}                              #
+{cellb}                              #
+{cellc}                              #
+1                                   #
+ANI                                   #
+atom.xyz            #
+200                                   #
+500                                   #
+25                                    #
+0.125                                 #
+90                                    #
+20                                    #
+{rings_maximum_search_depth_divided_by_two}                                     # 
+15                                    #
+#######################################
+{cutoff_lines} 
+Grtot  {Grtot}                           #
+#######################################
