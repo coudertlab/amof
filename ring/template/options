@@ -27,10 +27,10 @@
  Rings2          .false.              #
  Rings3          .true.               #
  Rings4          .true.               #
- Prim_Rings      .true.               #
- Str_Rings       .true.               #
- BarycRings      .true.               #
- Prop-1          .true.               #
+ Prim_Rings      .false.              #
+ Str_Rings       .false.              #
+ BarycRings      .false.              #
+ Prop-1          .false.              #
  Prop-2          .false.              #
  Prop-3          .false.              #
  Prop-4          .false.              #
