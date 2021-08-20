@@ -67,20 +67,24 @@ class Ring(object):
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
         """
-        ring_class = cls() # initialize class
+        ring_class = cls() # initialize class with empty data
+        criteria_to_compute_ring = ['connectivity_constructible_with_cutoffs'] # can be expanded in further dev
+        criteria_enlarged = ['in_reduced_trajectory'] + criteria_to_compute_ring
         rs = reduced_trajectory.report_search
-        try:
-            compute_ring = (rs['in_reduced_trajectory']==True) & (rs['connectivity_constructible_with_cutoffs']==True)
-            rs_traj = rs[rs['in_reduced_trajectory']==True]
-            subset_reduced_traj = rs_traj['connectivity_constructible_with_cutoffs']==True
-            nb_set_and_cutoff_list = [eval(i) for i in rs[compute_ring]['nb_set_and_cutoff']]
-            step = np.array(rs[compute_ring].index)
-            traj = list(itertools.compress(reduced_trajectory.trajectory, subset_reduced_traj))
-            ring_class.compute_ring(traj, nb_set_and_cutoff_list, step, parallel)
-        except KeyError: # if 'connectivity_constructible_with_cutoffs' doesn't exist, will create empty class
-            logger.info('No valid frame in reduced trajectory')
-            pass 
-        return ring_class # return class as it is a constructor
+        rs_traj = rs[rs['in_reduced_trajectory']==True]
+        if (len(rs_traj) != 0 and
+            np.min([criterium in rs_traj.columns for criterium in criteria_to_compute_ring]) == True):
+            compute_ring = rs[criteria_enlarged].all(axis='columns')
+            if np.sum(compute_ring) != 0:
+                subset_reduced_traj = rs[criteria_to_compute_ring].all(axis='columns')
+                nb_set_and_cutoff_list = [eval(i) for i in rs[compute_ring]['nb_set_and_cutoff']]
+                step = np.array(rs[compute_ring].index)
+                traj = list(itertools.compress(reduced_trajectory.trajectory, subset_reduced_traj))
+                ring_class.compute_ring(traj, nb_set_and_cutoff_list, step, parallel)
+                return ring_class
+
+        logger.info('No valid frame in reduced trajectory')
+        return ring_class # return empty class 
 
     def compute_ring(self, trajectory, nb_set_and_cutoff_list, step, parallel):
         """
@@ -125,7 +129,18 @@ class Ring(object):
             evol_numbers.append(int(re.search('RINGS-res-(.*).dat', file.name).group(1)))
         N = max(evol_numbers)
         # df = pd.read_csv(rstat_path / f'evol-RINGS-{N}.dat', skiprows = list(range(1,5)), escapechar='#', sep='\s+')
-        df = pd.read_csv(rstat_path / f'RINGS-res-{N}.dat', header = 1, escapechar='#', sep='\s+')
+        filename = f'RINGS-res-{N}.dat'
+        with open(rstat_path / filename) as f:
+            first_line = f.readline().strip('\n')
+        searchObj = re.search(r'# Number of rings with n >  (.*) nodes which potentialy exist: (.*)', first_line, re.M|re.I)
+        if searchObj:
+            potentially_undiscovered_nodes = float(searchObj.group(2))
+            if potentially_undiscovered_nodes != 0:
+                logger.warning(first_line)
+            header = 2
+        else:
+            header = 1
+        df = pd.read_csv(rstat_path / filename, header = header, escapechar='#', sep='\s+')
         df = df.set_index(' n')
         ar = xr.DataArray(df, dims=("ring_size", "ring_var"))
         return ar
@@ -161,7 +176,7 @@ class Ring(object):
         elements_present_unique =  [ase.data.chemical_symbols[i] for i in atomic_numbers_unique]
         parameters['number_of_chemical_species'] = len(elements_present_unique)
         parameters['list_of_chemical_species'] = ' '.join(elements_present_unique)
-        parameters['rings_maximum_search_depth_divided_by_two'] = 5 
+        parameters['rings_maximum_search_depth_divided_by_two'] = 10 
         for i in range(3):
             parameters[f"cell{'abc'[i]}"] = str(atom.cell[i])[1:-1]
         parameters['cutoff_lines'] = ''
