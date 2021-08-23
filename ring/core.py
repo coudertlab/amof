@@ -76,7 +76,7 @@ class Ring(object):
             np.min([criterium in rs_traj.columns for criterium in criteria_to_compute_ring]) == True):
             compute_ring = rs[criteria_enlarged].all(axis='columns')
             if np.sum(compute_ring) != 0:
-                subset_reduced_traj = rs[criteria_to_compute_ring].all(axis='columns')
+                subset_reduced_traj = rs_traj[criteria_to_compute_ring].all(axis='columns')
                 nb_set_and_cutoff_list = [eval(i) for i in rs[compute_ring]['nb_set_and_cutoff']]
                 step = np.array(rs[compute_ring].index)
                 traj = list(itertools.compress(reduced_trajectory.trajectory, subset_reduced_traj))
@@ -95,7 +95,7 @@ class Ring(object):
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
             
         """
-        logger.info("Start ring analysis for volume and surfaces for %s frames", len(trajectory))
+        logger.info("Start ring analysis for for %s frames", len(trajectory))
         list_of_xarray = []
 
         if parallel == False:
@@ -108,6 +108,8 @@ class Ring(object):
             else:
                 num_cores = 18 # less than 20 and nice value for 50 steps
             list_of_xarray = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_ring_for_atom)(trajectory[i], nb_set_and_cutoff_list[i]) for i in range(len(trajectory)))
+
+        list_of_xarray = [ar for ar in list_of_xarray if ar is not None] # filter rings that are not properly computed
 
         dic_of_xarray = dict(zip(step, list_of_xarray))
         xa = xr.Dataset(dic_of_xarray)
@@ -137,6 +139,7 @@ class Ring(object):
             potentially_undiscovered_nodes = float(searchObj.group(2))
             if potentially_undiscovered_nodes != 0:
                 logger.warning(first_line)
+                return None # don't add this frame to rings file
             header = 2
         else:
             header = 1
