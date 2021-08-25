@@ -2,6 +2,7 @@
 Module containing pore analysis related methods
 """
 
+from subprocess import TimeoutExpired
 import ase
 import ase.data
 
@@ -61,6 +62,8 @@ class Pore(object):
                 num_cores = 18 # less than 20 and nice value for 50 steps
             list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.get_surface_volume)(trajectory[i], step[i]) for i in range(len(trajectory)))
 
+        list_of_dict = [dic for dic in list_of_dict if dic is not None] # filter pore volume that are not properly computed
+
         df = pd.DataFrame(list_of_dict)
         self.surface_volume = df
 
@@ -87,11 +90,16 @@ class Pore(object):
             dic: dictionary with output from zeopp vol and sa
         """
         with tempfile.TemporaryDirectory() as tmpdirname:
-            atom.write(tmpdirname + 'atom.cif')
-            sadi.pore.pysimmzeopp.network(tmpdirname + 'atom.cif', sa = True, vol = True)
-            sa = self.read_zeopp(tmpdirname + 'atom.sa')
-            vol = self.read_zeopp(tmpdirname + 'atom.vol')
-        return {'Step': step, **sa, **vol}
+            atom.write(tmpdirname + '/atom.cif')
+            try:
+                sadi.pore.pysimmzeopp.network(tmpdirname + '/atom.cif', sa = True, vol = True)
+                sa = self.read_zeopp(tmpdirname + '/atom.sa')
+                vol = self.read_zeopp(tmpdirname + '/atom.vol')
+                dic = {'Step': step, **sa, **vol}
+            except TimeoutExpired:
+                logger.warning('Timout expired for ZEOpp. System size: %s; Step: %s', atom.get_global_number_of_atoms(), step)
+                dic = None
+        return dic
 
     def write_to_file(self, filename):
         """path_to_output: where the pore object will be written"""

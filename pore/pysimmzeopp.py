@@ -144,6 +144,9 @@ def network(s, **kwargs):
           % strftime('%H:%M:%S'))
           
     p = Popen(arg_list, stdin=PIPE, stdout=PIPE, stderr=PIPE) 
+    # for very large system, zeopp spend a lot of time in the djikstra network made of cavities finding out which ones are accessible
+    # tested for 20k atoms, it sometimes exit within 20-30min but can try for 14+ hours (exited manually)
+    p.communicate(timeout=3600) 
     p.wait()
 
     logger.debug('%s: zeo++ simulation successful'
