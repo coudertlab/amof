@@ -39,7 +39,8 @@ Modified:
 # THE SOFTWARE.
 
 import sys, os
-from subprocess import Popen, PIPE
+# from subprocess import Popen, PIPE
+import subprocess
 from time import strftime
 import shlex
 import logging
@@ -143,11 +144,15 @@ def network(s, **kwargs):
     logger.debug('%s: starting simulation using zeo++'
           % strftime('%H:%M:%S'))
           
-    p = Popen(arg_list, stdin=PIPE, stdout=PIPE, stderr=PIPE) 
+    p = subprocess.Popen(arg_list, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
     # for very large system, zeopp spend a lot of time in the djikstra network made of cavities finding out which ones are accessible
     # tested for 20k atoms, it sometimes exit within 20-30min but can try for 14+ hours (exited manually)
-    p.communicate(timeout=3600) 
-    p.wait()
+    try:
+        p.communicate(timeout=7200)
+        p.wait()
+    except subprocess.TimeoutExpired:
+        p.kill()
+        raise # raise last encountered exception
 
     logger.debug('%s: zeo++ simulation successful'
           % strftime('%H:%M:%S'))

@@ -64,8 +64,10 @@ class Pore(object):
 
         list_of_dict = [dic for dic in list_of_dict if dic is not None] # filter pore volume that are not properly computed
 
-        df = pd.DataFrame(list_of_dict)
-        self.surface_volume = df
+        if list_of_dict != []:
+            df = pd.DataFrame(list_of_dict)
+            self.surface_volume = df 
+        # else keep empty surface_volume from init
 
     @staticmethod
     def read_zeopp(filename):
