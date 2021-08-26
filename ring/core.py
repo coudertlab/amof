@@ -116,6 +116,7 @@ class Ring(object):
         xa = xa.to_array("Step", "Step")
         xa = xr.Dataset({'ring': xa}) # one large data_array containing thermo variables
         # xa = xa.to_dataset(dim='thermo') # separate thermo variables
+        xa = xa.fillna(0) #  for every ring size found in the entire traj, add 0 at every step if none detected while other ring sizes are
         self.ring_data = xa
 
     @staticmethod
