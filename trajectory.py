@@ -131,16 +131,19 @@ class ReducedTrajectory(object):
         self.symbols = symbols
 
     @classmethod
-    def from_file(cls, filename):
+    def from_file(cls, filename, load_trajectory = True):
         """
         constructor of class from files
 
         Args: 
             filename: str or path to files without the final suffixes (ie no '.xyz' or '.symbols')
         """
-        logger.info("Read reduced trajectory %s", pathlib.Path(filename).name)
+        if load_trajectory == True:
+            logger.info("Read reduced trajectory %s", pathlib.Path(filename).name)
+            trajectory = ase.io.read(spath.append_suffix(filename, 'xyz'), ':', 'xyz')
+        else:
+            trajectory = []
         report_search = pd.read_csv(spath.append_suffix(filename, 'report_search.csv'), index_col=0)
-        trajectory = ase.io.read(spath.append_suffix(filename, 'xyz'), ':', 'xyz')
         symbols = sadi.symbols.DummySymbols.from_file(filename)
         cn_class = cls(trajectory, report_search, symbols) # initialize class
         return cn_class # return class as it is a constructor
