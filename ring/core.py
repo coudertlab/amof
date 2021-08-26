@@ -40,7 +40,7 @@ class Ring(object):
         self.ring_data = xr.DataArray(np.empty([0,0,0]), 
             coords = [('Step', np.empty([0], dtype='int64')), 
                 ('ring_size', np.empty([0], dtype='int64')), 
-                ('ring_var', np.empty([0], dtype='str'))], 
+                ('ring_var', np.empty([0], dtype='str_'))], # numpy str is str_
             name = 'ring')
 
     @classmethod
