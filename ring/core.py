@@ -123,16 +123,18 @@ class Ring(object):
     def read_rings_output(rstat_path):
         """
         read RINGS output from RINGS-res-N.dat whit largest possible N
+        read RINGS output from RINGS-res-3.dat, corresponding to King's shortest path rings
 
         Args:
             rstat_path: pathlib path leading to rstat, containing evol-RINGS files
         """
-        evol_numbers = []
-        for file in rstat_path.glob('RINGS-res-*.dat'):
-            evol_numbers.append(int(re.search('RINGS-res-(.*).dat', file.name).group(1)))
-        N = max(evol_numbers)
-        # df = pd.read_csv(rstat_path / f'evol-RINGS-{N}.dat', skiprows = list(range(1,5)), escapechar='#', sep='\s+')
-        filename = f'RINGS-res-{N}.dat'
+        # evol_numbers = []
+        # for file in rstat_path.glob('RINGS-res-*.dat'):
+        #     evol_numbers.append(int(re.search('RINGS-res-(.*).dat', file.name).group(1)))
+        # N = max(evol_numbers)
+        # # df = pd.read_csv(rstat_path / f'evol-RINGS-{N}.dat', skiprows = list(range(1,5)), escapechar='#', sep='\s+')
+        # filename = f'RINGS-res-{N}.dat'
+        filename = 'RINGS-res-3.dat' # King's shortest path rings
         with open(rstat_path / filename) as f:
             first_line = f.readline().strip('\n')
         searchObj = re.search(r'# Number of rings with n >  (.*) nodes which potentialy exist: (.*)', first_line, re.M|re.I)

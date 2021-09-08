@@ -26,7 +26,7 @@
  Rings1          .false.              #
  Rings2          .false.              #
  Rings3          .true.               #
- Rings4          .true.               #
+ Rings4          .false.              #
  Prim_Rings      .false.              #
  Str_Rings       .false.              #
  BarycRings      .false.              #
