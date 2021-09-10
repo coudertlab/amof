@@ -30,18 +30,6 @@ import sadi.pore.pysimmzeopp
 
 logger = logging.getLogger(__name__)
 
-
-class MissingRingsError(Exception):
-    """Exception raised when rings which potentially exist are not found.
-
-    Attributes:
-        message -- explanation of the error
-    """
-
-    def __init__(self, message):
-        self.message = message
-
-
 class Ring(object):
     """
     Main class for ring statistics analysis analysis
@@ -154,20 +142,12 @@ class Ring(object):
         Args:
             rstat_path: pathlib path leading to rstat, containing evol-RINGS files
         """
-        # evol_numbers = []
-        # for file in rstat_path.glob('RINGS-res-*.dat'):
-        #     evol_numbers.append(int(re.search('RINGS-res-(.*).dat', file.name).group(1)))
-        # N = max(evol_numbers)
-        # # df = pd.read_csv(rstat_path / f'evol-RINGS-{N}.dat', skiprows = list(range(1,5)), escapechar='#', sep='\s+')
-        # filename = f'RINGS-res-{N}.dat'
         filename = 'RINGS-res-3.dat' # King's shortest path rings
         with open(rstat_path / filename) as f:
             first_line = f.readline().strip('\n')
         searchObj = re.search(r'# Number of rings with n >  (.*) nodes which potentialy exist: (.*)', first_line, re.M|re.I)
         potentially_undiscovered_nodes = float(searchObj.group(2))
         if potentially_undiscovered_nodes != 0:
-            # raise MissingRingsError(first_line)
-            logger.warning(first_line)
             return None # don't add this frame to rings file
         
         filename = 'RINGS-res-5.dat' # primitive rings 
@@ -233,7 +213,6 @@ class Ring(object):
         for pair in itertools.combinations_with_replacement(atomic_numbers_unique, 2):
             if pair not in cutoff_dict.keys():
                 cutoff_dict[pair] = 0
-        a = 1
         # enlarge cutoff dict with 0 for every other values
 
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -246,7 +225,7 @@ class Ring(object):
             arg = f"cd {shlex.quote(tmpdirname)} && rings input.inp"
 
             search_depth = 16
-            max_search_depth = 32
+            max_search_depth = 40
             ring_ar = None
 
             while search_depth <= max_search_depth and ring_ar is None:
@@ -255,17 +234,10 @@ class Ring(object):
                 p = subprocess.Popen(arg, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
                 p.wait()
 
-                # arg_list = shlex.split(arg)  # if no need to use shell=True                            
-                # p = Popen(arg_list, stdin=PIPE, stdout=PIPE, stderr=PIPE) 
-
-
-                # os.system(f"cd {tmpdirname} && rings input.inp")            
-
                 ring_ar = self.read_rings_output(tmpdirpath / 'rstat')
                 search_depth += 4
             if ring_ar is None:
                 logger.warning('Rings with n >  %s nodes potentialy exist', max_search_depth)
-            a=1
         return ring_ar
 
     def write_to_file(self, filename):
