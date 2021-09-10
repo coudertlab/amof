@@ -31,22 +31,34 @@ import sadi.pore.pysimmzeopp
 logger = logging.getLogger(__name__)
 
 
-# class SearchError(Exception):
-#     """Exception raised when coordination search failed.
+class MissingRingsError(Exception):
+    """Exception raised when rings which potentially exist are not found.
 
-#     Attributes:
-#         message -- explanation of the error
-#         report_search -- dictionary describing the search when the error occurred
-#     """
+    Attributes:
+        message -- explanation of the error
+    """
 
-#     def __init__(self, message, report_search = {}):
-#         self.message = message
-#         self.report_search = report_search
+    def __init__(self, message):
+        self.message = message
 
 
 class Ring(object):
     """
     Main class for ring statistics analysis analysis
+
+    Search for primitive rings as defined by
+        Le Roux, S., & Jund, P. (2010). Ring statistics analysis of topological networks: 
+        New approach and application to amorphous GeS2 and SiO2 systems. 
+        Computational Materials Science, 49(1), 70–83. 
+        https://doi.org/10.1016/j.commatsci.2010.04.023 
+
+    A definition phrased by Franzblau of such rings (named SP ring in this paper) is:
+        Given a graph G and a ring R in 6, R is a shortest path ring (SP ring) 
+        if R contains a shortest path for each pair of vertices in the ring. 
+        That is, distG(y, z ) =dist+ (y, z) for each pair y, z in the ring
+
+        Franzblau, D. S. (1991). Computation of ring statistics for network models of solids. 
+        Physical Review B, 44(10), 4925–4930. https://doi.org/10.1103/PhysRevB.44.4925
     """
 
     def __init__(self):
@@ -154,6 +166,7 @@ class Ring(object):
         searchObj = re.search(r'# Number of rings with n >  (.*) nodes which potentialy exist: (.*)', first_line, re.M|re.I)
         potentially_undiscovered_nodes = float(searchObj.group(2))
         if potentially_undiscovered_nodes != 0:
+            # raise MissingRingsError(first_line)
             logger.warning(first_line)
             return None # don't add this frame to rings file
         
@@ -180,13 +193,14 @@ class Ring(object):
         with open(path / template_name, 'w') as f:
             f.write(script)  
 
-    def write_input_files(self, atom, cutoff_dict, path):
+    def write_input_files(self, atom, cutoff_dict, search_depth, path):
         """
         Write RINGS input and option files in path
 
         Args:
             atom: ase atom object
             cutoff_dict: 
+            search_depth: int, rings_maximum_search_depth
             path: pathlib path
         """
         parameters = {}
@@ -195,7 +209,7 @@ class Ring(object):
         elements_present_unique =  [ase.data.chemical_symbols[i] for i in atomic_numbers_unique]
         parameters['number_of_chemical_species'] = len(elements_present_unique)
         parameters['list_of_chemical_species'] = ' '.join(elements_present_unique)
-        parameters['rings_maximum_search_depth_divided_by_two'] = 10 
+        parameters['rings_maximum_search_depth_divided_by_two'] = search_depth // 2 
         for i in range(3):
             parameters[f"cell{'abc'[i]}"] = str(atom.cell[i])[1:-1]
         parameters['cutoff_lines'] = ''
@@ -226,21 +240,31 @@ class Ring(object):
             tmpdirpath = pathlib.Path(tmpdirname)
             (tmpdirpath / 'data').mkdir(parents=True, exist_ok=True)
             atom.write(tmpdirname + '/data/atom.xyz')
-            self.write_input_files(atom, cutoff_dict, tmpdirpath)
             
             # warning, make sure no user input is possible inside arg. 
             # Here shlex.quote is used as precaution in the only possible variable of the string
             arg = f"cd {shlex.quote(tmpdirname)} && rings input.inp"
-            p = subprocess.Popen(arg, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
-            p.wait()
 
-            # arg_list = shlex.split(arg)  # if no need to use shell=True                            
-            # p = Popen(arg_list, stdin=PIPE, stdout=PIPE, stderr=PIPE) 
+            search_depth = 16
+            max_search_depth = 32
+            ring_ar = None
+
+            while search_depth <= max_search_depth and ring_ar is None:
+                self.write_input_files(atom, cutoff_dict, search_depth, tmpdirpath)
+                
+                p = subprocess.Popen(arg, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
+                p.wait()
+
+                # arg_list = shlex.split(arg)  # if no need to use shell=True                            
+                # p = Popen(arg_list, stdin=PIPE, stdout=PIPE, stderr=PIPE) 
 
 
-            # os.system(f"cd {tmpdirname} && rings input.inp")            
+                # os.system(f"cd {tmpdirname} && rings input.inp")            
 
-            ring_ar = self.read_rings_output(tmpdirpath / 'rstat')
+                ring_ar = self.read_rings_output(tmpdirpath / 'rstat')
+                search_depth += 4
+            if ring_ar is None:
+                logger.warning('Rings with n >  %s nodes potentialy exist', max_search_depth)
             a=1
         return ring_ar
 
