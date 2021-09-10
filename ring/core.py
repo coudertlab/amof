@@ -49,30 +49,32 @@ class Ring(object):
         Physical Review B, 44(10), 4925–4930. https://doi.org/10.1103/PhysRevB.44.4925
     """
 
-    def __init__(self):
+    def __init__(self, max_search_depth = None):
         """default constructor"""
         self.ring_data = xr.DataArray(np.empty([0,0,0]), 
             coords = [('Step', np.empty([0], dtype='int64')), 
                 ('ring_size', np.empty([0], dtype='int64')), 
                 ('ring_var', np.empty([0], dtype='str_'))], # numpy str is str_
             name = 'ring')
+        self.max_search_depth = max_search_depth
 
     @classmethod
-    def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, parallel = False):
+    def from_trajectory(cls, trajectory, nb_set_and_cutoff, max_search_depth = 32 , delta_Step = 1, first_frame = 0, parallel = False):
         """
         constructor of ring class from an ase trajectory object
         Args:
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
+            max_search_depth: int, maximum search depth for rings.
         """
-        ring_class = cls() # initialize class
+        ring_class = cls(max_search_depth = max_search_depth) # initialize class
         nb_set_and_cutoff_list = [nb_set_and_cutoff for i in range(len(trajectory))]
         step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
         ring_class.compute_ring(trajectory, nb_set_and_cutoff_list, step, parallel)
         return ring_class # return class as it is a constructor
 
     @classmethod
-    def from_reduced_trajectory(cls, reduced_trajectory, parallel = False):
+    def from_reduced_trajectory(cls, reduced_trajectory, max_search_depth = 32, parallel = False):
         """
         constructor of ring class from a sadi ReducedTrajectory object
         
@@ -81,7 +83,7 @@ class Ring(object):
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
         """
-        ring_class = cls() # initialize class with empty data
+        ring_class = cls(max_search_depth = max_search_depth) # initialize class with empty data
         criteria_to_compute_ring = ['connectivity_constructible_with_cutoffs'] # can be expanded in further dev
         criteria_enlarged = ['in_reduced_trajectory'] + criteria_to_compute_ring
         rs = reduced_trajectory.report_search
@@ -224,11 +226,10 @@ class Ring(object):
             # Here shlex.quote is used as precaution in the only possible variable of the string
             arg = f"cd {shlex.quote(tmpdirname)} && rings input.inp"
 
-            search_depth = 16
-            max_search_depth = 40
+            search_depth = min(16, self.max_search_depth)
             ring_ar = None
 
-            while search_depth <= max_search_depth and ring_ar is None:
+            while search_depth <= self.max_search_depth and ring_ar is None:
                 self.write_input_files(atom, cutoff_dict, search_depth, tmpdirpath)
                 
                 p = subprocess.Popen(arg, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
@@ -237,7 +238,7 @@ class Ring(object):
                 ring_ar = self.read_rings_output(tmpdirpath / 'rstat')
                 search_depth += 4
             if ring_ar is None:
-                logger.warning('Rings with n >  %s nodes potentialy exist', max_search_depth)
+                logger.warning('Rings with n >  %s nodes potentialy exist', self.max_search_depth)
         return ring_ar
 
     def write_to_file(self, filename):
