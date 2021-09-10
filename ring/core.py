@@ -30,6 +30,20 @@ import sadi.pore.pysimmzeopp
 
 logger = logging.getLogger(__name__)
 
+
+# class SearchError(Exception):
+#     """Exception raised when coordination search failed.
+
+#     Attributes:
+#         message -- explanation of the error
+#         report_search -- dictionary describing the search when the error occurred
+#     """
+
+#     def __init__(self, message, report_search = {}):
+#         self.message = message
+#         self.report_search = report_search
+
+
 class Ring(object):
     """
     Main class for ring statistics analysis analysis
@@ -122,8 +136,8 @@ class Ring(object):
     @staticmethod
     def read_rings_output(rstat_path):
         """
-        read RINGS output from RINGS-res-N.dat whit largest possible N
-        read RINGS output from RINGS-res-3.dat, corresponding to King's shortest path rings
+        read RINGS output from RINGS-res-5.dat, corresponding to primitive rings 
+        read RINGS-res-3.dat, corresponding to King's shortest path rings, to know whether some rings are missing
 
         Args:
             rstat_path: pathlib path leading to rstat, containing evol-RINGS files
@@ -138,14 +152,13 @@ class Ring(object):
         with open(rstat_path / filename) as f:
             first_line = f.readline().strip('\n')
         searchObj = re.search(r'# Number of rings with n >  (.*) nodes which potentialy exist: (.*)', first_line, re.M|re.I)
-        if searchObj:
-            potentially_undiscovered_nodes = float(searchObj.group(2))
-            if potentially_undiscovered_nodes != 0:
-                logger.warning(first_line)
-                return None # don't add this frame to rings file
-            header = 2
-        else:
-            header = 1
+        potentially_undiscovered_nodes = float(searchObj.group(2))
+        if potentially_undiscovered_nodes != 0:
+            logger.warning(first_line)
+            return None # don't add this frame to rings file
+        
+        filename = 'RINGS-res-5.dat' # primitive rings 
+        header = 1
         df = pd.read_csv(rstat_path / filename, header = header, escapechar='#', sep='\s+')
         df = df.set_index(' n')
         ar = xr.DataArray(df, dims=("ring_size", "ring_var"))
