@@ -131,12 +131,13 @@ class ReducedTrajectory(object):
         self.symbols = symbols
 
     @classmethod
-    def from_file(cls, filename, load_trajectory = True):
+    def from_file(cls, filename, sampling = 1, load_trajectory = True):
         """
         constructor of class from files
 
         Args: 
             filename: str or path to files without the final suffixes (ie no '.xyz' or '.symbols')
+            sampling: int, will sample the trajectory with this rate choosing frames that are in_reduced_trajectory
         """
         if load_trajectory == True:
             logger.info("Read reduced trajectory %s", pathlib.Path(filename).name)
@@ -144,6 +145,12 @@ class ReducedTrajectory(object):
         else:
             trajectory = []
         report_search = pd.read_csv(spath.append_suffix(filename, 'report_search.csv'), index_col=0)
+        if sampling != 1:
+            rs_traj = report_search[report_search['in_reduced_trajectory']==True]
+            in_traj_sampling = round(sampling * len(rs_traj) / len(report_search)) # can be zero if few frames in reduced traj
+            if in_traj_sampling != 0: 
+                trajectory = trajectory[::in_traj_sampling]  
+                report_search = rs_traj[::in_traj_sampling]
         symbols = sadi.symbols.DummySymbols.from_file(filename)
         cn_class = cls(trajectory, report_search, symbols) # initialize class
         return cn_class # return class as it is a constructor
