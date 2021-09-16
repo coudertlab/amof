@@ -111,7 +111,7 @@ class Ring(object):
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
             
         """
-        logger.info("Start ring analysis for for %s frames", len(trajectory))
+        logger.info("Start ring analysis for %s frames", len(trajectory))
         list_of_xarray = []
 
         if parallel == False:

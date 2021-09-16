@@ -145,14 +145,10 @@ class ReducedTrajectory(object):
         else:
             trajectory = []
         report_search = pd.read_csv(spath.append_suffix(filename, 'report_search.csv'), index_col=0)
-        if sampling != 1:
-            rs_traj = report_search[report_search['in_reduced_trajectory']==True]
-            in_traj_sampling = round(sampling * len(rs_traj) / len(report_search)) # can be zero if few frames in reduced traj
-            if in_traj_sampling != 0: 
-                trajectory = trajectory[::in_traj_sampling]  
-                report_search = rs_traj[::in_traj_sampling]
         symbols = sadi.symbols.DummySymbols.from_file(filename)
         cn_class = cls(trajectory, report_search, symbols) # initialize class
+        if sampling != 1:
+            cn_class.sample(sampling)
         return cn_class # return class as it is a constructor
 
     def write_to_file(self, filename):
@@ -164,7 +160,22 @@ class ReducedTrajectory(object):
         ase.io.write(spath.append_suffix(filename, 'xyz'), self.trajectory)
         self.symbols.write_to_file(filename)
 
+    def sample(self, sampling):
+        """
+        Sample trajectory choosing frames that are in_reduced_trajectory
 
+        sampling refers to the frames indexed by integers (0,1,2..) and to Steps
+        First time it is used, it is relative to the not reduced trajectory
+        Then if the reduced traj has already been sampled, then the rate is relative to the sampled reduced trajectory
+
+        Args: 
+            sampling: int, sampling rate relative to not reduced trajectory
+        """        
+        rs_traj = self.report_search[self.report_search['in_reduced_trajectory']==True]
+        in_traj_sampling = round(sampling * len(rs_traj) / len(self.report_search)) # can be zero if few frames in reduced traj
+        if in_traj_sampling != 0: 
+            self.trajectory = self.trajectory[::in_traj_sampling]  
+            self.report_search = rs_traj[::in_traj_sampling]
 
 def read_lammps_data(filename, atom_style):
     """
