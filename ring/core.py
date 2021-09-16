@@ -127,13 +127,14 @@ class Ring(object):
 
         list_of_xarray = [ar for ar in list_of_xarray if ar is not None] # filter rings that are not properly computed
 
-        dic_of_xarray = dict(zip(step, list_of_xarray))
-        xa = xr.Dataset(dic_of_xarray)
-        xa = xa.to_array("Step", "Step")
-        xa = xr.Dataset({'ring': xa}) # one large data_array containing thermo variables
-        # xa = xa.to_dataset(dim='thermo') # separate thermo variables
-        xa = xa.fillna(0) #  for every ring size found in the entire traj, add 0 at every step if none detected while other ring sizes are
-        self.ring_data = xa
+        if list_of_xarray != []:
+            dic_of_xarray = dict(zip(step, list_of_xarray))
+            xa = xr.Dataset(dic_of_xarray)
+            xa = xa.to_array("Step", "Step")
+            xa = xr.Dataset({'ring': xa}) # one large data_array containing thermo variables
+            # xa = xa.to_dataset(dim='thermo') # separate thermo variables
+            xa = xa.fillna(0) #  for every ring size found in the entire traj, add 0 at every step if none detected while other ring sizes are
+            self.ring_data = xa
 
     @staticmethod
     def read_rings_output(rstat_path):
