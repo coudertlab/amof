@@ -4,6 +4,7 @@ Module containing methods acting on CP2K output files
 
 import logging
 import os
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -36,3 +37,33 @@ def clean_xyz(filename):
                 fw.write(previous)
     os.remove(filename)
     os.rename(str(filename)+"_temp_rm_duplicates", filename)
+
+
+def clean_tabular(filename):
+    """
+    Clean cp2k tabular output (one line per step)
+        - remove duplicate timesteps:
+        - remove duplicate headers
+    Works for ener, cell, stress
+    """
+    seen_steps = set()
+    with open(filename, "r") as fr:
+        # lines = f.readlines()
+        with open(str(filename)+"_temp_rm_duplicates", "w") as fw:
+            fw.write(fr.readline()) # write header (first line of first file)
+            write_to_file = True
+            for line in fr:
+                if line[0]=='#':
+                    write_to_file = False
+                else:
+                    step = int(re.split('\ +', line)[1])
+                    if step not in seen_steps:
+                        write_to_file = True
+                        seen_steps.add(step)
+                    else:
+                        logger.info("Removing duplicate %s", line.strip("\n").strip('Atoms.'))
+                        write_to_file = False
+                if write_to_file:
+                    fw.write(line)
+    os.remove(filename)
+    os.rename(str(filename)+"_temp_rm_duplicates", filename)    
