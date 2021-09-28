@@ -16,7 +16,7 @@ def clean_xyz(filename):
 
     search for lines starting by 'Atoms' and will remove the line before (number of atoms) until the start of the next frame.
     """
-    seen_lines = set()
+    seen_steps = set()
     with open(filename, "r") as fr:
         # lines = f.readlines()
         with open(str(filename)+"_temp_rm_duplicates", "w") as fw:
@@ -24,11 +24,12 @@ def clean_xyz(filename):
             write_to_file = True
             for line in fr:
                 if line[0:5]==' i = ':
-                    if line not in seen_lines:
+                    step = int(re.search(' i = (.*), time =(.*)', line).group(1))
+                    if step not in seen_steps:
                         write_to_file = True
-                        seen_lines.add(line)
+                        seen_steps.add(step)
                     else:
-                        logger.info("Removing duplicate %s", line.strip("\n").strip('Atoms.'))
+                        logger.info("Removing duplicate %s", step)
                         write_to_file = False
                 if write_to_file and previous is not None:
                     fw.write(previous)
