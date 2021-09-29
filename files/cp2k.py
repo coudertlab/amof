@@ -5,6 +5,7 @@ Module containing methods acting on CP2K output files
 import logging
 import os
 import re
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -68,3 +69,34 @@ def clean_tabular(filename):
                     fw.write(line)
     os.remove(filename)
     os.rename(str(filename)+"_temp_rm_duplicates", filename)    
+
+
+def read_tabular(filename, return_units = False):
+    """
+    Parses tabular file
+
+    Return:
+        df, pandas dataframe read 
+        unit_dict, dict
+    """
+    with open(filename, "r") as fr:
+        first_line = fr.readline().strip('\n')
+    # first_line = first_line.strip('#').strip('\n')
+    columns = re.split('\  +', first_line)[1:] # rm '#' in first position, single whitespaces are tolerated in column name
+    names = []
+    units = []
+    for c in columns:
+        if 'Step' in c:
+            names.append('Step')
+            units.append('')
+        else:
+            search = re.search('(.*)\[(.*)\]', c)
+            names.append(search.group(1).strip('.').strip(' ')) #strip points (abbreviations, not v. practical) and whitespaces (dataframe handling)
+            units.append(search.group(2))
+
+    df = pd.read_table(filename, skiprows=1, names=names, sep=r"\s+")
+    df = df.set_index('Step')
+    if return_units == False:
+        return df
+    else:
+        return df, dict(zip(names, units))
