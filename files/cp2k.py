@@ -74,10 +74,15 @@ def clean_tabular(filename):
 def read_tabular(filename, return_units = False):
     """
     Parses tabular file
+    Works for ener, cell, stress
+
+    Args:
+        filename: str or pathlib.Path
+        return_units: Bool, if true returns unit_dict
 
     Return:
-        df, pandas dataframe read 
-        unit_dict, dict
+        df, pandas dataframe representing the data contained in filename
+        unit_dict, dict of strings with columns names as keys and units as values
     """
     with open(filename, "r") as fr:
         first_line = fr.readline().strip('\n')
