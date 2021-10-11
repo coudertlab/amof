@@ -174,11 +174,12 @@ class ReducedTrajectory(object):
         Args: 
             sampling: int, sampling rate relative to not reduced trajectory
         """        
-        rs_traj = self.report_search[self.report_search['in_reduced_trajectory']==True]
-        in_traj_sampling = round(sampling * len(rs_traj) / len(self.report_search)) # can be zero if few frames in reduced traj
-        if in_traj_sampling != 0: 
-            self.trajectory = self.trajectory[::in_traj_sampling]  
-            self.report_search = rs_traj[::in_traj_sampling]
+        if len(self.report_search) != 0:
+            rs_traj = self.report_search[self.report_search['in_reduced_trajectory']==True]
+            in_traj_sampling = round(sampling * len(rs_traj) / len(self.report_search)) # can be zero if few frames in reduced traj
+            if in_traj_sampling != 0: 
+                self.trajectory = self.trajectory[::in_traj_sampling]  
+                self.report_search = rs_traj[::in_traj_sampling]
 
 def read_lammps_data(filename, atom_style):
     """
