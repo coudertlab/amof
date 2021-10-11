@@ -124,8 +124,11 @@ class ReducedTrajectory(object):
         report_search: pandas dataframe with information per Step of trajectory
         symbols: sadi DummySymbols object
     """
-    def __init__(self, trajectory, report_search, symbols):
-        """Default constructor from attributes"""
+    def __init__(self, trajectory = [], 
+        report_search = pd.DataFrame({"Step": np.empty([0])}), 
+        symbols = sadi.symbols.DummySymbols()):
+        """Default constructor from attributes
+        Mock reducedtrajectory with no frame if no argument supplied"""
         self.trajectory = trajectory
         self.report_search = report_search
         self.symbols = symbols
