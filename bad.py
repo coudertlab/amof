@@ -5,13 +5,10 @@ Module containing bond angle distribution related methods
 import ase
 import ase.neighborlist
 import ase.data
-# import asap3.analysis.bad
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy.integrate
-import scipy.interpolate
 import joblib
 import itertools
 

@@ -8,10 +8,7 @@ import ase.data
 import numpy as np
 import pandas as pd
 import logging
-import os
-import pathlib
 import joblib
-from numba import jit
 
 import sadi.trajectory
 import sadi.atom

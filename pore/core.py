@@ -9,8 +9,6 @@ import ase.data
 import numpy as np
 import pandas as pd
 import logging
-import os
-import pathlib
 import tempfile
 import re
 import joblib

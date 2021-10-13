@@ -6,7 +6,6 @@ import pandas as pd
 import logging
 import joblib
 
-import ase.io
 from pymatgen.io.ase import AseAtomsAdaptor
 from sadi.coordination.core import SearchError
 

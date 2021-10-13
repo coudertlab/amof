@@ -5,8 +5,6 @@ Module containing methods linked to elastic properties
 import math, sys
 import numpy as np
 import xarray as xr
-import os
-import pathlib
 import logging
 import ase.atoms
 
