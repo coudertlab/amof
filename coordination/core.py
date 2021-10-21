@@ -57,6 +57,7 @@ class CoordinationSearch(object):
         self.atypes = ["" for i in range(struct.num_sites)]
         self.fragtypes = ["-1" for i in range(struct.num_sites)]
         self.fragnumbers = [-1 for i in range(struct.num_sites)]
+        self.elems = [str(self.struct[i].species)[:-1].lower() for i in range(struct.num_sites)]
         self.fragments = {} 
         self.symbols = sadi.symbols.DummySymbols()
         self.all_neighb = self.struct.get_all_neighbors(neighb_max_distance)
@@ -231,8 +232,8 @@ class CoordinationSearch(object):
 
     def get_atype(self, i):
         """return atype of atom i formatted as in molsys"""
-        atype = str(self.struct[i].species)[:-1].lower() + str(len(self.conn[i])) 
-        list_of_nn = [str(self.struct[j].species)[:-1].lower() for j in self.conn[i]]
+        atype = self.elems[i] + str(len(self.conn[i])) 
+        list_of_nn = [self.elems[i] for j in self.conn[i]]
         counts = Counter(list_of_nn)
         list_of_counts = sorted(counts.items(), key= lambda t: (t[0], t[1])) # sort by alphabetical order to have a unique atype per coordination environment
         atype += "_" + ''.join(str(e) for pair in list_of_counts for e in pair)
@@ -356,7 +357,7 @@ class CoordinationSearch(object):
             for c in nx.simple_cycles(directed):
                 if len(c) > 2 and len(c) <= max_depth:
                     all_cycles.append(c)
-                    # print(len(all_cycles))
+                    print(len(all_cycles))
                 elif exit_if_large_cycle and len(c) > max_depth:
                     # print(c)
                     raise SearchError('max_depth exceeded in cycle search', self.report_search)
@@ -367,7 +368,7 @@ class CoordinationSearch(object):
                     c_pattern = [self.struct.species[i].number for i in c]
                     if self.are_circularly_identical(c_pattern, pattern):
                         all_cycles.append(c)
-                        # print(len(all_cycles))
+                        print(len(all_cycles))
                 if exit_if_too_many_rings and len(all_cycles) > target_number_of_rings * 2:
                     raise SearchError('target_number_of_rings exceeded in pattern cycle search', self.report_search)            
         else:
