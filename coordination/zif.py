@@ -98,13 +98,13 @@ class ZifSearch(CoordinationSearch):
         pattern = [A] + [B, A] * int((cycle_length - 1) / 2)
         cycles = self.find_rings(graph, pattern=pattern, target_number_of_rings = target_number_of_cycles, exit_if_too_many_rings=False)
 
-        # TD: remove when sure that pattern search is working fine
         # check sanity of found cycles
         self.report_search['imid_expected_number_of_cycles'] = (
             len(cycles) == target_number_of_cycles)
         if not self.report_search['imid_expected_number_of_cycles']:
             logger.debug("number of cycles incorrect")
 
+        # TD: remove when sure that pattern search is working fine
         cycles_of_wrong_size = [c for c in cycles if len(c) != cycle_length]
         self.report_search['imid_expected_length_of_cycles'] = (
             len(cycles_of_wrong_size) == 0)
