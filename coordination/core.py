@@ -338,7 +338,8 @@ class CoordinationSearch(object):
             exit_if_large_cycle: Bool, if True will raise an Exception if a cycle larger than max_depth is found
             pattern: list of strings representing self.elems to match ('n', 'c', etc.)
             target_number_of_rings: int, number of unique rings
-            exit_if_too_many_rings: bool
+            exit_if_too_many_rings: bool, interupts loop when too many rings found. 
+                If False, will raise an error nonetheless but will state how many extra cycles are found
 
         :return: dict {index:cycle}. Each
             entry will be a ring (cycle, in graph theory terms) including the index
@@ -386,6 +387,10 @@ class CoordinationSearch(object):
             if sorted(cycle) not in unique_sorted:
                 unique_sorted.append(sorted(cycle))
                 unique_cycles.append(cycle)
+
+        if exit_if_too_many_rings==False and len(unique_cycles) > target_number_of_rings:
+            self.report_search['Extra cycles found'] = len(unique_cycles) - target_number_of_rings
+            raise SearchError('target_number_of_rings exceeded in pattern cycle search', self.report_search)           
 
         if including is None:
             cycles_nodes = unique_cycles
