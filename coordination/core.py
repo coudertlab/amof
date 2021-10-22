@@ -336,7 +336,10 @@ class CoordinationSearch(object):
             all rings will be returned.
             max_depth: int, maximum cycle size to be found
             exit_if_large_cycle: Bool, if True will raise an Exception if a cycle larger than max_depth is found
-            
+            pattern: list of strings representing self.elems to match ('n', 'c', etc.)
+            target_number_of_rings: int, number of unique rings
+            exit_if_too_many_rings: bool
+
         :return: dict {index:cycle}. Each
             entry will be a ring (cycle, in graph theory terms) including the index
             found in the Molecule. If there is no cycle including an index, the
@@ -357,7 +360,7 @@ class CoordinationSearch(object):
             for c in nx.simple_cycles(directed):
                 if len(c) > 2 and len(c) <= max_depth:
                     all_cycles.append(c)
-                    print(len(all_cycles))
+                    # print(len(all_cycles))
                 elif exit_if_large_cycle and len(c) > max_depth:
                     # print(c)
                     raise SearchError('max_depth exceeded in cycle search', self.report_search)
@@ -368,7 +371,7 @@ class CoordinationSearch(object):
                     c_pattern = [self.elems[i] for i in c]
                     if self.are_circularly_identical(c_pattern, pattern):
                         all_cycles.append(c)
-                        print(len(all_cycles))
+                        # print(len(all_cycles))
                 if exit_if_too_many_rings and len(all_cycles) > target_number_of_rings * 2:
                     # self.plot_conn_as_graph() 
                     raise SearchError('target_number_of_rings exceeded in pattern cycle search', self.report_search)            

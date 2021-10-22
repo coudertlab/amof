@@ -3,6 +3,7 @@ Main file containing classes for custom neigbour search in ZIF glasses
 Supported: ZIF-8
 """
 
+from numpy import False_
 from sadi.coordination import *
 import sadi.coordination.buildingunits as bu
 
@@ -73,11 +74,25 @@ class ZifSearch(CoordinationSearch):
         self.add_ABbonds(graph, A, A)
         # cycles = self.get_chain_decomposition(graph) # give same results for the tested files
         # cycles = self.find_one_cycle_per_node(graph) # give same results for the tested files
-        # cycles = self.find_rings(graph, max_depth=cycle_length, exit_if_large_cycle=True)
+        import time
+        start = time.time()
+        try:
+            cycles = self.find_rings(graph, max_depth=cycle_length, exit_if_large_cycle=False)
+        except SearchError:
+            pass
+        end = time.time()
+        print("No pattern", end - start)
 
         # currently very slow
-        pattern = [str(A)[:-1].lower()] + [str(B)[:-1].lower(), str(A)[:-1].lower()] * int((cycle_length - 1) / 2)
-        cycles = self.find_rings(graph, pattern=pattern, target_number_of_rings = target_number_of_cycles, exit_if_too_many_rings=True)
+        start = time.time()
+        try:
+            pattern = [str(A)[:-1].lower()] + [str(B)[:-1].lower(), str(A)[:-1].lower()] * int((cycle_length - 1) / 2)
+            cycles = self.find_rings(graph, pattern=pattern, target_number_of_rings = target_number_of_cycles, exit_if_too_many_rings=False)
+        except SearchError:
+            pass
+        end = time.time()
+        print("Pattern", end - start)
+
 
         # check sanity of found cycles
         self.report_search['imid_expected_number_of_cycles'] = (
