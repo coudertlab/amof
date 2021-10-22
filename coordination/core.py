@@ -47,7 +47,7 @@ class CoordinationSearch(object):
 
     Attributes:
         fragments: dict of dict;  key i of encompassing dict is fragment of fragnumber i
-        atypes, fragtypes, fragnumbers, conn: same structure as molsys.mol object
+        atypes, fragtypes, fragnumbers, conn, elems: same structure as molsys.mol object
     """
         
     def __init__(self, struct, neighb_max_distance, dist_margin):
@@ -247,7 +247,7 @@ class CoordinationSearch(object):
 
     def get_covdist(self, i, j): # turn to class at some point to have struct as self. 
         """return sum of covalent radii of the two atoms referenced by their index i and j"""
-        return self.covalentradius[str(self.struct[i].specie)] + self.covalentradius[str(self.struct[j].specie)]
+        return self.covalentradius[self.elems[i].title()] + self.covalentradius[self.elems[j].title()]
 
     def add_ABbonds(self, graph, A, B, dist_margin = None):
         """
@@ -365,11 +365,12 @@ class CoordinationSearch(object):
             all_cycles = []
             for c in nx.simple_cycles(directed):
                 if len(c) == len(pattern):
-                    c_pattern = [self.struct.species[i].number for i in c]
+                    c_pattern = [self.elems[i] for i in c]
                     if self.are_circularly_identical(c_pattern, pattern):
                         all_cycles.append(c)
                         print(len(all_cycles))
                 if exit_if_too_many_rings and len(all_cycles) > target_number_of_rings * 2:
+                    # self.plot_conn_as_graph() 
                     raise SearchError('target_number_of_rings exceeded in pattern cycle search', self.report_search)            
         else:
             all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
