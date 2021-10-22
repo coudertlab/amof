@@ -64,7 +64,7 @@ class ZifSearch(CoordinationSearch):
         If fragtype is not None, will create new fragments with this fragmame
 
         Args:
-            A, B: pymatgen.Composition objects, species of A and B
+            A, B: string, lowecase string indicating species of A and B (e.g. "h")
             cycle_length: int
             fragtype: str
         """
@@ -95,7 +95,7 @@ class ZifSearch(CoordinationSearch):
         # end = time.time()
         # print("Pattern", end - start)
 
-        pattern = [str(A)[:-1].lower()] + [str(B)[:-1].lower(), str(A)[:-1].lower()] * int((cycle_length - 1) / 2)
+        pattern = [A] + [B, A] * int((cycle_length - 1) / 2)
         cycles = self.find_rings(graph, pattern=pattern, target_number_of_rings = target_number_of_cycles, exit_if_too_many_rings=False)
 
         # TD: remove when sure that pattern search is working fine
@@ -163,14 +163,14 @@ class MetalmIm(ZifSearch):
         """
         # shorthand to select different atoms in pymatgen
         metal_atom = pymatgen.core.Composition(f"{self.node.name}1")
-        H = pymatgen.core.Composition("H1")
-        C = pymatgen.core.Composition("C1")
-        N = pymatgen.core.Composition("N1")
+        H = "h"
+        C = "c"
+        N = "n"
 
         # Find imid cycles (C-N-C-N-C)
         graph = StructureGraph.with_empty_graph(self.struct)
         self.find_ABAcycles(C, N, cycle_length = 5, 
-            target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2, 
+            target_number_of_cycles = self.elems.count("n") / 2, 
             fragtype = self.linker.name)
 
         # add H based on cov radii to single C and C bonded to one N
@@ -181,7 +181,7 @@ class MetalmIm(ZifSearch):
             logger.debug("%s C atoms have %s N nn", C_Nbonds.count(i), i)
 
         self.assign_B_uniquely_to_A_N_coordinated(lambda i: (C_Nbonds[i] in [0, 1]), lambda i: (
-            self.struct[i].species == H),   3, report_entry="C atoms missing H neighbours", 
+            self.elems[i] == "h"),   3, report_entry="C atoms missing H neighbours", 
             propagate_fragments = True, new_fragments_name = 'methyl')
 
         # bind the remaining H (there should be non for the crystal)
@@ -198,7 +198,7 @@ class MetalmIm(ZifSearch):
             propagate_fragments = 'reverse')
 
         # link N to metal_atom with no constraint on the number of N to metal_atom
-        self.find_N_closest_cov_dist(lambda i: self.struct[i].species == metal_atom, lambda i: self.struct[i].species == N,
+        self.find_N_closest_cov_dist(lambda i: self.elems[i] == metal_atom, lambda i: self.elems[i] == N,
             self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated', 
             report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)
 
@@ -235,14 +235,14 @@ class MetalIm(ZifSearch):
         main function to detect connectivity
         """
         # shorthand to select different atoms in pymatgen
-        metal_atom = pymatgen.core.Composition(f"{self.node.name}1")
-        H = pymatgen.core.Composition("H1")
-        C = pymatgen.core.Composition("C1")
-        N = pymatgen.core.Composition("N1")
+        metal_atom = self.node.name.lower()
+        H = "h"
+        C = "c"
+        N = "n"
 
         # Find imid cycles (C-N-C-N-C)
         graph = StructureGraph.with_empty_graph(self.struct)
-        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = self.struct.species.count(pymatgen.core.Element("N")) / 2,
+        self.find_ABAcycles(C, N, cycle_length = 5, target_number_of_cycles = self.elems.count("n") / 2,
             fragtype = self.linker.name)
 
         # hard way to force the reduction to work by ignoring the failed imid search: to be investigated
@@ -250,8 +250,8 @@ class MetalIm(ZifSearch):
             raise SearchError('Imid search failed', self.report_search)
 
         # add H based on cov radii to every C
-        self.assign_B_uniquely_to_A_N_coordinated(lambda i: (self.struct[i].species == C), lambda i: (
-            self.struct[i].species == H),   3, report_level = 'undercoordinated', report_entry="C atoms missing H neighbours",
+        self.assign_B_uniquely_to_A_N_coordinated(lambda i: (self.elems[i] == C), lambda i: (
+            self.elems[i] == H),   3, report_level = 'undercoordinated', report_entry="C atoms missing H neighbours",
 
             propagate_fragments = True, new_fragments_name = 'irregular_C',
             dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
@@ -264,7 +264,7 @@ class MetalIm(ZifSearch):
             dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
 
         # link N to metal_atom with no constraint on the number of N to metal_atom
-        self.find_N_closest_cov_dist(lambda i: self.struct[i].species == metal_atom, lambda i: self.struct[i].species == N,
+        self.find_N_closest_cov_dist(lambda i: self.elems[i] == metal_atom, lambda i: self.elems[i] == N,
             self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated',
             report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)
 

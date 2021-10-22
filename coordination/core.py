@@ -257,10 +257,10 @@ class CoordinationSearch(object):
         if dist_margin is None:
             dist_margin = self.dist_margin
         for i in range(self.struct.num_sites):
-            if self.struct[i].species == A:
+            if self.elems[i] == A:
                 for site in self.all_neighb[i]:
                     j = site.index
-                    if self.struct[j].species == B and site.nn_distance < dist_margin*self.get_covdist(i, j):
+                    if self.elems[j] == B and site.nn_distance < dist_margin*self.get_covdist(i, j):
                         graph.add_edge(i, j, from_jimage=(0, 0, 0), to_jimage=(0, 0, 0), weight = self.struct.get_distance(i, j), warn_duplicates=False)
 
     @staticmethod
@@ -432,10 +432,10 @@ class CoordinationSearch(object):
         """
         A_Bbonds = [-1 for i in range(self.struct.num_sites)]
         for i in range(self.struct.num_sites):
-            if self.struct[i].species == A:
+            if self.elems[i] == A:
                 A_Bbonds[i] = 0
                 for j in self.conn[i]:
-                    if self.struct[j].species == B:
+                    if self.elems[j] == B:
                         A_Bbonds[i] += 1
         return A_Bbonds
 
@@ -600,7 +600,7 @@ class CoordinationSearch(object):
                 if len(neighb_set)<target_N:
                     logger.debug("not enough nn for %s: %s instead of %s",i, len(neighb_set), target_N)
                     for s in neighb_set:
-                        logger.debug("%s %s distance: %s conn: %s", str(s.species), s.index, s.nn_distance, str([(str(self.struct[j].species), j) for j in self.conn[s.index]]))
+                        logger.debug("%s %s distance: %s conn: %s", self.elems[s.index], s.index, s.nn_distance, str([(self.elems[j], j) for j in self.conn[s.index]]))
                     list_of_undercoordinated.append(i)
                 # take the closest as nn
                 nn_distances = [neighb.nn_distance for neighb in neighb_set]
