@@ -103,6 +103,7 @@ class ZifSearch(CoordinationSearch):
             len(cycles) == target_number_of_cycles)
         if not self.report_search['imid_expected_number_of_cycles']:
             logger.debug("number of cycles incorrect")
+            self.report_search['imid_missing_cycles'] = target_number_of_cycles - len(cycles)
 
         # TD: remove when sure that pattern search is working fine
         cycles_of_wrong_size = [c for c in cycles if len(c) != cycle_length]
