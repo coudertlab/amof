@@ -432,8 +432,8 @@ class CoordinationSearch(object):
 
                 # for cycles in cycles_of_atom:
                 #     if len(cycles) > 1:
-            a = 1
-        a = 1
+        #     a = 1
+        # a = 1
 
 
         if including is None:

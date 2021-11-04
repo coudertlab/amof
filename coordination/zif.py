@@ -22,7 +22,7 @@ class ZifSearch(CoordinationSearch):
         5. bind N and Zn
     """
 
-    def __init__(self, struct, dist_margin=1.2, dist_margin_metal=1.5, cutoff_metal = None):
+    def __init__(self, struct, dist_margin=1.2, dist_margin_metal=1.5, cutoff_metal = None, ignore_H_in_reduction = True):
         """
         Constructor for custom search 2 for ZIF glasses
 
@@ -31,8 +31,11 @@ class ZifSearch(CoordinationSearch):
             dist_margin_metal is the specific tolerance for metal-X bonds as they're not covalent
             cutoff_metal: float, overide dist_margin_metal if not None 
                 option added but not used so far
+            ignore_H_in_reduction: bool, if True imids identification is only done by the cycle
+                The errors in bonding Hs are however reported, and the resulting reduced structure is computed with the H taken into account (barycenter).
         """
         self.dist_margin_metal = dist_margin_metal  # dist_maring is created in CoordinationSearch.__init__
+        self.ignore_H_in_reduction = ignore_H_in_reduction
         neighb_max_distance = self.find_neighb_max_distance(
             dist_margin, dist_margin_metal, cutoff_metal)
         CoordinationSearch.__init__(
@@ -217,7 +220,7 @@ class MetalIm(ZifSearch):
         4. bind N and Zn
     """
 
-    def __init__(self, struct, metal, dist_margin=1.2, dist_margin_metal=1.5):
+    def __init__(self, struct, metal, dist_margin=1.2, dist_margin_metal=1.5, ignore_H_in_reduction = True):
         """
         Constructor for coordination search for MetalmIm glasses
 
@@ -229,7 +232,7 @@ class MetalIm(ZifSearch):
         """
         self.node = bu.SingleMetal(metal, 4)
         self.linker = bu.ImidazoleBased("Im", "C3N2H3")
-        ZifSearch.__init__(self, struct, dist_margin, dist_margin_metal)
+        ZifSearch.__init__(self, struct, dist_margin, dist_margin_metal, ignore_H_in_reduction)
 
     
     def detect_conn(self):
@@ -251,18 +254,21 @@ class MetalIm(ZifSearch):
         if not self.report_search['imid_search_successful']:
             raise SearchError('Imid search failed', self.report_search)
 
+        
         # add H based on cov radii to every C
+        new_fragments_name = self.linker.name if self.ignore_H_in_reduction else 'irregular_C'
         self.assign_B_uniquely_to_A_N_coordinated(lambda i: (self.elems[i] == C), lambda i: (
             self.elems[i] == H),   3, report_level = 'undercoordinated', report_entry="C atoms missing H neighbours",
 
-            propagate_fragments = True, new_fragments_name = 'irregular_C',
+            propagate_fragments = True, new_fragments_name = new_fragments_name,
             dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
 
         # bind the remaining H (there should be non for the crystal)
         H_Cbonds = self.get_A_Bbonds(H, C)
+        new_fragments_name = self.linker.name if self.ignore_H_in_reduction else 'irregular_H'
         self.find_N_closest_cov_dist(
             lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry="H atoms not bonded to C",
-            propagate_fragments = True, new_fragments_name = 'irregular_H',
+            propagate_fragments = True, new_fragments_name = new_fragments_name,
             dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
 
         # link N to metal_atom with no constraint on the number of N to metal_atom
