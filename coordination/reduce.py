@@ -71,7 +71,7 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
             except BaseException as e: # unexpected exception
                 logger.debug('Failed to do reduce frame with error message: ' + str(e))        
                 report_search['in_reduced_trajectory'] = False       
-                report_search['Error_message'] = str(e)
+                report_search['Error_message'] = "Unexpected Base Exception: " + str(e)
                 reduced_atom = None
             return reduced_atom, report_search
 

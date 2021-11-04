@@ -184,13 +184,14 @@ class CoordinationSearch(object):
         self.report_search['nb_set_and_cutoff'] = str(nb_set_and_cutoff)
         
         # check that every fragment B within A-B cutoff of A is nb of A in frag_conn
+        # if a fragment B is closer to a fragment C!=A (can be B) than B-A cutoff, then there's no irregularity when checking for B-A. 
         irregular_nb = []
         irregular_nb_offset = []
         nb_list = reduced_struct.get_neighbor_list(max(nb_set_and_cutoff.values()))
         for k in range(len(nb_list)):
             i, j, distance = nb_list[0][k], nb_list[1][k], nb_list[3][k]
             nb_set = '-'.join(sorted([species[i], species[j]]))
-            if (j not in self.frag_conn[i]) and (distance < nb_set_and_cutoff[nb_set]):
+            if (nb_set in bonds_unique) and (j not in self.frag_conn[i]) and (distance < nb_set_and_cutoff[nb_set]):
                 irregular_nb.append(nb_set)
                 irregular_nb_offset.append(nb_set_and_cutoff[nb_set] - distance)
         self.report_search['connectivity_constructible_with_cutoffs'] = (len(irregular_nb) == 0)
