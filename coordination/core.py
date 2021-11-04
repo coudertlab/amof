@@ -322,7 +322,7 @@ class CoordinationSearch(object):
         return str1 in str2 + ' ' + str2
 
     def find_rings(self, graph, including=None, max_depth = None, exit_if_large_cycle = False, 
-            pattern=None, target_number_of_rings = None, exit_if_too_many_rings=False):
+            pattern=None, target_number_of_rings = None, exit_if_too_many_rings=False, remove_overlapping_rings = False):
         """                
         Find ring structures in the StructureGraph.
 
@@ -341,6 +341,9 @@ class CoordinationSearch(object):
             target_number_of_rings: int, number of unique rings
             exit_if_too_many_rings: bool, interupts loop when too many rings found. 
                 If False, will raise an error nonetheless but will state how many extra cycles are found
+            remove_overlapping_rings: bool, will try to remove overlapping rings 
+                Ring A is overlapping if there is ring B such that the intersection of A and B is not empty
+                Will be done in a greedy way by removing in the same step every ring that has the largest overlap
 
         :return: dict {index:cycle}. Each
             entry will be a ring (cycle, in graph theory terms) including the index
@@ -390,8 +393,48 @@ class CoordinationSearch(object):
                 unique_cycles.append(cycle)
 
         if exit_if_too_many_rings==False and len(unique_cycles) > target_number_of_rings:
-            self.report_search['Extra cycles found'] = len(unique_cycles) - target_number_of_rings
-            raise SearchError('target_number_of_rings exceeded in pattern cycle search', self.report_search)           
+            self.report_search['Extra cycles found after initial ring search'] = len(unique_cycles) - target_number_of_rings
+            # raise SearchError('target_number_of_rings exceeded in pattern cycle search', self.report_search)           
+        
+        # remove rings that are contained in two cycles
+        # don't try if not enough rings found to save computation time
+        if remove_overlapping_rings == True and len(unique_cycles) > target_number_of_rings:
+
+            def get_cycles_of_atom(unique_cycles):
+                """return list of list of cycles containing i for atom i"""
+                cycles_of_atom = [[] for i in range(self.struct.num_sites)] 
+                for i in range(len(unique_cycles)):
+                    for a in unique_cycles[i]:
+                        cycles_of_atom[a].append(i)
+                return cycles_of_atom
+
+            removed_overlapping_rings = 0
+            cycles_of_atom = get_cycles_of_atom(unique_cycles)
+            keep_removing_rings = np.max([len(cycles) for cycles in cycles_of_atom]) > 1
+            while keep_removing_rings == True:            
+                 # each atom is weighted by the number of cycle it's in
+                 # each cycle by the sum of the weights of its atoms
+                overlap_weight_of_cycle = [np.sum([len(cycles_of_atom[a]) for a in c]) for c in unique_cycles]
+                max_weight = np.max(overlap_weight_of_cycle)
+                maximum_indices = [i for i, j in enumerate(overlap_weight_of_cycle) if j == max_weight]
+                removed_overlapping_rings += len(maximum_indices)
+                for index in sorted(maximum_indices, reverse=True):
+                    del unique_cycles[index]
+                # recontruct cycles_of_atom
+                cycles_of_atom = get_cycles_of_atom(unique_cycles)
+                keep_removing_rings = np.max([len(cycles) for cycles in cycles_of_atom]) > 1
+                
+            self.report_search['Overlapping rings removed'] = removed_overlapping_rings
+                # if len(unique_cycles) - np.sum(maximum_indices) < target_number_of_rings:
+                #     raise SearchError('Removing overlapping rings led ', self.report_search)            
+                # for i in range(len(unique_cycles)):
+                #     if overlap_weight_of_cycle[i] == max_weight:
+
+                # for cycles in cycles_of_atom:
+                #     if len(cycles) > 1:
+            a = 1
+        a = 1
+
 
         if including is None:
             cycles_nodes = unique_cycles

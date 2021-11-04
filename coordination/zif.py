@@ -96,7 +96,8 @@ class ZifSearch(CoordinationSearch):
         # print("Pattern", end - start)
 
         pattern = [A] + [B, A] * int((cycle_length - 1) / 2)
-        cycles = self.find_rings(graph, pattern=pattern, target_number_of_rings = target_number_of_cycles, exit_if_too_many_rings=False)
+        cycles = self.find_rings(graph, pattern=pattern, target_number_of_rings = target_number_of_cycles, 
+            exit_if_too_many_rings=False, remove_overlapping_rings=True)
 
         # check sanity of found cycles
         self.report_search['imid_expected_number_of_cycles'] = (
