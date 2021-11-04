@@ -234,7 +234,7 @@ class CoordinationSearch(object):
     def get_atype(self, i):
         """return atype of atom i formatted as in molsys"""
         atype = self.elems[i] + str(len(self.conn[i])) 
-        list_of_nn = [self.elems[i] for j in self.conn[i]]
+        list_of_nn = [self.elems[j] for j in self.conn[i]]
         counts = Counter(list_of_nn)
         list_of_counts = sorted(counts.items(), key= lambda t: (t[0], t[1])) # sort by alphabetical order to have a unique atype per coordination environment
         atype += "_" + ''.join(str(e) for pair in list_of_counts for e in pair)
@@ -423,7 +423,7 @@ class CoordinationSearch(object):
                 # recontruct cycles_of_atom
                 cycles_of_atom = get_cycles_of_atom(unique_cycles)
                 keep_removing_rings = np.max([len(cycles) for cycles in cycles_of_atom]) > 1
-                
+
             self.report_search['Overlapping rings removed'] = removed_overlapping_rings
                 # if len(unique_cycles) - np.sum(maximum_indices) < target_number_of_rings:
                 #     raise SearchError('Removing overlapping rings led ', self.report_search)            
