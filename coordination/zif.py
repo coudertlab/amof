@@ -75,10 +75,6 @@ class ZifSearch(CoordinationSearch):
         graph = StructureGraph.with_empty_graph(self.struct)
         self.add_ABbonds(graph, B, A)
         self.add_ABbonds(graph, A, A)
-        # old_ways to compute cycles, deprecated since pattern search
-        # cycles = self.get_chain_decomposition(graph) # give same results for the tested files
-        # cycles = self.find_one_cycle_per_node(graph) # give same results for the tested files
-        # cycles = self.find_rings(graph, max_depth=cycle_length, exit_if_large_cycle=False)
 
         pattern = [A] + [B, A] * int((cycle_length - 1) / 2)
         cycles = self.find_rings(graph, pattern=pattern, target_number_of_rings = target_number_of_cycles, 
