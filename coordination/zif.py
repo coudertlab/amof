@@ -81,29 +81,21 @@ class ZifSearch(CoordinationSearch):
             exit_if_too_many_rings=False, remove_overlapping_rings=True)
 
         # check sanity of found cycles
-        self.report_search['imid_expected_number_of_cycles'] = (
+        self.report_search['Expected number of cycles'] = (
             len(cycles) == target_number_of_cycles)
-        if not self.report_search['imid_expected_number_of_cycles']:
+        if not self.report_search['Expected number of cycles']:
             logger.debug("number of cycles incorrect")
-            self.report_search['imid_missing_cycles'] = target_number_of_cycles - len(cycles)
-
-        # TD: remove when sure that pattern search is working fine
-        cycles_of_wrong_size = [c for c in cycles if len(c) != cycle_length]
-        self.report_search['imid_expected_length_of_cycles'] = (
-            len(cycles_of_wrong_size) == 0)
-        if not self.report_search['imid_expected_length_of_cycles']:
-            logger.debug("cycle not of %s atoms found: %s", cycle_length, 
-                           cycles_of_wrong_size)
+            self.report_search['Number of missing cycles'] = target_number_of_cycles - len(cycles)
 
         in_cycle = [False for i in range(self.struct.num_sites)]
-        self.report_search['imid_atoms_appear_only_once_in_cycles'] = True
+        self.report_search['Atoms appear only once in cycles'] = True
         for c in cycles:
             for a, b in c:
                 self.conn[a].append(b)
                 self.conn[b].append(a)
                 if in_cycle[a] == True:
                     logger.debug("atom %s appears in more than one cycle", a)
-                    self.report_search['imid_atoms_appear_only_once_in_cycles'] = False
+                    self.report_search['Atoms appear only once in cycles'] = False
                 in_cycle[a] = True
         self.clean_conn()
         if fragtype is not None:
