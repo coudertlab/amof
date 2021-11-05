@@ -213,7 +213,7 @@ class CoordinationSearch(object):
         Adapted from molsys
         """
         self.frag_conn = []        # fragment connectivity (indices of fragments)
-        self.frag_conn_atoms = []  # atoms making the fragemnt connectivity (tuples of atom indices: first in frgmnt, second in other fragmnt)
+        self.frag_conn_atoms = []  # atoms making the fragment connectivity (tuples of atom indices: first in fragment, second in other fragment)
         # prepare the atom list for the fragments
         for i in range(len(self.fragments)):
             self.frag_conn.append([])
@@ -228,8 +228,8 @@ class CoordinationSearch(object):
                         # this is an external bond
                         self.frag_conn[i].append(j)
                         self.frag_conn_atoms[i].append((ia,ja))
-                        # logger.debug("fragment %d (%s) bonds to fragment %d (%s) %s - %s" %\
-                        #               (i, fragment['fragtype'], j, self.fraglist[j], self._mol.atypes[ia], self._mol.atypes[ja]))
+                        logger.debug("fragment %d (%s) bonds to fragment %d (%s) %s - %s" %\
+                                      (i, fragment['fragtype'], j, self.fraglist[j], self._mol.atypes[ia], self._mol.atypes[ja]))
 
     def get_atype(self, i):
         """return atype of atom i formatted as in molsys"""

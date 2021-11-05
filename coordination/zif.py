@@ -263,6 +263,9 @@ class MetalIm(ZifSearch):
             propagate_fragments = True, new_fragments_name = new_fragments_name,
             dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
 
+        # from collections import Counter
+        # print(Counter(dict(Counter(self.fragnumbers)).values()))
+
         # bind the remaining H (there should be non for the crystal)
         H_Cbonds = self.get_A_Bbonds(H, C)
         new_fragments_name = self.linker.name if self.ignore_H_in_reduction else 'irregular_H'
