@@ -265,8 +265,6 @@ class CoordinationSearch(object):
     def get_chain_decomposition(cls, graph):
         """return chain decomposition as list of list from pymatgen graph"""
         GG = cls.multigraph_to_graph(graph.graph) # pymatgen graph is a multigraph and directed, graph.graph is a nx object
-        # test = cls.find_one_cycle_per_node(graph)
-        # testb = cls.find_rings(graph)
         return list(chain_decomposition(GG)) # direct use of nx function
 
     @classmethod
@@ -295,6 +293,7 @@ class CoordinationSearch(object):
     def are_circularly_identical(arr1, arr2):
         """
         Checks whether two lists of int are circularly identical
+        Also works with lists of strings that don't contain spaces ' '
 
         Code from https://stackoverflow.com/a/26924896/8288189
         """
@@ -309,7 +308,8 @@ class CoordinationSearch(object):
         return str1 in str2 + ' ' + str2
 
     def find_rings(self, graph, including=None, max_depth = None, exit_if_large_cycle = False, 
-            pattern=None, target_number_of_rings = None, exit_if_too_many_rings=False, remove_overlapping_rings = False):
+            pattern=None, target_number_of_rings = None, exit_if_too_many_rings=False, 
+            remove_overlapping_rings = False):
         """                
         Find ring structures in the StructureGraph.
 
@@ -346,15 +346,12 @@ class CoordinationSearch(object):
         cycles_edges = []
 
         # Remove all two-edge cycles
-        # all_cycles = [c for c in nx.simple_cycles(directed) if len(c) > 2]
         if max_depth is not None:
             all_cycles = []
             for c in nx.simple_cycles(directed):
                 if len(c) > 2 and len(c) <= max_depth:
                     all_cycles.append(c)
-                    # print(len(all_cycles))
                 elif exit_if_large_cycle and len(c) > max_depth:
-                    # print(c)
                     raise SearchError('max_depth exceeded in cycle search', self.report_search)
         elif pattern is not None:
             all_cycles = []
@@ -363,7 +360,6 @@ class CoordinationSearch(object):
                     c_pattern = [self.elems[i] for i in c]
                     if self.are_circularly_identical(c_pattern, pattern):
                         all_cycles.append(c)
-                        # print(len(all_cycles))
                 if exit_if_too_many_rings and len(all_cycles) > target_number_of_rings * 2:
                     # self.plot_conn_as_graph() 
                     raise SearchError('target_number_of_rings exceeded in pattern cycle search', self.report_search)            
@@ -379,9 +375,8 @@ class CoordinationSearch(object):
                 unique_sorted.append(sorted(cycle))
                 unique_cycles.append(cycle)
 
-        if exit_if_too_many_rings==False and len(unique_cycles) > target_number_of_rings:
+        if len(unique_cycles) > target_number_of_rings:
             self.report_search['Extra cycles found after initial ring search'] = len(unique_cycles) - target_number_of_rings
-            # raise SearchError('target_number_of_rings exceeded in pattern cycle search', self.report_search)           
         
         # remove rings that are contained in two cycles
         # don't try if not enough rings found to save computation time
@@ -412,16 +407,6 @@ class CoordinationSearch(object):
                 keep_removing_rings = np.max([len(cycles) for cycles in cycles_of_atom]) > 1
 
             self.report_search['Overlapping rings removed'] = removed_overlapping_rings
-                # if len(unique_cycles) - np.sum(maximum_indices) < target_number_of_rings:
-                #     raise SearchError('Removing overlapping rings led ', self.report_search)            
-                # for i in range(len(unique_cycles)):
-                #     if overlap_weight_of_cycle[i] == max_weight:
-
-                # for cycles in cycles_of_atom:
-                #     if len(cycles) > 1:
-        #     a = 1
-        # a = 1
-
 
         if including is None:
             cycles_nodes = unique_cycles
