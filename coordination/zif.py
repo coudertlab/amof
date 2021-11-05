@@ -32,7 +32,8 @@ class ZifSearch(CoordinationSearch):
             cutoff_metal: float, overide dist_margin_metal if not None 
                 option added but not used so far
             ignore_H_in_reduction: bool, if True imids identification is only done by the cycle
-                The errors in bonding Hs are however reported, and the resulting reduced structure is computed with the H taken into account (barycenter).
+                The errors in bonding Hs are however reported, and the resulting reduced structure 
+                    is computed with the H taken into account (barycenter).
         """
         self.dist_margin_metal = dist_margin_metal  # dist_margin is created in CoordinationSearch.__init__
         self.ignore_H_in_reduction = ignore_H_in_reduction
@@ -62,7 +63,6 @@ class ZifSearch(CoordinationSearch):
         Find every cycle of the form ABA...BA of length cycle_length for species A and B
         Add the bonds thus found to self.conn
         A can be neighbour to A and B, and B only to A. 
-        NOT IMPLEMENTED YET: Only one A-A bond is allowed > check
         For imid, A is C and B is N
         If fragtype is not None, will create new fragments with this fragmame
 
@@ -71,7 +71,6 @@ class ZifSearch(CoordinationSearch):
             cycle_length: int
             fragtype: str
         """
-        # Find cycles (C-N-C-N-C)
         graph = StructureGraph.with_empty_graph(self.struct)
         self.add_ABbonds(graph, B, A)
         self.add_ABbonds(graph, A, A)
@@ -81,29 +80,32 @@ class ZifSearch(CoordinationSearch):
             exit_if_too_many_rings=False, remove_overlapping_rings=True)
 
         # check sanity of found cycles
-        self.report_search['Expected number of cycles'] = (
+        report_entry_1 = 'Expected number of cycles'
+        self.report_search[report_entry_1] = (
             len(cycles) == target_number_of_cycles)
-        if not self.report_search['Expected number of cycles']:
+        if not self.report_search[report_entry_1]:
             logger.debug("number of cycles incorrect")
             self.report_search['Number of missing cycles'] = target_number_of_cycles - len(cycles)
 
+        report_entry_2 = 'Atoms appear only once in cycles'
         in_cycle = [False for i in range(self.struct.num_sites)]
-        self.report_search['Atoms appear only once in cycles'] = True
+        self.report_search[report_entry_2] = True
         for c in cycles:
             for a, b in c:
                 self.conn[a].append(b)
                 self.conn[b].append(a)
                 if in_cycle[a] == True:
                     logger.debug("atom %s appears in more than one cycle", a)
-                    self.report_search['Atoms appear only once in cycles'] = False
+                    self.report_search[report_entry_2] = False
                 in_cycle[a] = True
         self.clean_conn()
+
         if fragtype is not None:
             for c in cycles:
                 indices = list(set(itertools.chain.from_iterable(c)))
                 self.create_fragment(fragtype, indices)
         
-        self.report_search['imid_search_successful'] = self.report_search['imid_atoms_appear_only_once_in_cycles'] and self.report_search['imid_expected_number_of_cycles'] and self.report_search['imid_expected_length_of_cycles']
+        self.report_search['Cycle search successful'] = self.report_search[report_entry_1] and self.report_search[report_entry_2]
 
 class MetalmIm(ZifSearch):
     """
@@ -217,8 +219,8 @@ class MetalIm(ZifSearch):
             fragtype = self.linker.name)
 
         # hard way to force the reduction to work by ignoring the failed imid search: to be investigated
-        if not self.report_search['imid_search_successful']:
-            raise SearchError('Imid search failed', self.report_search)
+        if not self.report_search['Cycle search successful']:
+            raise SearchError('Cycle search failed', self.report_search)
 
         # Connect H
         H_perfectly_connected = True
@@ -232,9 +234,6 @@ class MetalIm(ZifSearch):
             propagate_fragments = True, new_fragments_name = new_fragments_name,
             dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
         H_perfectly_connected = H_perfectly_connected and self.report_search[report_entry] == []
-
-        from collections import Counter
-        # print(Counter(dict(Counter(self.fragnumbers)).values()))
 
         # bind the remaining H (there should be non for the crystal)
         H_Cbonds = self.get_A_Bbonds("h", "c")
@@ -254,7 +253,6 @@ class MetalIm(ZifSearch):
             lambda i: self.elems[i] == "n",
             self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated',
             report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)
-        a = 1
 
     def is_reduced_structure_valid(self):
         """
