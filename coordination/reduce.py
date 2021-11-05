@@ -10,7 +10,6 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from sadi.coordination.core import SearchError
 
 import sadi.symbols
-# import sadi.files.path as spath
 import sadi.coordination.zif
 import sadi.trajectory
 
@@ -61,18 +60,17 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
                 reduced_atom, report_search_atom = reduce_atom(atom, structure_reducer, symbols, filename = None)
                 report_search['in_reduced_trajectory'] = reduced_atom is not None
                 report_search = {**report_search, **report_search_atom}
-                # logger.info(str(report_search))
             except SearchError as e:
                 logger.debug('Failed to do reduce frame with error message: ' + e.message)        
                 report_search['in_reduced_trajectory'] = False       
                 report_search = {**report_search, **e.report_search}
                 report_search['Error_message'] = e.message
                 reduced_atom = None
-            # except BaseException as e: # unexpected exception
-            #     logger.debug('Failed to do reduce frame with error message: ' + str(e))        
-            #     report_search['in_reduced_trajectory'] = False       
-            #     report_search['Error_message'] = "Unexpected Base Exception: " + str(e)
-            #     reduced_atom = None
+            except BaseException as e: # unexpected exception
+                logger.debug('Failed to do reduce frame with error message: ' + str(e))        
+                report_search['in_reduced_trajectory'] = False       
+                report_search['Error_message'] = "Unexpected Base Exception: " + str(e)
+                reduced_atom = None
             return reduced_atom, report_search
 
         if parallel == False:
