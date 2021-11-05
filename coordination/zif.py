@@ -34,7 +34,7 @@ class ZifSearch(CoordinationSearch):
             ignore_H_in_reduction: bool, if True imids identification is only done by the cycle
                 The errors in bonding Hs are however reported, and the resulting reduced structure is computed with the H taken into account (barycenter).
         """
-        self.dist_margin_metal = dist_margin_metal  # dist_maring is created in CoordinationSearch.__init__
+        self.dist_margin_metal = dist_margin_metal  # dist_margin is created in CoordinationSearch.__init__
         self.ignore_H_in_reduction = ignore_H_in_reduction
         neighb_max_distance = self.find_neighb_max_distance(
             dist_margin, dist_margin_metal, cutoff_metal)
@@ -232,7 +232,9 @@ class MetalIm(ZifSearch):
         """
         self.node = bu.SingleMetal(metal, 4)
         self.linker = bu.ImidazoleBased("Im", "C3N2H3")
-        ZifSearch.__init__(self, struct, dist_margin, dist_margin_metal, ignore_H_in_reduction)
+        ZifSearch.__init__(self, struct, dist_margin = dist_margin, 
+            dist_margin_metal = dist_margin_metal, 
+            ignore_H_in_reduction = ignore_H_in_reduction)
 
     
     def detect_conn(self):
@@ -254,30 +256,39 @@ class MetalIm(ZifSearch):
         if not self.report_search['imid_search_successful']:
             raise SearchError('Imid search failed', self.report_search)
 
+        # Connect H
+        H_perfectly_connected = True
         
         # add H based on cov radii to every C
         new_fragments_name = self.linker.name if self.ignore_H_in_reduction else 'irregular_C'
+        report_entry = "C atoms missing H neighbours"
         self.assign_B_uniquely_to_A_N_coordinated(lambda i: (self.elems[i] == C), lambda i: (
-            self.elems[i] == H),   3, report_level = 'undercoordinated', report_entry="C atoms missing H neighbours",
+            self.elems[i] == H),   3, report_level = 'undercoordinated', report_entry = report_entry,
 
             propagate_fragments = True, new_fragments_name = new_fragments_name,
             dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
+        H_perfectly_connected = H_perfectly_connected and self.report_search[report_entry] == []
 
-        # from collections import Counter
+        from collections import Counter
         # print(Counter(dict(Counter(self.fragnumbers)).values()))
 
         # bind the remaining H (there should be non for the crystal)
         H_Cbonds = self.get_A_Bbonds(H, C)
         new_fragments_name = self.linker.name if self.ignore_H_in_reduction else 'irregular_H'
+        report_entry = "H atoms not bonded to C"
         self.find_N_closest_cov_dist(
-            lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry="H atoms not bonded to C",
+            lambda i: H_Cbonds[i] == 0, lambda i: True, 1, report_level='full', report_entry= report_entry,
             propagate_fragments = True, new_fragments_name = new_fragments_name,
             dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
+        H_perfectly_connected = H_perfectly_connected and self.report_search[report_entry] == []
+
+        self.report_search['H perfectly connected'] = H_perfectly_connected
 
         # link N to metal_atom with no constraint on the number of N to metal_atom
         self.find_N_closest_cov_dist(lambda i: self.elems[i] == metal_atom, lambda i: self.elems[i] == N,
             self.node.target_coordination, dist_margin=self.dist_margin_metal, report_level='undercoordinated',
             report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)
+        a = 1
 
     def is_reduced_structure_valid(self):
         """
