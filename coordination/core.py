@@ -479,9 +479,6 @@ class CoordinationSearch(object):
         def are_A_Ncoordinated(A_conn, A_enough_nn):
             """return False as long as the main loop should keep running"""
             for i in range(len(A_conn)):
-                # if len(A_conn[i])>target_N:
-                #     logger.warning('len(A_conn[i])>target_N')
-                # if (len(A_conn[i])!=target_N) and (A_enough_nn[i]==True):
                 if (len(A_conn[i])<target_N) and (A_enough_nn[i]==True):
                     return False
             return True
@@ -513,7 +510,6 @@ class CoordinationSearch(object):
             # take the closest A-B pair and bond them 
             choose_min = [] # candidate of atom A i to be selected
             for i in range(len(A_indices)):
-                # if len(A_conn[i])==target_N or A_enough_nn[i]==False:
                 if len(A_conn[i])>=target_N or A_enough_nn[i]==False:
                     choose_min.append(np.inf) # so that it is not chosen as min
                 else:
@@ -530,7 +526,6 @@ class CoordinationSearch(object):
                     A_neighb_indices[i].remove(B_imin)
             # flag A atoms missing nn
             for i in range(len(A_indices)):
-                # if A_enough_nn[i]==True and len(A_conn[i])<target_N and len(A_nn_distances[i])==0:
                 if A_enough_nn[i]==True and len(A_nn_distances[i])==0:
                     A_enough_nn[i]=False
                     # logger.debug("not enough nn for atom id:", A_indices[i], "; N bonds:", C_Nbonds[A_indices[i]], "; missing bonds:", target_N - len(A_conn[i]))
@@ -555,13 +550,6 @@ class CoordinationSearch(object):
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
             if self.report_search[report_entry] != []:
                 logger.debug("%s: %s", report_entry, self.report_search[report_entry])
-
-        # # report coordination (formatted as atype) of every atom that endup not having enough nn
-        # if report_entry is not None:
-        #     list_of_atypes = [self.get_atype(A_indices[i]) for i in range(len(A_indices)) if A_enough_nn[i]==False]
-        #     self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
-        #     if self.report_search[report_entry] != []:
-        #         logger.debug("%s: %s", report_entry, self.report_search[report_entry])
 
         # Create new fragments for A atoms
         if new_fragments_name is not None:
