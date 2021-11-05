@@ -140,7 +140,6 @@ class MetalmIm(ZifSearch):
         main function to detect connectivity
         """
         # Find imid cycles (C-N-C-N-C)
-        graph = StructureGraph.with_empty_graph(self.struct)
         self.find_ABAcycles("c", "n", cycle_length = 5, 
             target_number_of_cycles = self.elems.count("n") / 2, 
             fragtype = self.linker.name)
@@ -240,7 +239,6 @@ class MetalIm(ZifSearch):
         main function to detect connectivity
         """
         # Find imid cycles (C-N-C-N-C)
-        graph = StructureGraph.with_empty_graph(self.struct)
         self.find_ABAcycles("c", "n", cycle_length = 5, target_number_of_cycles = self.elems.count("n") / 2,
             fragtype = self.linker.name)
 
