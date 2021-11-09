@@ -164,7 +164,7 @@ class MetalmIm(ZifSearch):
             lambda i: (C_Nbonds[i] in [0, 1]), 
             lambda i: (self.elems[i] == "h"),
             3, 
-            report_entry=report_entry, 
+            report_level = 'undercoordinated', report_entry=report_entry, 
             propagate_fragments = True, new_fragments_name = new_fragments_name)
         H_perfectly_connected = H_perfectly_connected and self.report_search[report_entry] == []
 
