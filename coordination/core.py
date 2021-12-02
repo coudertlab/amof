@@ -433,7 +433,7 @@ class CoordinationSearch(object):
 
     def plot_conn_as_graph(self, filename = "graph_temp.png"):
         """create graph with every bond present in conn and print it in file"""
-        filename = sadi.files.path.append_suffix(filename, 'png')
+        filename = sadi.files.path.append_suffix(filename, 'png') # draw_graph_to_file needs a filename extension
         graph = StructureGraph.with_empty_graph(self.struct)
         for i in range(self.struct.num_sites):
             for j in self.conn[i]:

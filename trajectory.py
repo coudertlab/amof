@@ -96,7 +96,7 @@ class Trajectory(object):
         Args: 
             cell: cell vector of same length than self.traj in valid ase cell format
             set_pbc: wether to set_pbc=True to every frame of traj
-            fit_size = if True will limit array size to the smallest if cell and traj to avoir raising an error
+            fit_size = if True will limit array size to the smallest if cell and traj to avoid raising an error
         """
         if fit_size and len(self.traj)!=len(cell):
             logger.warning("Mismatch in file sizes; traj: %s vs cell: %s", len(self.traj), len(cell))
