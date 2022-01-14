@@ -288,6 +288,35 @@ class MetalIm(ZifSearch):
             dist_margin=self.dist_margin_metal, report_level='undercoordinated',
             report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)
 
+        # np.save("conn", self.conn)
+
+        # import json
+        # with open('conn.json', 'w') as f:
+        #     f.write(json.dumps(self.conn))
+
+
+        # #Now read the file back into a Python list object
+        # with open('conn.json', 'r') as f:
+        #     a = json.loads(f.read())
+
+        import pickle
+
+        with open('conn.pickle', 'wb') as fp:
+            pickle.dump(self.conn, fp)
+
+        # with open ('conn.pickle', 'rb') as fp:
+        #     itemlist = pickle.load(fp)
+
+        with open('fragtypes.pickle', 'wb') as fp:
+            pickle.dump(self.fragtypes, fp)
+
+        with open('fragnumbers.pickle', 'wb') as fp:
+            pickle.dump(self.fragnumbers, fp)
+
+        a = 1
+
+
+
     def is_reduced_structure_valid(self):
         """
         For now, only accept the search if nothing else then Im and Zn are found
