@@ -19,334 +19,64 @@ Note: the code still reads old mfpx file of type top correctly but it writes onl
 
 logger = logging.getLogger(__name__)
 
-def write(mol, f, fullcell = True, topoformat = "new"):
+class DummyMol(object):
+    """
+    DummyMol object with all the necessary attributes
+    Mainly here to provide info on mol arg for write_mfpx
+    """
+    def __init__(self, elems, xyz, cell, conn, atypes, fragtypes, fragnumbers):
+        """default constructor"""
+        self.cell = cell
+        self.fragtypes = fragtypes
+        self.fragnumbers = fragnumbers
+        self.elems = elems
+        self.xyz = xyz
+        self.conn = conn
+        self.natoms = len(elems)
+        self.atypes = atypes
+
+def write_mfpx(mol, filename):
     """
     Routine, which writes an mfpx file
     :Parameters:
-        -mol   (obj) : instance of a molsys class
-        -f (obj) : file object or writable object
-        -fullcell  (bool): flag to specify if complete cellvectors arre written
+        -mol   (obj) : DummyMol or class with similar attributes
+        -filename (str) : filename
     """
+    f = open(filename, 'w')
     ### write check ###
     try:
         f.write ### do nothing
     except AttributeError:
         raise IOError("%s is not writable" % f)
     ### write func ###
-    if len(mol.fragtypes) == 0:
-        mol.set_nofrags()
-    if mol.is_topo:
-        ftype = 'topo'
-        if mol.use_pconn == False:
-            # this is a topo object but without valid pconn. for writing we need to generate it
-            mol.add_pconn()
-        # this is for the new format
-        topoinfo = {}
-        if topoformat == "new":
-            topoinfo["format"] = "new"
-        else:
-            topoinfo["format"] = "old"
-        if "topo" in mol.loaded_addons:
-            for k in ["systrekey", "RCSRname", "spgr", "coord_seq", "transitivity", "sk_emapping"]:
-                v = getattr(mol.topo, k)
-                if v != "None":
-                    if type(v) == type([]):
-                        if type(v[0]) == type(""):
-                            # a list of strings .. use | as separator
-                            topoinfo[k] = "|".join(v)
-                        elif type(v[0]) == type(0):
-                            # a list of integers .. 
-                            topoinfo[k] = " ".join([str(i) for i in v])
-                    else:
-                        topoinfo[k] = v
-        else:
-            topoinfo["format"] = "old"
-    elif mol.is_bb:
-        ftype = "bb"
-    else:
-        ftype = 'xyz'
+    ftype = 'xyz'
     f.write('# type %s\n' % ftype)
-    if mol.bcond>0:
-        if fullcell:
-#            elif keyword == 'cellvect':
-#                mol.periodic = True
-#                celllist = [float(i) for i in lbuffer[2:11]]
-#                cell = numpy.array(celllist)
-#                cell.shape = (3,3)
-#                mol.set_cell(cell)
-            f.write('# cellvect %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n' %\
-                    tuple(mol.cell.ravel()))
-        else:
-            f.write('# cell %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n' %\
-                    tuple(mol.cellparams))
-    if mol.is_bb:
-        ### BLOCK DEFINITION ###################################################
-        ### bbcenter write ###
-        if mol.bb.center_type != 'special':
-            f.write('# bbcenter %s\n' % mol.bb.center_type)
-        else:
-            f.write('# bbcenter %s %12.6f %12.6f %12.6f\n' %
-                    tuple([mol.bb.center_type]+ mol.bb.center_xyz.tolist()))
-        ### bbconn write ###
-        # sort by connectors' types
-        _argsorted_type = argsorted(mol.bb.connector_types)
-        connectors_type = [mol.bb.connector_types[_] for _ in _argsorted_type]
-        connector_atoms = [sorted(mol.bb.connector_atoms[_]) for _ in _argsorted_type]
-        connectors      = [mol.bb.connector[_] for _ in _argsorted_type]
-        # sort by connector atoms after connectors' types
-        _sort_priority = [_*mol.natoms for _ in connectors_type]
-        connector_atoms_priority = [
-            [__+_sort_priority[_k] for __ in _] for _k,_ in enumerate(connector_atoms)
-        ] # preparatory for nested sorting
-        _argsorted_catoms = argsorted(connector_atoms_priority)
-        connector_atoms = [connector_atoms[_] for _ in _argsorted_catoms]
-        connectors      = [connectors[_]      for _ in _argsorted_catoms]
-        # make bbcon line
-        connstrings = ''
-        ctype = 0
-        for i,d in enumerate(mol.bb.connector_atoms):
-            if mol.bb.connector_types[i] != ctype:
-                ctype +=1
-                connstrings += '/ ' # ctypes sep
-            for j in d:
-                connstrings = connstrings + str(j+1) +',' # connector_atoms sep
-            connstrings = connstrings[0:-1] + '*' + str(connectors[i]+1)+' '
-        # write bbconn line
-        f.write('# bbconn %s\n' % connstrings)
-        if mol.bb.connector_atypes is not None:
-            # also write connector atypes
-            temp_atypes = []
-            for at in mol.bb.connector_atypes:
-                if type(at) == type([]):
-                    temp_atypes.append(",".join(at))
-                else:
-                    temp_atypes.append(at)
-            f.write('# bbatypes %s\n' % " ".join(temp_atypes))
-    if ftype == "topo":
-        tks = list(topoinfo.keys())
-        tks.sort()
-        for k in tks:
-            f.write("# topo_%s %s\n" % (k, topoinfo[k]))
-    if hasattr(mol, "orientation"):
-        ### ORIENTATION DEFINITION #############################################
-        o = len(mol.orientation) * "%3d" % tuple(mol.orientation)
-        f.write('# orient '+o+"\n")
-    f.write('%i\n' % mol.natoms)
-    if ftype == 'xyz' or ftype == "bb":
-        write_body(f,mol)
-    else:
-        # this is all a hack .. restructure write/read body etc. .... currently we keep it makeing the mess even bigger .. sick!
-        topo_new = False
-        if topoinfo["format"] == "new":
-            topo_new = True
-            # make sure that fragnumbers contains the skey_mapping of the topo addon (just for storing it)
-            mol.fragnumbers = mol.topo.sk_vmapping
-        write_body(f,mol,topo=True, topo_new=topo_new)
-    return
+    f.write('# cellvect %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n' %\
+        tuple(mol.cell.ravel()))
+    write_body(f,mol)
+    f.close()
 
-def parse_connstring(mol, con_info): 
-    """ 
-    Routines which parses the con_info string of a txyz or an mfpx file 
-    :Parameters: 
-        - mol      (obj) : instance of a molclass 
-        - con_info (str) : string holding the connectors info 
-    """ 
-    connector             = [] 
-    connector_atoms       = [] 
-    connector_types       = [] 
-    contype_count = 0 
-    for c in con_info: 
-        if c == "/": 
-            contype_count += 1 
-        else: 
-            ss = c.split('*') # ss[0] is the dummy neighbors, ss[1] is the connector atom 
-            if len(ss) > 2: 
-                raise IOError('This is not a proper BB file, convert with script before!') 
-            elif len(ss) < 2: # neighbor == connector 
-                ss *= 2 
-            stt = ss[0].split(',') 
-            connector.append(int(ss[1])-1) 
-            connector_types.append(contype_count) 
-            connector_atoms.append((numpy.array([int(i) for i in stt]) -1).tolist()) 
-    return connector, connector_atoms, connector_types
-
-## this is read_body and write_body from txyz. due to the specific needs and special format of mfpx files these functions have been moved over here (RS)
-
-
-def read_body(f, natoms, frags = True, topo = False, cromo = False, topo_new=False):
-    """
-    Routine, which reads the body of a txyz or a mfpx file
-    :Parameters:
-        -f      (obj)  : fileobject
-        -natoms (int)  : number of atoms in body
-        -frags  (bool) : flag to specify if fragment info is in body or not
-        -topo   (bool) : flag to specify if pconn info is in body or not
-        -cromo  (bool) : flag to specify if oconn info is in body or not
-    """
-    elems       = []
-    xyz         = []
-    atypes      = []
-    conn        = []
-    fragtypes   = []
-    fragnumbers = []
-    pconn       = []
-    pimages     = []
-    oconn      = []
-    if topo: frags=False
-    for i in range(natoms):
-        lbuffer = f.readline().split()
-        xyz.append([float(i) for i in lbuffer[2:5]])
-        elems.append(lbuffer[1].lower())
-        t = lbuffer[5]
-        atypes.append(t)
-        if frags == True:
-            fragtypes.append(lbuffer[6])
-            fragnumbers.append(int(lbuffer[7]))
-            offset = 2
-        else:
-            if topo_new:
-                fragtypes.append('0')  # why "0" and not "-1" ???
-                fragnumbers.append(int(lbuffer[6]))
-                offset = 1
-            else:
-                fragtypes.append('0') # why "0" and not "-1" ???
-                fragnumbers.append(0)
-                offset = 0
-        if not topo:
-            conn.append((numpy.array([int(i) for i in lbuffer[6+offset:]])-1).tolist())
-        elif cromo:
-            txt = lbuffer[6+offset:]
-            a = [[int(j) for j in i.split('/')] for i in txt]
-            c,pc,pim,oc = [i[0]-1 for i in a], [images[i[1]] for i in a], [i[1] for i in a], [i[2] for i in a]
-            conn.append(c)
-            pconn.append(pc)
-            pimages.append(pim)
-            oconn.append(oc)
-        else:
-            txt = lbuffer[6+offset:]
-            a = [[int(j) for j in i.split('/')] for i in txt]
-            c,pc,pim = [i[0]-1 for i in a], [images[i[1]] for i in a], [i[1] for i in a]
-            conn.append(c)
-            pconn.append(pc)
-            pimages.append(pim)
-    if topo:
-        if cromo:
-            return elems, numpy.array(xyz), atypes, conn, pconn, pimages, oconn
-        else:
-            if topo_new:
-                return elems, numpy.array(xyz), atypes, conn, pconn, pimages, fragnumbers
-            else:
-#                return elems, numpy.array(xyz), atypes, conn, fragtypes, fragnumbers, pconn
-                return elems, numpy.array(xyz), atypes, conn, pconn, pimages
-    else:
-        return elems, numpy.array(xyz), atypes, conn, fragtypes, fragnumbers
-
-
-def write_body(f, mol, frags=True, topo=False, pbc=True, plain=False, topo_new=False):
+def write_body(f, mol):
     """
     Routine, which writes the body of a txyz or a mfpx file
     :Parameters:
         -f      (obj)  : fileobject
-        -mol    (obj)  : instance of molsys object
-        -frags  (bool) : flag to specify if fragment info should be in body or not
-        -topo   (bool) : flag to specigy if pconn info should be in body or not
-        -pbc    (bool) : if False, removes connectivity out of the box (meant for visualization)
-        -plain  (bool) : plain Tinker file supported by molden
-        -topo_new(bool): if True the new format with skey mapping (hidden in fragnumbers) is written
+        -mol    (obj)  : DummyMol or class with similar attributes
     """
-    if topo:
-        frags = False   #from now on this is convention! yuck .. why do we specify it in the first place then?
-    if topo: pconn = mol.pconn
-    if frags:
-        fragtypes   = mol.fragtypes
-        fragnumbers = mol.fragnumbers
-    else:
-        fragtypes = None
-        if topo_new:
-            fragnumbers = mol.fragnumbers ## this hides the skey mapping
-        else:
-            fragnumbers = None
+    fragtypes   = mol.fragtypes
+    fragnumbers = mol.fragnumbers
     elems       = mol.elems
     xyz         = mol.xyz
     cnct        = mol.conn
     natoms      = mol.natoms
     atypes      = mol.atypes
-    if mol.cellparams is not None and not pbc:
-        mol.set_conn_nopbc()
-        cnct = mol.conn_nopbc
-    ### BUG but feature so removable ###
-    #    atoms_withconn = mol.atoms_withconn_nopbc[:]
-    #    offset = numpy.zeros(natoms, 'int')
-    #    for i in range(natoms):
-    #        if i not in atoms_withconn:
-    #            offset[i:] += 1
-    #    cnct = [
-    #        [
-    #            # subtract the j-th offset to atom j in i-th conn if j in atoms_withconn
-    #            j-offset[j] for j in cnct[i] if j in atoms_withconn
-    #        ]
-    #        # if atom i in atoms_withconn
-    #        for i in range(natoms) if i in atoms_withconn
-    #    ]
-    #    natoms = len(atoms_withconn)
-    #    xyz    = xyz[atoms_withconn]
-    #    elems  = numpy.take(elems, atoms_withconn).tolist()
-    #    atypes = numpy.take(atypes, atoms_withconn).tolist()
-    #    if frags:
-    #        fragtypes   = numpy.take(fragtypes, atoms_withconn).tolist()
-    #        fragnumbers = numpy.take(fragnumbers, atoms_withconn).tolist()
-    if plain:
-        if frags:
-            fragtypes = [None]*len(atypes)
-            fragnumbers = [None]*len(atypes)
-            oldatypes = list(zip(atypes, fragtypes, fragnumbers))
-        else:
-            oldatypes = atypes[:]
-        # unique atomtypes
-        u_atypes = set(Counter(oldatypes).keys())
-        u_atypes -= set([a for a in u_atypes if str(a).isdigit()])
-        u_atypes = sorted(list(u_atypes))
-        # old2new atomtypes
-        o2n_atypes = {e:i for i,e in enumerate(u_atypes)}
-        n2o_atypes = {i:e for i,e in enumerate(u_atypes)}
-        atypes = [a if str(a).isdigit() else o2n_atypes[a] for a in oldatypes]
-        frags = False ### encoded in one column only
+
     xyzl = xyz.tolist()
     for i in range(natoms):
         line = ("%3d %-3s" + 3*"%12.6f" + "   %-24s") % \
             (i+1, elems[i], xyzl[i][0], xyzl[i][1], xyzl[i][2], atypes[i])
-        if frags is True:
-            line += ("%-16s %5d ") % (fragtypes[i], fragnumbers[i])
-        elif topo_new is True:
-            # write fragnumbers as skey mappings if topo_new is specified
-            line += ("%5d ") % (fragnumbers[i])
+        line += ("%-16s %5d ") % (fragtypes[i], fragnumbers[i])
         conn = (numpy.array(cnct[i])+1).tolist()
         if len(conn) != 0:
-            if topo:
-                pimg = []
-                for pc in pconn[i]:
-                    for ii,img in enumerate(images):
-                        if pc is None:
-                            raise TypeError("Something went VERY BAD in pconn")
-                        if all(img==pc):
-                            pimg.append(ii)
-                            break
-                for cc,pp in zip(conn,pimg):
-                    if pp < 10:
-                        line +="%8d/%1d " % (cc,pp)
-                    else:
-                        line += "%7d/%2d " % (cc,pp)
-            else:
-                line += (len(conn)*"%7d ") % tuple(conn)
+            line += (len(conn)*"%7d ") % tuple(conn)
         f.write("%s \n" % line)
-    if plain:
-        if frags:
-            f.write("### atype: (old_atype, fragment_type, fragment_number)\n")
-            n2o_fmt = pprint.pformat(n2o_atypes, indent=4)
-        else:
-            f.write("### atype: old_atype\n")
-            n2o_fmt = pprint.pformat(n2o_atypes, indent=4, width=1) #force \n
-        n2o_fmt = n2o_fmt.strip("{}")
-        n2o_fmt = "{\n " + n2o_fmt + "\n}\n"
-        f.write(n2o_fmt)
-    return
