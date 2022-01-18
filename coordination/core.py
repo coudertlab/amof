@@ -24,6 +24,7 @@ import logging
 import sadi.files.path
 import sadi.structure
 import sadi.symbols
+import sadi.files.molsys as smolsys
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -192,6 +193,13 @@ class CoordinationSearch(object):
         self.report_search['number_of_nodes'] = reduced_struct.num_sites
         self.report_search['symbols'] = str(self.symbols)
         return reduced_struct
+
+    def write_mfpx(self, filename):
+        """
+        Write an mfpx output file with connectivity info readable by molsys
+        """
+        mol = smolsys.DummyMol(elems, xyz, cell, conn, atypes, fragtypes, fragnumbers)
+        smolsys.write_mfpx(mol, filename)
 
     def make_frag_conn(self):
         """

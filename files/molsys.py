@@ -9,6 +9,8 @@ forked and adapted from molsys/fileIO/mfpx.py
 import numpy
 import logging
 
+import sadi.files.path as spath
+
 """
 These functions implement the reading and writing of mfpx files
 
@@ -42,6 +44,7 @@ def write_mfpx(mol, filename):
         -mol   (obj) : DummyMol or class with similar attributes
         -filename (str) : filename
     """
+    filename = spath.append_suffix(filename, 'mfpx')
     f = open(filename, 'w')
     ### write check ###
     try:

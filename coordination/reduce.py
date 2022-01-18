@@ -15,7 +15,8 @@ import sadi.trajectory
 
 logger = logging.getLogger(__name__)
 
-def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta_Step = 1, first_frame = 0, parallel = False):
+def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta_Step = 1, 
+        first_frame = 0, parallel = False, write_mfpx = False):
     """
     Conveniant wrapper to reduce trajectory by specifying a specific mof
     For now works for 'ZIF-4', 'ZIF-8', 'ZIF-zni' and 'SALEM-2'
@@ -26,6 +27,7 @@ def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta
         filename: str, where to write output files, specify None to avoid writing
         dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours. Default: 1.2
         delta_Step: number of simulation steps between two frames
+        write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajetory
     """
     if mof in ['ZIF-4', 'ZIF-zni', 'SALEM-2']:
         structure_reducer = lambda struct: sadi.coordination.zif.MetalIm(struct, "Zn", dist_margin=dist_margin, dist_margin_metal=1.6) # 1.6 means 3.088 for Zn-N (one case of 2.92 was observed)
@@ -35,9 +37,11 @@ def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta
         symbols = sadi.symbols.DummySymbols(['Zn', 'mIm']) 
     else:
         logger.exception('Structure search not available for the mof %s', mof)
-    return reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, delta_Step = delta_Step, first_frame = first_frame, parallel = parallel)
+    return reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, 
+        delta_Step = delta_Step, first_frame = first_frame, parallel = parallel, write_mfpx = write_mfpx)
 
-def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = None, delta_Step = 1, first_frame = 0, parallel = False):
+def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = None, delta_Step = 1, 
+            first_frame = 0, parallel = False, write_mfpx = False):
         """
         Args:
             trajectory: ase trajectory object
@@ -47,6 +51,8 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
                  parallelisation issues + not adapted to analysis tools to have variable number of atoms)
             delta_Step: number of simulation steps between two frames
             filename: str, where to write output files, specify None to avoid writing
+            write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajetory
+                if no filename is provided, will not write any
         
         Return:
             reduced_traj: sadi ReducedTrajectory object
@@ -55,10 +61,12 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
 
         step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
 
-        def per_atom(atom, step):
+        def per_atom(atom, step, filename):
             report_search = {'Step': step}
             try:
-                reduced_atom, report_search_atom = reduce_atom(atom, structure_reducer, symbols, filename = None)
+                if filename is not None:
+                    filename += f"_{step}" 
+                reduced_atom, report_search_atom = reduce_atom(atom, structure_reducer, symbols, write_mfpx = write_mfpx, filename = filename)
                 report_search['in_reduced_trajectory'] = reduced_atom is not None
                 report_search = {**report_search, **report_search_atom}
             except SearchError as e:
@@ -75,10 +83,10 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
             return reduced_atom, report_search
 
         if parallel == False:
-            result_list = [per_atom(trajectory[i], step[i]) for i in range(len(trajectory))]
+            result_list = [per_atom(trajectory[i], step[i], filename) for i in range(len(trajectory))]
         else:
             num_cores = parallel if type(parallel) == int else 18
-            result_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(per_atom)(trajectory[i], step[i]) for i in range(len(trajectory)))
+            result_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(per_atom)(trajectory[i], step[i], filename) for i in range(len(trajectory)))
 
         list_report_search = []
         reduced_traj = []
@@ -94,12 +102,13 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
             reduced_trajectory.write_to_file(filename)
         return reduced_trajectory
 
-def reduce_atom(atom, structure_reducer, symbols, filename = None):
+def reduce_atom(atom, structure_reducer, symbols, write_mfpx = False, filename = None):
     """
     Args:
         atom: ase atom object
         structure_reducer: a function taking a pymatgen structure as input and returning a CoordinationSearch object
         symbols: a DummySymbol object 
+        write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajetory
         filename: str, where to write output files. Shouldn't contain any extension
             If None doesn't write
 
@@ -108,13 +117,14 @@ def reduce_atom(atom, structure_reducer, symbols, filename = None):
         report_search: dic
     """
     struct = AseAtomsAdaptor.get_structure(atom)
-
     searcher = structure_reducer(struct)
     searcher.symbols = symbols # enforce symbols; TBD: add option to get around, 'auto' setup, etc.
     reduced_struct = searcher.reduce_structure()
     report_search = {**{"is_reduced_structure_valid": searcher.is_reduced_structure_valid()}, **searcher.report_search}
     if searcher.is_reduced_structure_valid():
         reduced_atom = AseAtomsAdaptor.get_atoms(reduced_struct)
+        if write_mfpx == True and filename is not None:
+            searcher.write_mfpx(filename)
     else:
         reduced_atom = None
     return reduced_atom, report_search
