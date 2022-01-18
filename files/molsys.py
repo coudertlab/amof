@@ -56,6 +56,7 @@ def write_mfpx(mol, filename):
     f.write('# type %s\n' % ftype)
     f.write('# cellvect %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f %12.6f\n' %\
         tuple(mol.cell.ravel()))
+    f.write('%i\n' % mol.natoms)
     write_body(f,mol)
     f.close()
 

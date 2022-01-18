@@ -198,7 +198,8 @@ class CoordinationSearch(object):
         """
         Write an mfpx output file with connectivity info readable by molsys
         """
-        mol = smolsys.DummyMol(elems, xyz, cell, conn, atypes, fragtypes, fragnumbers)
+        mol = smolsys.DummyMol(self.elems, self.struct.cart_coords, self.struct.lattice.matrix, 
+            self.conn, self.atypes, self.fragtypes, self.fragnumbers)
         smolsys.write_mfpx(mol, filename)
 
     def make_frag_conn(self):

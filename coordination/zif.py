@@ -299,19 +299,19 @@ class MetalIm(ZifSearch):
         # with open('conn.json', 'r') as f:
         #     a = json.loads(f.read())
 
-        import pickle
+        # import pickle
 
-        with open('conn.pickle', 'wb') as fp:
-            pickle.dump(self.conn, fp)
+        # with open('conn.pickle', 'wb') as fp:
+        #     pickle.dump(self.conn, fp)
 
-        # with open ('conn.pickle', 'rb') as fp:
-        #     itemlist = pickle.load(fp)
+        # # with open ('conn.pickle', 'rb') as fp:
+        # #     itemlist = pickle.load(fp)
 
-        with open('fragtypes.pickle', 'wb') as fp:
-            pickle.dump(self.fragtypes, fp)
+        # with open('fragtypes.pickle', 'wb') as fp:
+        #     pickle.dump(self.fragtypes, fp)
 
-        with open('fragnumbers.pickle', 'wb') as fp:
-            pickle.dump(self.fragnumbers, fp)
+        # with open('fragnumbers.pickle', 'wb') as fp:
+        #     pickle.dump(self.fragnumbers, fp)
 
         a = 1
 
