@@ -199,6 +199,7 @@ class WindowMsd(Msd):
                             dr[i][j] -= a
                         elif dr[i][j]<-a/2:
                             dr[i][j] += a
+                return dr
             dr_k = get_dr(k, r_k_minus_1)
             dr_k_minus_m = get_dr(k - m, r_k_minus_m_minus_1)
             delta_dr = dr_k - dr_k_minus_m
@@ -222,7 +223,7 @@ class WindowMsd(Msd):
         
         elements = sadi.atom.get_atomic_numbers_unique(trajectory[0])
 
-        self.msd_data = pd.DataFrame({"Time": m}) 
+        self.msd_data = pd.DataFrame({"Time": window}) 
         if not parallel:
             self.msd_data["X"] = [self.compute_species_msd(trajectory, m) for m in window]
 
