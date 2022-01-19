@@ -154,7 +154,7 @@ class WindowMsd(Msd):
 
         Args:
             trajectory: ase trajectory object
-            delta_time: int, time between two values, in fs
+            delta_time: int, time between two computed values of the MSD, in fs
             max_time: int or str
                 if half, then the upper limit is half of the simulation size
             timestep: float, timestep between two frames, in fs
@@ -164,9 +164,9 @@ class WindowMsd(Msd):
         msd_class = cls() # initialize class
         step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
         if max_time == "half":
-            max_m = (len(trajectory) // 2)
-            delta_m = delta_time // timestep
-        window = np.arange(0, (max_m // delta_m), delta_m)
+            max_time = (len(trajectory) // 2) * timestep
+        delta_m = delta_time // timestep
+        window = np.arange(0, ((max_time // timestep) // delta_m), delta_m)
         time = timestep * window
         msd_class.compute_msd(trajectory, step, window, time, parallel)
         return msd_class # return class as it is a constructor
@@ -223,7 +223,7 @@ class WindowMsd(Msd):
         
         elements = sadi.atom.get_atomic_numbers_unique(trajectory[0])
 
-        self.msd_data = pd.DataFrame({"Time": window}) 
+        self.msd_data = pd.DataFrame({"Time": time}) 
         if not parallel:
             self.msd_data["X"] = [self.compute_species_msd(trajectory, m) for m in window]
 
@@ -236,7 +236,7 @@ class WindowMsd(Msd):
             if type(parallel) == int and parallel < num_cores:
                 num_cores = parallel
             def compute_for_every_m(trajectory, x):
-                return [self.compute_species_msd(trajectory, x, m) for m in window]
+                return [self.compute_species_msd(trajectory, m, x) for m in window]
             msd_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_for_every_m)(trajectory, x) for x in x_list)
             self.msd_data["X"] = msd_list[0]
             for i in range(1, len(x_list)):
