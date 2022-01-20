@@ -190,6 +190,9 @@ class WindowMsd(Msd):
             r_k_minus_1 = r_k
             r_k_minus_m_minus_1 = r_k_minus_m
             def get_dr(k, r_k_minus_1):
+                """
+                !! only works for orthogonal cells
+                """
                 dr = np.zeros((len(r_k_minus_1), 3))
                 for j in range(3): #x,y,z
                     a = trajectory[k].get_cell()[j,j]
@@ -206,7 +209,7 @@ class WindowMsd(Msd):
             # MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
             r_k = dr_k + r_k_minus_1
             r_k_minus_m = dr_k_minus_m + r_k_minus_m_minus_1
-            MSD_partial[k - m] = np.linalg.norm(dr_k - dr_k_minus_m)**2/len(r_k_minus_m)
+            MSD_partial[k - m] = np.linalg.norm(r_k - r_k_minus_m)**2/len(r_k_minus_m)
         MSD = np.mean(MSD_partial)
         return MSD
 
@@ -231,6 +234,7 @@ class WindowMsd(Msd):
                 self.msd_data[x_str] = [self.compute_species_msd(trajectory, m, x) for m in window]
         else:
             x_list = [None] + elements
+            x_list = [30] # dev, only Zn
             num_cores = len(x_list) # default value
             if type(parallel) == int and parallel < num_cores:
                 num_cores = parallel
