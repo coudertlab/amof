@@ -166,7 +166,7 @@ class WindowMsd(Msd):
         if max_time == "half":
             max_time = (len(trajectory) // 2) * timestep
         delta_m = delta_time // timestep
-        window = np.arange(0, ((max_time // timestep) // delta_m), delta_m)
+        window = np.arange(0, max_time // timestep, delta_m)
         time = timestep * window
         msd_class.compute_msd(trajectory, step, window, time, parallel)
         return msd_class # return class as it is a constructor
@@ -202,12 +202,11 @@ class WindowMsd(Msd):
                 return dr
             dr_k = get_dr(k, r_k_minus_1)
             dr_k_minus_m = get_dr(k - m, r_k_minus_m_minus_1)
-            delta_dr = dr_k - dr_k_minus_m
             # r[t] = dr + r[t-1]
             # MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
-            r_k = delta_dr + r_k_minus_1
-            r_k_minus_m = delta_dr + r_k_minus_m_minus_1
-            MSD_partial[k - m] = np.linalg.norm(delta_dr)**2/len(r_k_minus_m)
+            r_k = dr_k + r_k_minus_1
+            r_k_minus_m = dr_k_minus_m + r_k_minus_m_minus_1
+            MSD_partial[k - m] = np.linalg.norm(dr_k - dr_k_minus_m)**2/len(r_k_minus_m)
         MSD = np.mean(MSD_partial)
         return MSD
 
