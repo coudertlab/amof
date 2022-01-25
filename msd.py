@@ -253,13 +253,13 @@ class WindowMsd(Msd):
 
         self.msd_data = pd.DataFrame({"Time": time}) 
         if not parallel:
-            self.msd_data["X"] = [self.compute_species_msd(trajectory, m) for m in window]
+            # self.msd_data["X"] = [self.compute_species_msd(trajectory, m) for m in window]
 
-            # for x in elements:
-            #     x_str = ase.data.chemical_symbols[x]
-            #     self.msd_data[x_str] = [self.compute_species_msd(trajectory, m, x) for m in window]
+            for x in elements:
+                x_str = ase.data.chemical_symbols[x]
+                self.msd_data[x_str] = [self.compute_species_msd(trajectory, m, x) for m in window]
         else:
-            x_list = [None] + elements
+            x_list = elements
             # x_list = [30] # dev, only Zn
             # x_list = [None, 30] # dev
             # x_list = elements # dev
@@ -280,9 +280,14 @@ class WindowMsd(Msd):
             def compute_for_every_m(trajectory, x):
                 return [self.compute_species_msd(trajectory, m, x) for m in window]
             msd_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_for_every_m)(trajectory, x) for x in x_list)
-            self.msd_data["X"] = msd_list[0]
-            for i in range(1, len(x_list)):
+            for i in range(len(x_list)):
                 x_str = ase.data.chemical_symbols[x_list[i]]
-                self.msd_data[x_str] = msd_list[i]               
-            np.allclose((self.msd_data['H'] * 96 + self.msd_data['C'] * 96 + self.msd_data['N'] * 64 + self.msd_data['Zn']*16)/272, self.msd_data['X'])
-
+                self.msd_data[x_str] = msd_list[i]
+        # compute total msd
+        formula_dict = trajectory[0].symbols.formula._count
+        self.msd_data['X'] = self.msd_data.groupby(self.msd_data.index).apply(
+            lambda x: 
+                np.sum([x[k] * v for k, v in formula_dict.items()])
+                /sum(formula_dict.values())
+                )         
+        self.msd_data            
