@@ -6,6 +6,10 @@ import os
 
 # force numpy to use one thread 
 os.environ["OMP_NUM_THREADS"] = "1"  
+os.environ["OPENBLAS_NUM_THREADS"] = "1"  # export OPENBLAS_NUM_THREADS=4
+os.environ["MKL_NUM_THREADS"] = "1"  # export MKL_NUM_THREADS=6
+os.environ["NUMEXPR_NUM_THREADS"] = "1"  # export NUMEXPR_NUM_THREADS=6
+os.environ["OPENBLAS_MAIN_FREE"] = "1"
 
 import ase
 import ase.data
@@ -208,7 +212,7 @@ class WindowMsd(Msd):
                             dr[i][j] -= a
                         elif dr[i][j]<-a/2:
                             dr[i][j] += a
-            #     return dr
+                return dr
             # dr_k = get_dr(k, r_k_minus_1)
             # dr_k_minus_m = get_dr(k - m, r_k_minus_m_minus_1)
 
