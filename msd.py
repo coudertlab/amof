@@ -2,8 +2,14 @@
 Module containing msd related methods
 """
 
+import os
+
+# force numpy to use one thread 
+os.environ["OMP_NUM_THREADS"] = "1"  
+
 import ase
 import ase.data
+from ase.geometry.geometry import wrap_positions
 
 import numpy as np
 import pandas as pd
@@ -186,7 +192,7 @@ class WindowMsd(Msd):
         # r[0] = r_0 
         r_k = sadi.atom.select_species_positions(trajectory[m], atomic_number)
         MSD_partial = np.zeros(len(trajectory) - m)
-        for k in range(m, len(trajectory)):
+        for k in range(m, len(trajectory)): # First looping yields 0
             r_k_minus_1 = r_k
             r_k_minus_m_minus_1 = r_k_minus_m
             def get_dr(k, r_k_minus_1):
@@ -202,9 +208,25 @@ class WindowMsd(Msd):
                             dr[i][j] -= a
                         elif dr[i][j]<-a/2:
                             dr[i][j] += a
-                return dr
-            dr_k = get_dr(k, r_k_minus_1)
-            dr_k_minus_m = get_dr(k - m, r_k_minus_m_minus_1)
+            #     return dr
+            # dr_k = get_dr(k, r_k_minus_1)
+            # dr_k_minus_m = get_dr(k - m, r_k_minus_m_minus_1)
+
+            def get_dr_new(k, r_k_minus_1):
+                pos = sadi.atom.select_species_positions(trajectory[k], atomic_number) - r_k_minus_1
+                cell = trajectory[k].get_cell()
+                new_dr_k = wrap_positions(pos, cell, center=(0., 0., 0.))
+                return new_dr_k
+
+                # if not np.allclose(pos,dr_k):
+                #     logger.warning("pos diff from get_dr")
+                # if not np.allclose(new_dr_k, pos):
+                #     logger.warning("wrapped pos diff from pos")
+                #     raise ValueError()
+
+            dr_k = get_dr_new(k, r_k_minus_1)
+            dr_k_minus_m = get_dr_new(k - m, r_k_minus_m_minus_1)
+
             # r[t] = dr + r[t-1]
             # MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
             r_k = dr_k + r_k_minus_1
@@ -229,12 +251,13 @@ class WindowMsd(Msd):
         if not parallel:
             self.msd_data["X"] = [self.compute_species_msd(trajectory, m) for m in window]
 
-            for x in elements:
-                x_str = ase.data.chemical_symbols[x]
-                self.msd_data[x_str] = [self.compute_species_msd(trajectory, m, x) for m in window]
+            # for x in elements:
+            #     x_str = ase.data.chemical_symbols[x]
+            #     self.msd_data[x_str] = [self.compute_species_msd(trajectory, m, x) for m in window]
         else:
             x_list = [None] + elements
             x_list = [30] # dev, only Zn
+            x_list = [None, 30] # dev
             num_cores = len(x_list) # default value
             if type(parallel) == int and parallel < num_cores:
                 num_cores = parallel
