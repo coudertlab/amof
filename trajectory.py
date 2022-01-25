@@ -7,6 +7,8 @@ Module containing everything related to trajectories:
 
 # import ase.io.trajectory
 import ase.io
+from ase.geometry.geometry import wrap_positions
+
 import logging
 import bisect
 import numpy as np
@@ -279,4 +281,21 @@ def construct_step(**kwargs):
     except:
         logger.exception("Cannot construct step from provided args")       
         raise ValueError  
-        
+
+def get_delta_pos(pos, cell):
+    """
+    Converts position coordinates of trajectory into displacements between consecutive frames
+    Each displacement will be made to fit in the unit cell around (0,0,0). 
+    In other words it will be as small as possible
+
+    Args:
+        pos: list, a trajectory of atomic positions
+        cell: list, a traj of cell values (can be ase cell format)
+
+    Return:
+        delta_pos: list, a trajectory of atomic positions
+    """
+    delta_pos = [pos[0]]
+    for k in range(len(pos)-1):
+        delta_pos.append(wrap_positions(pos[k+1]-pos[k], cell[k], center=(0., 0., 0.)))
+    return delta_pos
