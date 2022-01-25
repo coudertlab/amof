@@ -260,8 +260,20 @@ class WindowMsd(Msd):
             #     self.msd_data[x_str] = [self.compute_species_msd(trajectory, m, x) for m in window]
         else:
             x_list = [None] + elements
-            x_list = [30] # dev, only Zn
+            # x_list = [30] # dev, only Zn
             # x_list = [None, 30] # dev
+            # x_list = elements # dev
+
+            # mock X by only keeping Zns
+            # x_list = [None] # dev
+            # trajectory = [ase.Atoms('Zn16', sadi.atom.select_species_positions(atom, 30),
+                    # cell=atom.get_cell(), pbc=True) for atom in trajectory]
+            # trajectory = [ase.Atoms(
+            #         atom.get_atomic_numbers()[atom.get_atomic_numbers()==30],
+            #         sadi.atom.select_species_positions(atom, 30),
+            #         cell=atom.get_cell(), pbc=True) for atom in trajectory]
+            # trajectory = [sadi.atom.select_species_positions(atom, 30) for atom in trajectory]
+
             num_cores = len(x_list) # default value
             if type(parallel) == int and parallel < num_cores:
                 num_cores = parallel
@@ -272,3 +284,5 @@ class WindowMsd(Msd):
             for i in range(1, len(x_list)):
                 x_str = ase.data.chemical_symbols[x_list[i]]
                 self.msd_data[x_str] = msd_list[i]               
+            np.allclose((self.msd_data['H'] * 96 + self.msd_data['C'] * 96 + self.msd_data['N'] * 64 + self.msd_data['Zn']*16)/272, self.msd_data['X'])
+
