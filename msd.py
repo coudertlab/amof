@@ -5,10 +5,10 @@ Module containing msd related methods
 import os
 
 # force numpy to use one thread 
-os.environ["OMP_NUM_THREADS"] = "1"  
-os.environ["OPENBLAS_NUM_THREADS"] = "1"  # export OPENBLAS_NUM_THREADS=4
-os.environ["MKL_NUM_THREADS"] = "1"  # export MKL_NUM_THREADS=6
-os.environ["NUMEXPR_NUM_THREADS"] = "1"  # export NUMEXPR_NUM_THREADS=6
+os.environ["OMP_NUM_THREADS"] = "1"  # essential
+os.environ["OPENBLAS_NUM_THREADS"] = "1"  # at least one of these 4 is needed
+os.environ["MKL_NUM_THREADS"] = "1"  
+os.environ["NUMEXPR_NUM_THREADS"] = "1"  
 os.environ["OPENBLAS_MAIN_FREE"] = "1"
 
 import ase
@@ -247,7 +247,7 @@ class WindowMsd(Msd):
             m: np array, window
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
-        logger.info("Start computing msd for %s frames", len(trajectory))
+        logger.info("Start computing msd at %s times on a trajectory of %s frames", len(window), len(trajectory))
         
         elements = sadi.atom.get_atomic_numbers_unique(trajectory[0])
 
@@ -261,7 +261,7 @@ class WindowMsd(Msd):
         else:
             x_list = [None] + elements
             x_list = [30] # dev, only Zn
-            x_list = [None, 30] # dev
+            # x_list = [None, 30] # dev
             num_cores = len(x_list) # default value
             if type(parallel) == int and parallel < num_cores:
                 num_cores = parallel
