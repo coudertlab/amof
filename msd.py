@@ -157,8 +157,7 @@ class WindowMsd(Msd):
         self.msd_data = pd.DataFrame({"Time": np.empty([0])})
 
     @classmethod
-    def from_trajectory(cls, trajectory, delta_time = 100, max_time = "half", timestep = 1,
-             delta_Step = 1, first_frame = 0, parallel = False):
+    def from_trajectory(cls, trajectory, delta_time = 100, max_time = "half", timestep = 1, parallel = False):
         """
         constructor of msd class
 
@@ -168,19 +167,16 @@ class WindowMsd(Msd):
             max_time: int or str
                 if half, then the upper limit is half of the simulation size
                 if input max_time is higher than half of simulation size, will choose the latter
-            timestep: float, timestep between two frames, in fs
-            delta_Step: number of simulation steps between two frames
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
         msd_class = cls() # initialize class
-        step = straj.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
         half_time = (len(trajectory) // 2) * timestep
         if max_time == "half" or max_time > half_time:
             max_time = half_time
         delta_m = delta_time // timestep
         window = np.arange(0, max_time // timestep, delta_m)
         time = timestep * window
-        msd_class.compute_msd(trajectory, step, window, time, parallel)
+        msd_class.compute_msd(trajectory, window, time, parallel)
         return msd_class # return class as it is a constructor
 
     @staticmethod
@@ -205,12 +201,12 @@ class WindowMsd(Msd):
         MSD = np.mean(MSD_partial)
         return MSD
 
-    def compute_msd(self, trajectory, step, window, time, parallel):
+    def compute_msd(self, trajectory, window, time, parallel):
         """
         Args:
             trajectory: ase trajectory object
-            step: np array, simulation steps
-            m: np array, window
+            window: np array, window
+            time: np array, time in fs
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
         logger.info("Start computing msd at %s times on a trajectory of %s frames", len(window), len(trajectory))
