@@ -193,60 +193,12 @@ class WindowMsd(Msd):
             m: int
             if atomic_number is None, compute MSD between all atoms
         """
-        # r_k_minus_m = sadi.atom.select_species_positions(trajectory[0], atomic_number)
         MSD_partial = np.zeros(len(delta_pos) - m)
         r_k_minus_m = delta_pos[0]
-        # test reducing mem usage
-        # r = np.zeros((len(trajectory), len(r_0), 3))
-        # r[0] = r_0 
-        r_k = r_k_minus_m * 0
+        r_k = r_k_minus_m * 0 # empty array with same shape as r_k_minus_m
         for k in range(0, m+1): 
             r_k += delta_pos[k]
-        for k in range(m+1, len(delta_pos)): # First looping yields 0
-            # r_k_minus_1 = r_k[:]
-            # r_k_minus_m_minus_1 = r_k_minus_m[:]
-
-
-            # def get_dr(k, r_k_minus_1):
-            #     """
-            #     !! only works for orthogonal cells
-            #     """
-            #     dr = np.zeros((len(r_k_minus_1), 3))
-            #     for j in range(3): #x,y,z
-            #         a = trajectory[k].get_cell()[j,j]
-            #         dr[:,j] = (sadi.atom.select_species_positions(trajectory[k], atomic_number) - r_k_minus_1%a)[:,j]
-            #         for i in range(len(dr)):
-            #             if dr[i][j]>a/2:
-            #                 dr[i][j] -= a
-            #             elif dr[i][j]<-a/2:
-            #                 dr[i][j] += a
-            #     return dr
-            # dr_k = get_dr(k, r_k_minus_1)
-            # dr_k_minus_m = get_dr(k - m, r_k_minus_m_minus_1)
-
-            # def get_dr_new(k, r_k_minus_1):
-            #     pos = sadi.atom.select_species_positions(trajectory[k], atomic_number) - r_k_minus_1
-            #     cell = trajectory[k].get_cell()
-            #     new_dr_k = wrap_positions(pos, cell, center=(0., 0., 0.))
-            #     return new_dr_k
-
-            #     # if not np.allclose(pos,dr_k):
-            #     #     logger.warning("pos diff from get_dr")
-            #     # if not np.allclose(new_dr_k, pos):
-            #     #     logger.warning("wrapped pos diff from pos")
-            #     #     raise ValueError()
-
-            # dr_k = get_dr_new(k, r_k_minus_1)
-            # dr_k_minus_m = get_dr_new(k - m, r_k_minus_m_minus_1)
-
-            # dr_k = delta_pos[k]
-            # dr_k_minus_m = delta_pos[k-m]
-            # r[t] = dr + r[t-1]
-            # MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
-
-            # r_k = dr_k + r_k_minus_1
-            # r_k_minus_m = dr_k_minus_m + r_k_minus_m_minus_1
-
+        for k in range(m+1, len(delta_pos)): 
             r_k += delta_pos[k]
             r_k_minus_m += delta_pos[k-m]
             MSD_partial[k - m] = np.linalg.norm(r_k - r_k_minus_m)**2/len(r_k_minus_m)
@@ -276,26 +228,15 @@ class WindowMsd(Msd):
         def compute_for_every_m(positions, cell):
             delta_pos = straj.get_delta_pos(positions, cell)
             return [self.compute_msd_of_m(delta_pos, m) for m in window]
+
         if not parallel:
             msd_list = [compute_for_every_m(pos, cell) for pos in positions_by_elt]
         else:
-            # x_list = [30] # dev, only Zn
-            # x_list = [None, 30] # dev
-            # x_list = elements # dev
-
-            # mock X by only keeping Zns
-            # x_list = [None] # dev
-            # trajectory = [ase.Atoms('Zn16', sadi.atom.select_species_positions(atom, 30),
-                    # cell=atom.get_cell(), pbc=True) for atom in trajectory]
-            # trajectory = [ase.Atoms(
-            #         atom.get_atomic_numbers()[atom.get_atomic_numbers()==30],
-            #         sadi.atom.select_species_positions(atom, 30),
-            #         cell=atom.get_cell(), pbc=True) for atom in trajectory]
-            # trajectory = [sadi.atom.select_species_positions(atom, 30) for atom in trajectory]
             num_cores = len(elements) # default value
             if type(parallel) == int and parallel < num_cores:
                 num_cores = parallel
             msd_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_for_every_m)(pos, cell) for pos in positions_by_elt)
+
         # assign partial msd
         for i in range(len(elements)):
             x_str = ase.data.chemical_symbols[elements[i]]
@@ -307,4 +248,3 @@ class WindowMsd(Msd):
                 np.sum([x[k] * v for k, v in formula_dict.items()])
                 / sum(formula_dict.values())
                 )         
-        self.msd_data            
