@@ -167,14 +167,16 @@ class WindowMsd(Msd):
             delta_time: int, time between two computed values of the MSD, in fs
             max_time: int or str
                 if half, then the upper limit is half of the simulation size
+                if input max_time is higher than half of simulation size, will choose the latter
             timestep: float, timestep between two frames, in fs
             delta_Step: number of simulation steps between two frames
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
         msd_class = cls() # initialize class
         step = straj.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
-        if max_time == "half":
-            max_time = (len(trajectory) // 2) * timestep
+        half_time = (len(trajectory) // 2) * timestep
+        if max_time == "half" or max_time > half_time:
+            max_time = half_time
         delta_m = delta_time // timestep
         window = np.arange(0, max_time // timestep, delta_m)
         time = timestep * window
