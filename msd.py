@@ -167,6 +167,7 @@ class WindowMsd(Msd):
             max_time: int or str
                 if half, then the upper limit is half of the simulation size
                 if input max_time is higher than half of simulation size, will choose the latter
+            timestep: int, time between two frames of the trajectory
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
         msd_class = cls() # initialize class
