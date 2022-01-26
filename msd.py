@@ -197,12 +197,14 @@ class WindowMsd(Msd):
         # test reducing mem usage
         # r = np.zeros((len(trajectory), len(r_0), 3))
         # r[0] = r_0 
-        r_k = r_k_minus_m[:]
-        for k in range(1, m+1): 
+        r_k = r_k_minus_m * 0
+        for k in range(0, m+1): 
             r_k += delta_pos[k]
-        for k in range(m, len(delta_pos)): # First looping yields 0
-            r_k_minus_1 = r_k
-            r_k_minus_m_minus_1 = r_k_minus_m
+        for k in range(m+1, len(delta_pos)): # First looping yields 0
+            # r_k_minus_1 = r_k[:]
+            # r_k_minus_m_minus_1 = r_k_minus_m[:]
+
+
             # def get_dr(k, r_k_minus_1):
             #     """
             #     !! only works for orthogonal cells
@@ -235,12 +237,16 @@ class WindowMsd(Msd):
             # dr_k = get_dr_new(k, r_k_minus_1)
             # dr_k_minus_m = get_dr_new(k - m, r_k_minus_m_minus_1)
 
-            dr_k = delta_pos[k]
-            dr_k_minus_m = delta_pos[k-m]
+            # dr_k = delta_pos[k]
+            # dr_k_minus_m = delta_pos[k-m]
             # r[t] = dr + r[t-1]
             # MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
-            r_k = dr_k + r_k_minus_1
-            r_k_minus_m = dr_k_minus_m + r_k_minus_m_minus_1
+
+            # r_k = dr_k + r_k_minus_1
+            # r_k_minus_m = dr_k_minus_m + r_k_minus_m_minus_1
+
+            r_k += delta_pos[k]
+            r_k_minus_m += delta_pos[k-m]
             MSD_partial[k - m] = np.linalg.norm(r_k - r_k_minus_m)**2/len(r_k_minus_m)
         MSD = np.mean(MSD_partial)
         return MSD
@@ -287,7 +293,7 @@ class WindowMsd(Msd):
             num_cores = len(elements) # default value
             if type(parallel) == int and parallel < num_cores:
                 num_cores = parallel
-            msd_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_for_every_m)(trajectory, x) for x in elements)
+            msd_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_for_every_m)(pos, cell) for pos in positions_by_elt)
         # assign partial msd
         for i in range(len(elements)):
             x_str = ase.data.chemical_symbols[elements[i]]

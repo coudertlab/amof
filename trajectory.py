@@ -287,6 +287,8 @@ def get_delta_pos(pos, cell):
     Converts position coordinates of trajectory into displacements between consecutive frames
     Each displacement will be made to fit in the unit cell around (0,0,0). 
     In other words it will be as small as possible
+    The first frame contains the initial positions
+    For each frame k the original positions can be retrieved by summing all the displacements from 0 to k
 
     Args:
         pos: list, a trajectory of atomic positions
