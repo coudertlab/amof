@@ -60,11 +60,15 @@ class DirectMsd(Msd):
     Direct MSD
 
     MSD(t) = \dfrac{1}{N_{particles}} \sum_{i=1}^{N_{particles}} (r_i(t) - r_i(0))^2 
+
+    This precise implementation only works for orthogonal cell.
+    Better to use WindowMSD
     """
 
     def __init__(self):
         """default constructor"""
         self.msd_data = pd.DataFrame({"Step": np.empty([0])})
+        logger.warning('DirectMsd is deprecated and not suitable for non-orthogonal cells, use WindowMsd instead')
 
     @classmethod
     def from_trajectory(cls, trajectory, delta_Step = 1, first_frame = 0, parallel = False):
@@ -88,25 +92,20 @@ class DirectMsd(Msd):
         if atomic_number is None, compute MSD between all atoms
         """
         r_0 = sadi.atom.select_species_positions(trajectory[0], atomic_number)
-        # test reducing mem usage
-        # r = np.zeros((len(trajectory), len(r_0), 3))
-        # r[0] = r_0 
         r_t = r_0
         MSD = np.zeros(len(trajectory))
         for t in range(1, len(trajectory)):
             r_t_minus_dt = r_t
             dr = np.zeros((len(r_0), 3))
+            # ! only works for orthogonal cell
             for j in range(3): #x,y,z
                 a = trajectory[t].get_cell()[j,j]
-                # dr[:,j] = (sadi.atom.select_species_positions(trajectory[t], atomic_number) - r[t-1]%a)[:,j]
                 dr[:,j] = (sadi.atom.select_species_positions(trajectory[t], atomic_number) - r_t_minus_dt%a)[:,j]
                 for i in range(len(dr)):
                     if dr[i][j]>a/2:
                         dr[i][j] -= a
                     elif dr[i][j]<-a/2:
                         dr[i][j] += a
-            # r[t] = dr + r[t-1]
-            # MSD[t] = np.linalg.norm(r[t]-r_0)**2/len(r_0)
             r_t = dr + r_t_minus_dt
             MSD[t] = np.linalg.norm(r_t-r_0)**2/len(r_0)
         return MSD
