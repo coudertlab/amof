@@ -301,3 +301,6 @@ def get_delta_pos(pos, cell):
     for k in range(len(pos)-1):
         delta_pos.append(wrap_positions(pos[k+1]-pos[k], cell[k], center=(0., 0., 0.)))
     return delta_pos
+
+def center_pos(pos, cell):
+    return [wrap_positions(pos[k], cell[k]) for k in range(len(pos))]

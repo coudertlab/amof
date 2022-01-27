@@ -213,6 +213,20 @@ class WindowMsd(Msd):
         
         elements = sadi.atom.get_atomic_numbers_unique(trajectory[0])
 
+        # trajectory = [atom.center() for atom in trajectory]
+        # trajectory = [atom.wrap() for atom in trajectory]
+        for atom in trajectory:
+            m = atom.get_masses()
+            m[m==1.008] = 2.014101777 # deuterate hydrogen
+            atom.set_masses(m)
+            cg = atom.get_center_of_mass()
+            atom.set_positions(atom.get_positions() - cg)
+            # atom.translate(-cg)
+            # atom.set_center_of_mass((0.,0.,0.))
+            # atom.center(about=0.) # ith or withou keyword, not that bad but no good
+            # atom.wrap()
+
+
         positions_by_elt = [] # each partial trajectory consist of the po
         for x in elements:
             x_str = ase.data.chemical_symbols[x]
@@ -222,6 +236,7 @@ class WindowMsd(Msd):
         self.msd_data = pd.DataFrame({"Time": time}) 
 
         def compute_for_every_m(positions, cell):
+            # positions = straj.center_pos(positions, cell)
             delta_pos = straj.get_delta_pos(positions, cell)
             return [self.compute_msd_of_m(delta_pos, m) for m in window]
 
