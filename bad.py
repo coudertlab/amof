@@ -81,16 +81,6 @@ class Bad(object):
                 for pair in list(comb): 
                     i, j = pair
                     angles_indices.append([i,a,j])
-                    # debug
-                    # print(i, a, j, atom.get_angle(i,a,j, mic=True))
-                    # if atom.get_angle(i,a,j, mic=True) < 90:
-                    #     logger.error("angle<90")
-                    #     logger.error("%s %s %s %s", i, a, j, atom.get_angle(i,a,j, mic=True))
-                    #     with open("low_angle.txt", "w") as text_file:
-                    #         text_file.write("%s %s %s %s", i, a, j, atom.get_angle(i,a,j, mic=True))
-                    #     atom.write("low_angle.cif")
-                    #     import sys
-                    #     sys.exit()
     
                 if angles_indices != []: # get_angles() doesn't work with an empty list
                     angles += list(atom.get_angles(angles_indices, mic=True))
