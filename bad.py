@@ -1,6 +1,14 @@
 """
 Module containing bond angle distribution related methods
 """
+import os
+
+# force numpy to use one thread 
+os.environ["OMP_NUM_THREADS"] = "1"  # essential
+os.environ["OPENBLAS_NUM_THREADS"] = "1"  # at least one of these 4 is needed
+os.environ["MKL_NUM_THREADS"] = "1"  
+os.environ["NUMEXPR_NUM_THREADS"] = "1"  
+os.environ["OPENBLAS_MAIN_FREE"] = "1"
 
 import ase
 import ase.neighborlist
