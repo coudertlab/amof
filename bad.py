@@ -36,16 +36,17 @@ class CoreBad(object):
     """
 
     @classmethod
-    def from_trajectory(cls, trajectory, nb_set_and_cutoff, dtheta = 0.05, parallel = False):
+    def from_trajectory(cls, trajectory, nb_set_and_cutoff, dtheta = 0.05, normalization = 'total', parallel = False, ):
         """
         constructor of rdf class from an ase trajectory object
         Args:
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
             dtheta: float, in degrees, default value of 0.05degree similar to RG
+            normalization: str, can be 'total' (entire bad is normalized) or 'partial' (sum of partial is normalized)
         """
         bad_class = cls() # initialize class
-        bad_class.compute_bad(trajectory, nb_set_and_cutoff, dtheta, parallel)
+        bad_class.compute_bad(trajectory, nb_set_and_cutoff, dtheta, normalization, parallel)
         return bad_class # return class as it is a constructor
 
     @classmethod
@@ -112,9 +113,11 @@ class Bad(CoreBad):
 
         return dic
     
-    def compute_bad(self, trajectory, nb_set_and_cutoff, dtheta, parallel):
+    def compute_bad(self, trajectory, nb_set_and_cutoff, dtheta, normalization, parallel):
         """
         compute compute_bad from ase trajectory object
+
+        normalization not used so far, only one option (ie 'total')
         """
         atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
 
@@ -170,7 +173,7 @@ class BadByCn(CoreBad):
     """
     Modifed Bad class that computes BAD by Coordination Number (BAD for A bonded to 1 B, 2 B, etc.)
 
-    Partial BAD by cn are normalised such that the sum over cn of partial BAD[cn] is of total area 1 (same as Bad class result).
+    Partial BAD by cn are normalized such that the sum over cn of partial BAD[cn] is of total area 1 (same as Bad class result).
     Each cn has a weight proportional to the number of angles found for A atoms with cn B nn.
 
     Limited derivation from CoreBad class as the data structure behind is xarray instead of pandas
@@ -235,7 +238,7 @@ class BadByCn(CoreBad):
 
         return dic
     
-    def compute_bad(self, trajectory, nb_set_and_cutoff, dtheta, parallel):
+    def compute_bad(self, trajectory, nb_set_and_cutoff, dtheta, normalisation, parallel):
         """
         compute compute_bad from ase trajectory object
         """
@@ -280,18 +283,19 @@ class BadByCn(CoreBad):
                     if cn not in angles_all.keys():
                         angles_all[cn] = []
                     angles_all[cn] += angles
-            if angles_all != {}:                    
-                num_angles_all = np.sum(len(ang) for ang in angles_all.values())
+            if angles_all != {}:
+                if normalisation == 'partial': 
+                    num_angles_all = np.sum(len(ang) for ang in angles_all.values())
                 cn_coord, bad_list = [], []
                 for cn, ang in angles_all.items():
                     cn_coord.append(cn)
-                    normalisation_ratio = len(ang)/num_angles_all
-                    bad_list.append(normalisation_ratio * np.histogram(angles_all[cn], bins = theta_bins, density=True)[0])
+                    normalization_ratio = len(ang)/num_angles_all if normalisation == 'partial' else 1
+                    bad_list.append(normalization_ratio * np.histogram(angles_all[cn], bins = theta_bins, density=True)[0])
                 ar = xr.DataArray(bad_list, coords={"cn":cn_coord, "theta": theta})
                 dic_of_xarray[aba_str] = ar
                 1
         xa = xr.Dataset(dic_of_xarray)
-        xa = xa.to_array("triple")
+        xa = xa.to_array("atom_triple")
         xa = xr.Dataset({'bad': xa}) 
         self.bad_data = xa
 
