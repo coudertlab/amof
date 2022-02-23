@@ -464,9 +464,11 @@ class CoordinationSearch(object):
                         A_Bbonds[i] += 1
         return A_Bbonds
 
-    def assign_B_uniquely_to_A_N_coordinated(self, conditionA, conditionB, target_N, use_cov_dist = True, dist_margin=None, report_level = None, report_entry = None, propagate_fragments = False, new_fragments_name = None):
+    def assign_B_uniquely_to_A_N_coordinated(self, conditionA, conditionB, target_N, 
+            use_cov_dist = True, dist_margin=None, report_level = None, report_entry = None, 
+            propagate_fragments = False, new_fragments_name = None):
         """
-        assign atoms B to atoms A so that B is only assigned once and A end up being at least target_N coordinated. 
+        assign atoms B to atoms A so that B is only assigned once and A end up being at most target_N coordinated. 
         At each step, the closest pair A-B is added to conn
         B can only form new bonds with A.
         conditionA/B are functions of index i in struct

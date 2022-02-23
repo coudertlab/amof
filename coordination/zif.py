@@ -196,7 +196,7 @@ class MetalmIm(ZifSearch):
 
         # link N to metal_atom with no constraint on the number of N to metal_atom
         metal_atom = self.node.name.lower()
-        self.find_N_closest_cov_dist(
+        self.assign_B_uniquely_to_A_N_coordinated(
             lambda i: self.elems[i] == metal_atom, 
             lambda i: self.elems[i] == "n",
             self.node.target_coordination, 
@@ -281,12 +281,13 @@ class MetalIm(ZifSearch):
 
         # link N to metal_atom with no constraint on the number of N to metal_atom
         metal_atom = self.node.name.lower()
-        self.find_N_closest_cov_dist(
+
+        self.assign_B_uniquely_to_A_N_coordinated(
             lambda i: self.elems[i] == metal_atom, 
             lambda i: self.elems[i] == "n",
             self.node.target_coordination, 
             dist_margin=self.dist_margin_metal, report_level='undercoordinated',
-            report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)
+            report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)            
 
     def is_reduced_structure_valid(self):
         """
