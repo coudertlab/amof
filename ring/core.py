@@ -25,7 +25,7 @@ import xarray as xr
 
 import sadi.trajectory
 import sadi.atom as satom
-import sadi.files.path
+import sadi.files.path as spath
 import sadi.pore.pysimmzeopp
 
 logger = logging.getLogger(__name__)
@@ -58,6 +58,7 @@ class Ring(object):
             name = 'ring')
         self.max_search_depth = max_search_depth
         self.discard_if_potentially_undiscovered_nodes = discard_if_potentially_undiscovered_nodes
+        self.report_search = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
     def from_trajectory(cls, trajectory, nb_set_and_cutoff, max_search_depth = 32 , delta_Step = 1, first_frame = 0, parallel = False):
@@ -115,20 +116,28 @@ class Ring(object):
             
         """
         logger.info("Start ring analysis for %s frames", len(trajectory))
-        list_of_xarray = []
+        result_list = []
 
         if parallel == False:
             for i in range(len(trajectory)):
                 logger.debug('compute frame # %s out of %s', i + 1, len(trajectory))
-                list_of_xarray.append(self.compute_ring_for_atom(trajectory[i], nb_set_and_cutoff_list[i]))
+                result_list.append(self.compute_ring_for_atom(trajectory[i], step[i], nb_set_and_cutoff_list[i]))
         else:
             if type(parallel) == int:
                 num_cores = parallel
             else:
                 num_cores = 18 # less than 20 and nice value for 50 steps
-            list_of_xarray = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_ring_for_atom)(trajectory[i], nb_set_and_cutoff_list[i]) for i in range(len(trajectory)))
+            result_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_ring_for_atom)(
+                        trajectory[i], step[i], nb_set_and_cutoff_list[i]) for i in range(len(trajectory)))
 
-        list_of_xarray = [ar for ar in list_of_xarray if ar is not None] # filter rings that are not properly computed
+        list_report_search = []
+        list_of_xarray = []
+        for ring_ar, report_search in result_list:
+            list_report_search.append(report_search)
+            if ring_ar is not None:
+                list_of_xarray.append(ring_ar)
+
+        self.report_search = pd.DataFrame(list_report_search).set_index('Step')
 
         if list_of_xarray != []:
             dic_of_xarray = dict(zip(step, list_of_xarray))
@@ -149,7 +158,8 @@ class Ring(object):
 
         Returns:
             ar: xarray dataarray containing the rings info
-            potentially_undiscovered_nodes: bool, true if potentially_undiscovered_nodes specified in RINGS output files
+            potentially_undiscovered_nodes: float, number potentially_undiscovered_nodes 
+                    specified in RINGS output files. If 0, means that all are discovered.
         """
         filename = 'RINGS-res-3.dat' # King's shortest path rings
         with open(rstat_path / filename) as f:
@@ -207,14 +217,20 @@ class Ring(object):
         self.fill_template('input.inp', parameters, path)
         self.fill_template('options', parameters, path)
 
-    def compute_ring_for_atom(self, atom, nb_set_and_cutoff):
+    def compute_ring_for_atom(self, atom, step, nb_set_and_cutoff):
         """
         Args:
             atom: ase atom object
             
         Returns:
             ring_ar: xarray dataarray containing the rings info
+            report_search: dic
         """
+        report_search = {'Step': step, 
+            'Discarded frame': False, 
+            'max_search_depth': self.max_search_depth,
+            'Discard if potentially undiscovered rings': self.discard_if_potentially_undiscovered_nodes,
+            'Rings statistics computed with potentially undiscovered rings': False}
         cutoff_dict = satom.format_cutoff(nb_set_and_cutoff, sort_pair = True)
         # add 0 where cutoff is not defined
         atomic_numbers_unique = list(set(atom.get_atomic_numbers()))
@@ -235,25 +251,30 @@ class Ring(object):
             search_depth = min(16, self.max_search_depth)
 
             ring_ar = None
-            potentially_undiscovered_nodes = True
-            while search_depth <= self.max_search_depth and potentially_undiscovered_nodes == True:
+            potentially_undiscovered_nodes = np.inf
+            while search_depth <= self.max_search_depth and potentially_undiscovered_nodes > 0:
                 self.write_input_files(atom, cutoff_dict, search_depth, tmpdirpath)
                 
                 p = subprocess.Popen(arg, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
                 p.wait()
 
                 ring_ar, potentially_undiscovered_nodes = self.read_rings_output(tmpdirpath / 'rstat')
+                report_search['Final search_depth'] = search_depth
+                report_search['Potentially undiscovered rings'] = potentially_undiscovered_nodes
+
                 search_depth += 4
-            if potentially_undiscovered_nodes == True:
+            if potentially_undiscovered_nodes > 0:
                 logger.warning('Rings with n >  %s nodes potentialy exist', self.max_search_depth)
+                report_search['Rings statistics computed with potentially undiscovered rings'] = True
                 if self.discard_if_potentially_undiscovered_nodes == True:
+                    report_search['Discarded frame'] = True
                     ring_ar = None # don't add this frame to rings file
-        return ring_ar
+        return ring_ar, report_search
 
     def write_to_file(self, filename):
         """path_to_output: where the ring object will be written"""
-        filename = sadi.files.path.append_suffix(filename, 'ring')
-        self.ring_data.to_netcdf(filename)
+        self.ring_data.to_netcdf(spath.append_suffix(filename, 'ring'))
+        self.report_search.to_csv(spath.append_suffix(filename, 'report_search.csv'))
 
 
     @classmethod
@@ -267,5 +288,5 @@ class Ring(object):
 
     def read_ring_file(self, filename):
         """path_to_data: where the ring object is"""
-        filename = sadi.files.path.append_suffix(filename, 'ring')
+        filename = spath.append_suffix(filename, 'ring')
         self.ring_data = xr.open_dataset(filename)
