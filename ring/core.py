@@ -165,7 +165,7 @@ class Ring(object):
         with open(rstat_path / filename) as f:
             first_line = f.readline().strip('\n')
         searchObj = re.search(r'# Number of rings with n >  (.*) nodes which potentialy exist: (.*)', first_line, re.M|re.I)
-        potentially_undiscovered_rings = float(searchObj.group(2))
+        potentially_undiscovered_rings = round(float(searchObj.group(2)))
         
         filename = 'RINGS-res-5.dat' # primitive rings 
         header = 1
