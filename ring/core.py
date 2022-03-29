@@ -49,7 +49,7 @@ class Ring(object):
         Physical Review B, 44(10), 4925–4930. https://doi.org/10.1103/PhysRevB.44.4925
     """
 
-    def __init__(self, max_search_depth = None):
+    def __init__(self, max_search_depth = None, discard_if_potentially_undiscovered_nodes = True):
         """default constructor"""
         self.ring_data = xr.DataArray(np.empty([0,0,0]), 
             coords = [('Step', np.empty([0], dtype='int64')), 
@@ -57,6 +57,7 @@ class Ring(object):
                 ('ring_var', np.empty([0], dtype='str_'))], # numpy str is str_
             name = 'ring')
         self.max_search_depth = max_search_depth
+        self.discard_if_potentially_undiscovered_nodes = discard_if_potentially_undiscovered_nodes
 
     @classmethod
     def from_trajectory(cls, trajectory, nb_set_and_cutoff, max_search_depth = 32 , delta_Step = 1, first_frame = 0, parallel = False):
@@ -74,7 +75,8 @@ class Ring(object):
         return ring_class # return class as it is a constructor
 
     @classmethod
-    def from_reduced_trajectory(cls, reduced_trajectory, max_search_depth = 32, parallel = False):
+    def from_reduced_trajectory(cls, reduced_trajectory, max_search_depth = 32, 
+            discard_if_potentially_undiscovered_nodes = True, parallel = False):
         """
         constructor of ring class from a sadi ReducedTrajectory object
         
@@ -83,7 +85,8 @@ class Ring(object):
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
         """
-        ring_class = cls(max_search_depth = max_search_depth) # initialize class with empty data
+        ring_class = cls(max_search_depth = max_search_depth,
+            discard_if_potentially_undiscovered_nodes = discard_if_potentially_undiscovered_nodes) # initialize class with empty data
         criteria_to_compute_ring = ['connectivity_constructible_with_cutoffs'] # can be expanded in further dev
         criteria_enlarged = ['in_reduced_trajectory'] + criteria_to_compute_ring
         rs = reduced_trajectory.report_search
@@ -136,8 +139,7 @@ class Ring(object):
             xa = xa.fillna(0) #  for every ring size found in the entire traj, add 0 at every step if none detected while other ring sizes are
             self.ring_data = xa
 
-    @staticmethod
-    def read_rings_output(rstat_path):
+    def read_rings_output(self, rstat_path):
         """
         read RINGS output from RINGS-res-5.dat, corresponding to primitive rings 
         read RINGS-res-3.dat, corresponding to King's shortest path rings, to know whether some rings are missing
@@ -150,7 +152,7 @@ class Ring(object):
             first_line = f.readline().strip('\n')
         searchObj = re.search(r'# Number of rings with n >  (.*) nodes which potentialy exist: (.*)', first_line, re.M|re.I)
         potentially_undiscovered_nodes = float(searchObj.group(2))
-        if potentially_undiscovered_nodes != 0:
+        if self.discard_if_potentially_undiscovered_nodes == True and potentially_undiscovered_nodes != 0:
             return None # don't add this frame to rings file
         
         filename = 'RINGS-res-5.dat' # primitive rings 
