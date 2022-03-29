@@ -146,21 +146,23 @@ class Ring(object):
 
         Args:
             rstat_path: pathlib path leading to rstat, containing evol-RINGS files
+
+        Returns:
+            ar: xarray dataarray containing the rings info
+            potentially_undiscovered_nodes: bool, true if potentially_undiscovered_nodes specified in RINGS output files
         """
         filename = 'RINGS-res-3.dat' # King's shortest path rings
         with open(rstat_path / filename) as f:
             first_line = f.readline().strip('\n')
         searchObj = re.search(r'# Number of rings with n >  (.*) nodes which potentialy exist: (.*)', first_line, re.M|re.I)
-        potentially_undiscovered_nodes = float(searchObj.group(2))
-        if self.discard_if_potentially_undiscovered_nodes == True and potentially_undiscovered_nodes != 0:
-            return None # don't add this frame to rings file
+        potentially_undiscovered_nodes = float(searchObj.group(2)) != 0
         
         filename = 'RINGS-res-5.dat' # primitive rings 
         header = 1
         df = pd.read_csv(rstat_path / filename, header = header, escapechar='#', sep='\s+')
         df = df.set_index(' n')
         ar = xr.DataArray(df, dims=("ring_size", "ring_var"))
-        return ar
+        return ar, potentially_undiscovered_nodes
 
     @staticmethod
     def fill_template(template_name, parameters, path):
@@ -230,18 +232,21 @@ class Ring(object):
             arg = f"cd {shlex.quote(tmpdirname)} && rings input.inp"
 
             search_depth = min(16, self.max_search_depth)
-            ring_ar = None
 
-            while search_depth <= self.max_search_depth and ring_ar is None:
+            ring_ar = None
+            potentially_undiscovered_nodes = True
+            while search_depth <= self.max_search_depth and potentially_undiscovered_nodes == True:
                 self.write_input_files(atom, cutoff_dict, search_depth, tmpdirpath)
                 
                 p = subprocess.Popen(arg, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
                 p.wait()
 
-                ring_ar = self.read_rings_output(tmpdirpath / 'rstat')
+                ring_ar, potentially_undiscovered_nodes = self.read_rings_output(tmpdirpath / 'rstat')
                 search_depth += 4
-            if ring_ar is None:
+            if potentially_undiscovered_nodes == True:
                 logger.warning('Rings with n >  %s nodes potentialy exist', self.max_search_depth)
+                if self.discard_if_potentially_undiscovered_nodes == True:
+                    ring_ar = None # don't add this frame to rings file
         return ring_ar
 
     def write_to_file(self, filename):
