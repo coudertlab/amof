@@ -49,7 +49,7 @@ class Ring(object):
         Physical Review B, 44(10), 4925–4930. https://doi.org/10.1103/PhysRevB.44.4925
     """
 
-    def __init__(self, max_search_depth = None, discard_if_potentially_undiscovered_nodes = True):
+    def __init__(self, max_search_depth = None, discard_if_potentially_undiscovered_rings = True):
         """default constructor"""
         self.ring_data = xr.DataArray(np.empty([0,0,0]), 
             coords = [('Step', np.empty([0], dtype='int64')), 
@@ -57,7 +57,7 @@ class Ring(object):
                 ('ring_var', np.empty([0], dtype='str_'))], # numpy str is str_
             name = 'ring')
         self.max_search_depth = max_search_depth
-        self.discard_if_potentially_undiscovered_nodes = discard_if_potentially_undiscovered_nodes
+        self.discard_if_potentially_undiscovered_rings = discard_if_potentially_undiscovered_rings
         self.report_search = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
@@ -77,7 +77,7 @@ class Ring(object):
 
     @classmethod
     def from_reduced_trajectory(cls, reduced_trajectory, max_search_depth = 32, 
-            discard_if_potentially_undiscovered_nodes = True, parallel = False):
+            discard_if_potentially_undiscovered_rings = True, parallel = False):
         """
         constructor of ring class from a sadi ReducedTrajectory object
         
@@ -87,7 +87,7 @@ class Ring(object):
                 values are cutoffs float, in Angstrom
         """
         ring_class = cls(max_search_depth = max_search_depth,
-            discard_if_potentially_undiscovered_nodes = discard_if_potentially_undiscovered_nodes) # initialize class with empty data
+            discard_if_potentially_undiscovered_rings = discard_if_potentially_undiscovered_rings) # initialize class with empty data
         criteria_to_compute_ring = ['connectivity_constructible_with_cutoffs'] # can be expanded in further dev
         criteria_enlarged = ['in_reduced_trajectory'] + criteria_to_compute_ring
         rs = reduced_trajectory.report_search
@@ -158,21 +158,21 @@ class Ring(object):
 
         Returns:
             ar: xarray dataarray containing the rings info
-            potentially_undiscovered_nodes: float, number potentially_undiscovered_nodes 
+            potentially_undiscovered_rings: float, number potentially_undiscovered_rings 
                     specified in RINGS output files. If 0, means that all are discovered.
         """
         filename = 'RINGS-res-3.dat' # King's shortest path rings
         with open(rstat_path / filename) as f:
             first_line = f.readline().strip('\n')
         searchObj = re.search(r'# Number of rings with n >  (.*) nodes which potentialy exist: (.*)', first_line, re.M|re.I)
-        potentially_undiscovered_nodes = float(searchObj.group(2)) != 0
+        potentially_undiscovered_rings = float(searchObj.group(2)) != 0
         
         filename = 'RINGS-res-5.dat' # primitive rings 
         header = 1
         df = pd.read_csv(rstat_path / filename, header = header, escapechar='#', sep='\s+')
         df = df.set_index(' n')
         ar = xr.DataArray(df, dims=("ring_size", "ring_var"))
-        return ar, potentially_undiscovered_nodes
+        return ar, potentially_undiscovered_rings
 
     @staticmethod
     def fill_template(template_name, parameters, path):
@@ -229,7 +229,7 @@ class Ring(object):
         report_search = {'Step': step, 
             'Discarded frame': False, 
             'max_search_depth': self.max_search_depth,
-            'Discard if potentially undiscovered rings': self.discard_if_potentially_undiscovered_nodes,
+            'Discard if potentially undiscovered rings': self.discard_if_potentially_undiscovered_rings,
             'Rings statistics computed with potentially undiscovered rings': False}
         cutoff_dict = satom.format_cutoff(nb_set_and_cutoff, sort_pair = True)
         # add 0 where cutoff is not defined
@@ -251,22 +251,22 @@ class Ring(object):
             search_depth = min(16, self.max_search_depth)
 
             ring_ar = None
-            potentially_undiscovered_nodes = np.inf
-            while search_depth <= self.max_search_depth and potentially_undiscovered_nodes > 0:
+            potentially_undiscovered_rings = np.inf
+            while search_depth <= self.max_search_depth and potentially_undiscovered_rings > 0:
                 self.write_input_files(atom, cutoff_dict, search_depth, tmpdirpath)
                 
                 p = subprocess.Popen(arg, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) 
                 p.wait()
 
-                ring_ar, potentially_undiscovered_nodes = self.read_rings_output(tmpdirpath / 'rstat')
+                ring_ar, potentially_undiscovered_rings = self.read_rings_output(tmpdirpath / 'rstat')
                 report_search['Final search_depth'] = search_depth
-                report_search['Potentially undiscovered rings'] = potentially_undiscovered_nodes
+                report_search['Potentially undiscovered rings'] = potentially_undiscovered_rings
 
                 search_depth += 4
-            if potentially_undiscovered_nodes > 0:
+            if potentially_undiscovered_rings > 0:
                 logger.warning('Rings with n >  %s nodes potentialy exist', self.max_search_depth)
                 report_search['Rings statistics computed with potentially undiscovered rings'] = True
-                if self.discard_if_potentially_undiscovered_nodes == True:
+                if self.discard_if_potentially_undiscovered_rings == True:
                     report_search['Discarded frame'] = True
                     ring_ar = None # don't add this frame to rings file
         return ring_ar, report_search
