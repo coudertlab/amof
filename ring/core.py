@@ -211,8 +211,9 @@ class Ring(object):
         """
         Args:
             atom: ase atom object
+            
         Returns:
-            dic: dictionary with output from zeopp vol and sa
+            ring_ar: xarray dataarray containing the rings info
         """
         cutoff_dict = satom.format_cutoff(nb_set_and_cutoff, sort_pair = True)
         # add 0 where cutoff is not defined
