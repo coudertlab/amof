@@ -49,7 +49,7 @@ class Ring(object):
         Physical Review B, 44(10), 4925–4930. https://doi.org/10.1103/PhysRevB.44.4925
     """
 
-    def __init__(self, max_search_depth = None, discard_if_potentially_undiscovered_rings = True):
+    def __init__(self, max_search_depth = None, discard_if_potentially_undiscovered_rings = False):
         """default constructor"""
         self.ring_data = xr.DataArray(np.empty([0,0,0]), 
             coords = [('Step', np.empty([0], dtype='int64')), 
@@ -77,7 +77,7 @@ class Ring(object):
 
     @classmethod
     def from_reduced_trajectory(cls, reduced_trajectory, max_search_depth = 32, 
-            discard_if_potentially_undiscovered_rings = True, parallel = False):
+            discard_if_potentially_undiscovered_rings = False, parallel = False):
         """
         constructor of ring class from a sadi ReducedTrajectory object
         
