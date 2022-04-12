@@ -149,6 +149,8 @@ class WindowMsd(Msd):
     m is the window length size, usually replaced by time t in publications. 
     To be unambiguous, here time will carry units and m and k will be used as trajectory indexes
     The final data array will be y = MSD, x = m labelled 'Time' 
+
+    Time is expressed in fs
     """
 
     def __init__(self):
