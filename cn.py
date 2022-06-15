@@ -34,7 +34,7 @@ class CoordinationNumber(object):
     @classmethod
     def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, parallel = False):
         """
-        constructor of rdf class from an ase trajectory object
+        constructor of CoordinationNumber class from an ase trajectory object
         Args:
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
