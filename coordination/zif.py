@@ -27,8 +27,11 @@ class ZifSearch(CoordinationSearch):
         Constructor for custom search 2 for ZIF glasses
 
         Args:
-            dist_margin is the default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
-            dist_margin_metal is the specific tolerance for metal-X bonds as they're not covalent
+            dist_margin; float, default tolerance when using the covalent radii criteria 
+                to determine if two atoms are neighbours
+                The default option is equivalent to cutoffs of 1.752 for C-C and  1.728 for C-N bonds
+            dist_margin_metal: float, specific tolerance for metal-X bonds as they're not covalent
+                For Zn-N, the default option is equivalent to a cut-off of (1.22 + 0.71) * 1.5 = 2.895
             cutoff_metal: float, overide dist_margin_metal if not None 
                 option added but not used so far
             ignore_H_in_reduction: bool, if True imids identification is only done by the cycle
@@ -261,7 +264,7 @@ class MetalIm(ZifSearch):
             3, 
             report_level = 'undercoordinated', report_entry = report_entry,
             propagate_fragments = True, new_fragments_name = new_fragments_name,
-            dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
+            dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass, equivalent to 1.4976 cutoff for C-H
         H_perfectly_connected = H_perfectly_connected and self.report_search[report_entry] == []
 
         # bind the remaining H (there should be non for the crystal)
@@ -274,7 +277,7 @@ class MetalIm(ZifSearch):
             1, 
             report_level='full', report_entry= report_entry,
             propagate_fragments = True, new_fragments_name = new_fragments_name,
-            dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass
+            dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass, equivalent to 1.4976 cutoff for C-H
         H_perfectly_connected = H_perfectly_connected and self.report_search[report_entry] == []
 
         self.report_search['H perfectly connected'] = H_perfectly_connected
