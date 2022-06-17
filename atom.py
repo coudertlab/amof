@@ -1,5 +1,5 @@
 """
-Module containing everythong related to atoms: 
+Module containing everything related to atoms: 
 - wrapper for ase atom module
 """
 
@@ -47,7 +47,7 @@ def get_atomic_numbers_unique(atom):
 
 def format_cutoff(nb_set_and_cutoff, format='ase', sort_pair = False):
     """
-    Return cutoff formated for different purposes
+    Return cutoff formatted for different purposes
 
     Args:
         nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
