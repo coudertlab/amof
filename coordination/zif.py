@@ -1,6 +1,6 @@
 """
-Main file containing classes for custom neigbour search in ZIF glasses
-Supported: ZIF-8
+Instantiation of coordination search for ZIF glasses
+Supported and validated: ZIF-4
 """
 
 from numpy import False_
@@ -10,29 +10,23 @@ import sadi.coordination.buildingunits as bu
 
 class ZifSearch(CoordinationSearch):
     """
-    Generic coordination search class for ZIFs comprised of 
+    Generic coordination search class for ZIFs comprised of: 
         single metal nodes
         imid-based linkers
     Provides generic methods used for all these systems
-    Principle:
-        1. find every cycle of CNCNC
-        2. add H based on cov radii to single C and C bonded to one N
-        3. bind the remaining H (there should be non for the crystal)
-        4. bind the CHn to CN2
-        5. bind N and Zn
     """
 
     def __init__(self, struct, dist_margin=1.2, dist_margin_metal=1.5, cutoff_metal = None, ignore_H_in_reduction = True):
         """
-        Constructor for custom search 2 for ZIF glasses
+        Constructor of ZifSearch
 
         Args:
-            dist_margin is the default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
-            dist_margin_metal is the specific tolerance for metal-X bonds as they're not covalent
-            cutoff_metal: float, overide dist_margin_metal if not None 
+            dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
+            dist_margin_metal: float, specific tolerance for metal-X bonds as they're not covalent
+            cutoff_metal: float, override dist_margin_metal if not None 
                 option added but not used so far
-            ignore_H_in_reduction: bool, if True imids identification is only done by the cycle
-                The errors in bonding Hs are however reported, and the resulting reduced structure 
+            ignore_H_in_reduction: bool, if True imid identification is only done by finding the cycle
+                The errors in bonding H atoms are however reported, and the resulting reduced structure 
                     is computed with the H taken into account (barycenter).
         """
         self.dist_margin_metal = dist_margin_metal  # dist_margin is created in CoordinationSearch.__init__
@@ -46,7 +40,14 @@ class ZifSearch(CoordinationSearch):
         self.update_atypes()
 
     def find_neighb_max_distance(self, dist_margin, dist_margin_metal, cutoff_metal):
-        """return neighb_max_distance to compute all_neighb to the minimal necessary distance"""
+        """
+        Return neighb_max_distance to compute all_neighb to the minimal necessary distance
+        
+        Args:
+            dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
+            dist_margin_metal: float, specific tolerance for metal-X bonds
+            cutoff_metal: float, override dist_margin_metal if not None 
+        """
         dist_margin_atoms = self.linker.species
         dist_margin_metal_atoms = self.node.species
         max_cov_linker = np.max([self.covalentradius[A]+self.covalentradius[B]
@@ -64,19 +65,22 @@ class ZifSearch(CoordinationSearch):
         Add the bonds thus found to self.conn
         A can be neighbour to A and B, and B only to A. 
         For imid, A is C and B is N
-        If fragtype is not None, will create new fragments with this fragmame
+        If fragtype is not None, will create new fragments with this fragname
 
         Args:
-            A, B: string, lowecase string indicating species of A and B (e.g. "h")
+            A, B: string, lowercase string indicating species of A and B (e.g. "h")
             cycle_length: int
+            target_number_of_cycles: int
             fragtype: str
         """
         graph = StructureGraph.with_empty_graph(self.struct)
         self.add_ABbonds(graph, B, A)
         self.add_ABbonds(graph, A, A)
 
+        #CLEAN
         # debug option whenever missing cycle found
         # graph.draw_graph_to_file("lastframe_before_cycle.svg", node_labels = True, hide_unconnected_nodes=False, hide_image_edges =False, algo='neato') #algo= neato or fdp
+        #CLEAN
 
         pattern = [A] + [B, A] * int((cycle_length - 1) / 2)
         cycles = self.find_rings(graph, pattern=pattern, target_number_of_rings = target_number_of_cycles, 
@@ -128,9 +132,10 @@ class MetalmIm(ZifSearch):
 
         Args:
             struct: pymatgen structure
-            metal: str representing metal node
+            metal: str, representing metal node
             dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
             dist_margin_metal: float, specific tolerance for metal-X bonds as they're not covalent
+            ignore_H_in_reduction: bool, if True imid identification is only done by finding the cycle
         """
         self.node = bu.SingleMetal(metal, 4)
         self.linker = bu.ImidazoleBased("mIm", "C4N2H5")
@@ -140,7 +145,7 @@ class MetalmIm(ZifSearch):
     
     def detect_conn(self):
         """
-        main function to detect connectivity
+        Main function to detect connectivity
         """
         # Find imid cycles (C-N-C-N-C)
         self.find_ABAcycles("c", "n", cycle_length = 5, 
@@ -205,7 +210,7 @@ class MetalmIm(ZifSearch):
 
     def is_reduced_structure_valid(self):
         """
-        For now, only accept the search if nothing else then mIm and Zn are found
+        Returns True iff nothing else then Im and Zn are found
         """
         return len(self.symbols.from_name_to_symbol) == 2
 
@@ -226,9 +231,11 @@ class MetalIm(ZifSearch):
 
         Args:
             struct: pymatgen structure
-            metal: str representing metal node
+            metal: str, representing metal node
             dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
             dist_margin_metal: float, specific tolerance for metal-X bonds as they're not covalent
+            ignore_H_in_reduction: bool, if True imid identification is only done by finding the cycle
+
         """
         self.node = bu.SingleMetal(metal, 4)
         self.linker = bu.ImidazoleBased("Im", "C3N2H3")
@@ -239,7 +246,7 @@ class MetalIm(ZifSearch):
     
     def detect_conn(self):
         """
-        main function to detect connectivity
+        Main function to detect connectivity
         """
         # Find imid cycles (C-N-C-N-C)
         self.find_ABAcycles("c", "n", cycle_length = 5, target_number_of_cycles = self.elems.count("n") / 2,
@@ -291,6 +298,6 @@ class MetalIm(ZifSearch):
 
     def is_reduced_structure_valid(self):
         """
-        For now, only accept the search if nothing else then Im and Zn are found
+        Returns True iff nothing else then Im and Zn are found
         """
         return len(self.symbols.from_name_to_symbol) == 2

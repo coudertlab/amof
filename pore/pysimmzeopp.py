@@ -1,9 +1,9 @@
 """
-Fork from pysimm.apps.zeoplusplus
+Forked from pysimm.apps.zeoplusplus
 Modified:
     - introduced wait() in subprocess handling to avoid infinite loop
     - print to logging
-    - removing everythin linked to pysimm to have an independant module
+    - removed everything linked to pysimm to have an independent module
     - removed nanohub
 """
 

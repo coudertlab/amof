@@ -66,14 +66,14 @@ class DummySymbols(object):
     @classmethod
     def from_file(cls, filename):
         """
-        constructor of cn class from msd file
+        Constructor of class from file
         """
         cn_class = cls() # initialize class
         cn_class.read_file(filename)
         return cn_class # return class as it is a constructor
 
     def read_file(self, filename):
-        """path_to_data: where the cn object is"""
+        """filename: str"""
         filename = sadi.files.path.append_suffix(filename, 'symbols')
         self.from_name_to_symbol = json.load(open(filename))
         self.from_symbol_to_name = {v: k for k, v in self.from_name_to_symbol.items()}

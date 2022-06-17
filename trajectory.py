@@ -138,7 +138,7 @@ class ReducedTrajectory(object):
     @classmethod
     def from_file(cls, filename, sampling = 1, load_trajectory = True):
         """
-        constructor of class from files
+        Constructor of class from files
 
         Args: 
             filename: str or path to files without the final suffixes (ie no '.xyz' or '.symbols')
@@ -243,7 +243,7 @@ def get_number_density(trajectory, how = 'mean'):
 
 def construct_step(**kwargs):
     """
-    contruct step from various constructors
+    Construct step from various constructors
 
     Args:
         delta_Step: int, number of simulation steps between two frames

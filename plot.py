@@ -1,5 +1,5 @@
 """
-Module containing everythong related to plotting: 
+Module containing everything related to plotting: 
 - hvplot extra functions
 """
 

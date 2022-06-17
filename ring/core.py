@@ -63,7 +63,8 @@ class Ring(object):
     @classmethod
     def from_trajectory(cls, trajectory, nb_set_and_cutoff, max_search_depth = 32 , delta_Step = 1, first_frame = 0, parallel = False):
         """
-        constructor of ring class from an ase trajectory object
+        Constructor of ring class from an ase trajectory object
+
         Args:
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
@@ -79,7 +80,7 @@ class Ring(object):
     def from_reduced_trajectory(cls, reduced_trajectory, max_search_depth = 32, 
             discard_if_potentially_undiscovered_rings = False, parallel = False):
         """
-        constructor of ring class from a sadi ReducedTrajectory object
+        Constructor of ring class from a sadi ReducedTrajectory object
         
         Args:
             reduced_trajectory: sadi ReducedTrajectory object
@@ -113,7 +114,6 @@ class Ring(object):
                 nb_set_and_cutoff_list: list of dict, one per frame in trajectory
             step: np array, simulation steps
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
-            
         """
         logger.info("Start ring analysis for %s frames", len(trajectory))
         result_list = []
