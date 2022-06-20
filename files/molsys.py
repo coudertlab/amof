@@ -2,7 +2,11 @@
 Module containing methods to output files readable by molsys:
     - mfpx
 
-forked and adapted from molsys/fileIO/mfpx.py
+Forked and adapted from molsys/fileIO/mfpx.py
+
+Molsys is part of MOFplus/cmc-tools, licensed under the MIT License
+Copyright (c) 2021 MOF+ (Computational Materials Chemistry group, Ruhr-Universität Bochum)
+https://github.com/MOFplus/cmc-tools
 """
 
 

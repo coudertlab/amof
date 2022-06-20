@@ -1,10 +1,10 @@
 #-*- coding: utf-8 -*-
 
 """
-Main file containing classes for custom neigbour search
+Core functions of coordination search
 """
 
-# from re import L
+#CLEAN from re import L
 import numpy as np
 import pymatgen
 from pymatgen.core.structure import Structure
@@ -19,7 +19,7 @@ from scipy import stats
 
 import logging
 
-# from xarray.core import dataset
+#CLEAN from xarray.core import dataset
 
 import sadi.files.path
 import sadi.structure
@@ -52,7 +52,7 @@ class CoordinationSearch(object):
     """
         
     def __init__(self, struct, neighb_max_distance, dist_margin):
-        """constructor"""
+        """Class constructor"""
         self.struct = struct
         self.conn = [[] for i in range(struct.num_sites)]
         self.atypes = ["" for i in range(struct.num_sites)]
@@ -187,8 +187,10 @@ class CoordinationSearch(object):
             self.report_search['connectivity_wrongly_inferred_from_cutoffs'] = str(dict(Counter(irregular_nb).items()))
             self.report_search['connectivity_wrong_offsets'] = str(stats.describe(irregular_nb_offset))
 
+        #CLEAN
         # self.struct.to(filename='vesta/not_constructible_connectivity/before_reduction.cif')
         # reduced_struct.to(filename='vesta/not_constructible_connectivity/reduced.cif')
+        #CLEAN
 
         self.report_search['number_of_nodes'] = reduced_struct.num_sites
         self.report_search['symbols'] = str(self.symbols)
@@ -204,7 +206,7 @@ class CoordinationSearch(object):
 
     def make_frag_conn(self):
         """
-        generate a fragment connectivity
+        Generate a fragment connectivity
 
         Adapted from molsys
         """
@@ -215,7 +217,7 @@ class CoordinationSearch(object):
             self.frag_conn.append([])
             self.frag_conn_atoms.append([])
         for i, fragment in self.fragments.items():
-        # for i,f in enumerate(self.fraglist):
+        #CLEAN for i,f in enumerate(self.fraglist):
             # determine all external bonds of this fragment
             for ia in fragment['indices']:
                 for ja in self.conn[ia]:
@@ -224,11 +226,13 @@ class CoordinationSearch(object):
                         # this is an external bond
                         self.frag_conn[i].append(j)
                         self.frag_conn_atoms[i].append((ia,ja))
+                        #CLEAN
                         # logger.debug("fragment %d (%s) bonds to fragment %d (%s) %s - %s" %\
                         #               (i, fragment['fragtype'], j, self.fraglist[j], self._mol.atypes[ia], self._mol.atypes[ja]))
+                        #CLEAN
 
     def get_atype(self, i):
-        """return atype of atom i formatted as in molsys"""
+        """Return atype of atom i formatted as in molsys"""
         atype = self.elems[i] + str(len(self.conn[i])) 
         list_of_nn = [self.elems[j] for j in self.conn[i]]
         counts = Counter(list_of_nn)
@@ -237,19 +241,22 @@ class CoordinationSearch(object):
         return atype
 
     def update_atypes(self):
-        """update self.atypes"""
+        """Update self.atypes"""
         self.atypes = [self.get_atype(i) for i in range(self.struct.num_sites)]
 
     covalentradius = CovalentRadius().radius # private class variable exclusively used in get_covdist
 
-    def get_covdist(self, i, j): # turn to class at some point to have struct as self. 
-        """return sum of covalent radii of the two atoms referenced by their index i and j"""
+    def get_covdist(self, i, j): #CLEAN turn to class at some point to have struct as self. 
+        """Return sum of covalent radii of the two atoms referenced by their index i and j"""
         return self.covalentradius[self.elems[i].title()] + self.covalentradius[self.elems[j].title()]
 
     def add_ABbonds(self, graph, A, B, dist_margin = None):
         """
-        Add bonds between species A and B to graph graph
-        dist_margin: margin to consider neighbourings atoms dist_margin further away than their cov distance
+        Add bonds between species A and B to graph
+
+        Args:
+            #FINDTYPE
+            dist_margin: float, margin to consider neighbourings atoms dist_margin further away than their cov distance
         """
         if dist_margin is None:
             dist_margin = self.dist_margin
@@ -262,7 +269,12 @@ class CoordinationSearch(object):
 
     @staticmethod
     def multigraph_to_graph(MG):
-        """from networkx tutorial, propagate min of weights"""
+        """
+        From networkx tutorial, propagate min of weights
+        
+        Args:
+            MG: networkx multigraph
+        """
         GG = nx.Graph()
         for n, nbrs in MG.adjacency():
             for nbr, edict in nbrs.items():
@@ -272,13 +284,22 @@ class CoordinationSearch(object):
 
     @classmethod
     def get_chain_decomposition(cls, graph):
-        """return chain decomposition as list of list from pymatgen graph"""
+        """
+        Return chain decomposition as list of list from pymatgen graph
+        
+        Args:
+            graph: pymatgen graph
+        """
         GG = cls.multigraph_to_graph(graph.graph) # pymatgen graph is a multigraph and directed, graph.graph is a nx object
         return list(chain_decomposition(GG)) # direct use of nx function
 
     @classmethod
     def find_one_cycle_per_node(cls, graph):
-        """for each node, if it exists return a cycle found via depth-first traversal in which node is included.
+        """For each node, if it exists return a cycle found via depth-first traversal in which node is included.
+
+        Args:
+            graph: pymatgen graph
+            
         Returns:
             cycles_list: list of list of edges"""
         GG = cls.multigraph_to_graph(graph.graph) # pymatgen graph is a multigraph and directed, graph.graph is a nx object
@@ -305,6 +326,9 @@ class CoordinationSearch(object):
         Also works with lists of strings that don't contain spaces ' '
 
         Code from https://stackoverflow.com/a/26924896/8288189
+
+        Args:
+            arr1, arr2: list of ints
         """
         if len(arr1) != len(arr2):
             return False
@@ -324,7 +348,8 @@ class CoordinationSearch(object):
 
         Forked from MoleculeGraph class in pymatgen.analysis.graph
         A ring is defined as a simple cycle in networkx terms
-        A simple cycle, or elementary circuit, is a closed path where no node appears twice. Two elementary circuits are distinct if they are not cyclic permutations of each other.
+        A simple cycle, or elementary circuit, is a closed path where no node appears twice. 
+        Two elementary circuits are distinct if they are not cyclic permutations of each other.
 
         :param including: list of site indices. If
             including is not None, then find_rings will
@@ -435,13 +460,13 @@ class CoordinationSearch(object):
 
     def clean_conn(self):
         """
-        Remove duplicates indices in conn
+        Remove duplicates indices in self.conn
         """
         for i in range(len(self.conn)):
             self.conn[i] = list(set(self.conn[i]))
 
     def plot_conn_as_graph(self, filename = "graph_temp.png"):
-        """create graph with every bond present in conn and print it in file"""
+        """Create graph with every bond present in self.conn and print it in file"""
         filename = sadi.files.path.append_suffix(filename, 'png') # draw_graph_to_file needs a filename extension
         graph = StructureGraph.with_empty_graph(self.struct)
         for i in range(self.struct.num_sites):
@@ -452,8 +477,10 @@ class CoordinationSearch(object):
 
     def get_A_Bbonds(self, A, B):
         """
-        A, B are species
-        return a list containing for each atom A the the number of bonds to a B atom, and -1 if not A atom
+        Return a list containing for each atom A the the number of bonds to a B atom, and -1 if not A atom
+
+        Args:
+            A, B: str, species (e.g. "h")
         """
         A_Bbonds = [-1 for i in range(self.struct.num_sites)]
         for i in range(self.struct.num_sites):
@@ -468,27 +495,31 @@ class CoordinationSearch(object):
             use_cov_dist = True, dist_margin=None, report_level = None, report_entry = None, 
             propagate_fragments = False, new_fragments_name = None):
         """
-        assign atoms B to atoms A so that B is only assigned once and A end up being at most target_N coordinated. 
-        At each step, the closest pair A-B is added to conn
-        B can only form new bonds with A.
-        conditionA/B are functions of index i in struct
-        allowed to exit if not enough nn available
-        If an A atom already has more than target_n neighbours, will do nothing
-        use_cov_dist can be used to further restrict the search using cov radii, if False, every nn in all_neighb used
-        if a string report_entry is supplied, will use it to add as an entry details about the missing nn
-        report_level can be 'full' (report every bond formed) or 'undercoordinated' (only those without enough nn)
+        Assign atoms B to atoms A so that B is only assigned once and A end up being at most target_N coordinated. 
 
+        At each step, the closest pair A-B is added to conn.
+        B can only form new bonds with A.
+        Allowed to exit if not enough nb available
+        
         Args:
+            conditionA/B: functions of index i in struct which return a boolean equal to True iff conditionA is verified
+            target_N: int, 
+                If an A atom already has more than target_N neighbours, will do nothing.
+            use_cov_dist: Bool, if True will further restrict the search using cov radii, if False, every nn in all_neighb used
+            dist_margin: float
+            report_level: str, can be 'full' (report every bond formed) or 'undercoordinated' (only those without enough nn)
+            report_entry: str, if supplied, will use it to add as an entry details about the missing nn
             propagate_fragments: Bool, if True will include every atom of frag(B) in fragment of A if frag(A) exists
                 If atom B was in a fragment F, F will be removed
             new_fragments_name: str, if not None will create fragments for atoms A not currently in a fragment with fragname "new_fragments_name". 
                 To include B atoms in this new fragment, propagate_fragments must be set to True
+            
         """
         if dist_margin is None:
             dist_margin = self.dist_margin
 
         def are_A_Ncoordinated(A_conn, A_enough_nn):
-            """return False as long as the main loop should keep running"""
+            """Return False as long as the main loop should keep running"""
             for i in range(len(A_conn)):
                 if (len(A_conn[i])<target_N) and (A_enough_nn[i]==True):
                     return False
@@ -539,7 +570,7 @@ class CoordinationSearch(object):
             for i in range(len(A_indices)):
                 if A_enough_nn[i]==True and len(A_nn_distances[i])==0:
                     A_enough_nn[i]=False
-                    # logger.debug("not enough nn for atom id:", A_indices[i], "; N bonds:", C_Nbonds[A_indices[i]], "; missing bonds:", target_N - len(A_conn[i]))
+                    #CLEAN logger.debug("not enough nn for atom id:", A_indices[i], "; N bonds:", C_Nbonds[A_indices[i]], "; missing bonds:", target_N - len(A_conn[i]))
         
         # add A_conn to self.conn
         for i in range(len(A_indices)): 
@@ -580,18 +611,23 @@ class CoordinationSearch(object):
                             self.merge_fragments(self.fragnumbers[a], self.fragnumbers[b])
 
     def get_neighb_cov_dist(self, i, dist_margin=None):
-        """return list of nn of atom i using a cutoff based on covalent radii * dist_margin"""
+        """Return list of nb of atom i using a cutoff based on covalent radii * dist_margin"""
         if dist_margin is None:
             dist_margin = self.dist_margin
         return [n for n in self.all_neighb[i] if n.nn_distance < dist_margin * self.get_covdist(i, n.index)]
 
-    def find_N_closest_cov_dist(self, conditionA, conditionB, target_N, dist_margin = None, verbose = False, report_level = None, report_entry = None, propagate_fragments = False, new_fragments_name = None):
+    def find_N_closest_cov_dist(self, conditionA, conditionB, target_N, dist_margin = None, 
+        report_level = None, report_entry = None, propagate_fragments = False, new_fragments_name = None):
         """
         Find target_N nearest neighbours respecting conditionB to conditionA atoms
         The search for each A is independant, as a result the same B atom can be bonded to several A atoms
-        report_level can be 'full' (report every bond formed) or 'undercoordinated' (only those without enough nn)
 
         Args:
+            conditionA/B: functions of index i in struct which return a boolean equal to True iff conditionA is verified
+            target_N: int
+            dist_margin: float
+            report_level: str, can be 'full' (report every bond formed) or 'undercoordinated' (only those without enough nn)
+            report_entry: str, if supplied, will use it to add as an entry details about the missing nn
             propagate_fragments: Bool or str if True will include every atom of frag(B) in fragment of A if frag(A) exists
                 If atom B was in a fragment F, F will be removed
                 If 'reverse' and target_N = 1, will propagate from B to A

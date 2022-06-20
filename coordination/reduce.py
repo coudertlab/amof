@@ -18,16 +18,17 @@ logger = logging.getLogger(__name__)
 def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta_Step = 1, 
         first_frame = 0, parallel = False, write_mfpx = False):
     """
-    Conveniant wrapper to reduce trajectory by specifying a specific mof
+    Convenient wrapper to reduce trajectory by specifying a specific mof
     For now works for 'ZIF-4', 'ZIF-8', 'ZIF-zni' and 'SALEM-2'
 
     Args:
         trajectory: ase trajectory object
-        mof: str specifying the mof
-        filename: str, where to write output files, specify None to avoid writing
+        mof: str, mof name
+        filename: str, where to write output files  
+            if None, avoid writing
         dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours. Default: 1.2
-        delta_Step: number of simulation steps between two frames
-        write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajetory
+        delta_Step: int, number of simulation steps between two frames
+        write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajectory
     """
     if mof in ['ZIF-4', 'ZIF-zni', 'SALEM-2']:
         structure_reducer = lambda struct: sadi.coordination.zif.MetalIm(struct, "Zn", dist_margin=dist_margin, dist_margin_metal=1.6) # 1.6 means 3.088 for Zn-N (one case of 2.92 was observed)
@@ -47,15 +48,15 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
             trajectory: ase trajectory object
             structure_reducer: a function taking a pymatgen structure as input and returning a CoordinationSearch object
             symbols: a DummySymbol object containing the representation to use for all frames 
-                (no option atm to include additionnal symbols on specific frames,
-                 parallelisation issues + not adapted to analysis tools to have variable number of atoms)
-            delta_Step: number of simulation steps between two frames
+                (no option atm to include additional symbols on specific frames,
+                 parallelization issues + not adapted to analysis tools to have variable number of atoms)
+            delta_Step: int, number of simulation steps between two frames
             filename: str, where to write output files, specify None to avoid writing
             write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajetory
                 if no filename is provided, will not write any
         
         Return:
-            reduced_traj: sadi ReducedTrajectory object
+            reduced_traj: sadi.trajectory ReducedTrajectory object
         """
         logger.info("Start reducing trajectory for %s frames", len(trajectory))
 
@@ -108,17 +109,17 @@ def reduce_atom(atom, structure_reducer, symbols, write_mfpx = False, filename =
         atom: ase atom object
         structure_reducer: a function taking a pymatgen structure as input and returning a CoordinationSearch object
         symbols: a DummySymbol object 
-        write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajetory
+        write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajectory
         filename: str, where to write output files. Shouldn't contain any extension
             If None doesn't write
 
     Return:
-        reduced_atom: ase atom with fragments instead of atoms
-        report_search: dic
+        reduced_atom: ase atom object with fragments instead of atoms
+        report_search: dictionary
     """
     struct = AseAtomsAdaptor.get_structure(atom)
     searcher = structure_reducer(struct)
-    searcher.symbols = symbols # enforce symbols; TBD: add option to get around, 'auto' setup, etc.
+    searcher.symbols = symbols # enforce symbols; TBD: add option to get around, 'auto' setup, etc. #CLEAN
     reduced_struct = searcher.reduce_structure()
     report_search = {**{"is_reduced_structure_valid": searcher.is_reduced_structure_valid()}, **searcher.report_search}
     if searcher.is_reduced_structure_valid():
