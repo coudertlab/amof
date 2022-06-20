@@ -255,7 +255,8 @@ class CoordinationSearch(object):
         Add bonds between species A and B to graph
 
         Args:
-            #FINDTYPE
+            graph: pymatgen graph
+            A, B: str, species written in lower cap (e.g. "h")
             dist_margin: float, margin to consider neighbourings atoms dist_margin further away than their cov distance
         """
         if dist_margin is None:
