@@ -21,18 +21,12 @@ class ZifSearch(CoordinationSearch):
         Constructor of ZifSearch
 
         Args:
-<<<<<<< HEAD
             dist_margin; float, default tolerance when using the covalent radii criteria 
                 to determine if two atoms are neighbours
                 The default option is equivalent to cutoffs of 1.752 for C-C and  1.728 for C-N bonds
             dist_margin_metal: float, specific tolerance for metal-X bonds as they're not covalent
                 For Zn-N, the default option is equivalent to a cut-off of (1.22 + 0.71) * 1.5 = 2.895
             cutoff_metal: float, overide dist_margin_metal if not None 
-=======
-            dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
-            dist_margin_metal: float, specific tolerance for metal-X bonds as they're not covalent
-            cutoff_metal: float, override dist_margin_metal if not None 
->>>>>>> origin/commenting
                 option added but not used so far
             ignore_H_in_reduction: bool, if True imid identification is only done by finding the cycle
                 The errors in bonding H atoms are however reported, and the resulting reduced structure 
