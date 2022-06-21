@@ -7,8 +7,10 @@ import numpy as np
 import xarray as xr
 import logging
 import ase.atoms
+import pandas as pd
 
-import sadi.files.path
+import sadi.files.path as spath
+import sadi.elastic.elate as elate
 
 logger = logging.getLogger(__name__)
 
@@ -188,7 +190,7 @@ class ElasticConstant(object):
         self.Cmat = da
 
     def write(self, filename):
-        path_to_output = sadi.files.path.append_suffix(filename, 'elastic')
+        path_to_output = spath.append_suffix(filename, 'elastic')
         self.Cmat.to_netcdf(path_to_output)
 
 
@@ -197,12 +199,12 @@ class ElasticConstant(object):
         """
         constructor of elastic file class from rdf file
         """
-        rdf_class = cls() # initialize class
-        rdf_class.read_elastic_file(filename)
-        return rdf_class # return class as it is a constructor
+        new_class = cls() # initialize class
+        new_class.read_elastic_file(filename)
+        return new_class # return class as it is a constructor
 
     def read_elastic_file(self, filename):
-        filename = sadi.files.path.append_suffix(filename, 'elastic')
+        filename = spath.append_suffix(filename, 'elastic')
         self.Cmat = xr.open_dataset(filename)
 
 
@@ -218,6 +220,62 @@ class ElasticConstant(object):
     #     print('        beta = %.3f' % np.rad2deg(np.mean([x[4] for x in abc])))
     #     print('    gamma = %.3f' % np.rad2deg(np.mean([x[5] for x in abc])))
     #     print('   volume = %.1f' % volume)
+
+
+class MechanicalProperties(object):
+    """
+    Main class to compute Mechanical Properties from Elastic constants
+    Wrapper of ELATE
+    """
+
+    def __init__(self):
+        """default constructor"""
+        self.data = pd.DataFrame()
+
+    @classmethod
+    def from_elastic(cls, C):
+        """
+        constructor of CoordinationNumber class from elastic constant tensor
+        Args:
+            C: list of list of float, elastic constant tensor
+        """
+        new_class = cls() # initialize class
+        new_class.compute_averages(C)
+        return new_class # return class as it is a constructor
+
+    def compute_averages(self, C):
+        """
+        compute average mechanical properties using ELATE
+
+        C: list of list of float, elastic constant tensor
+        """
+        el = elate.Elastic(C)
+        prop = el.averages()
+        df = pd.DataFrame(prop, 
+            index = ["Voigt", "Reuss", "Hill"], 
+            columns = ["Bulk modulus","Young's modulus","Shear modulus","Poisson's ratio"])
+        df.index.name = "Averaging scheme"
+        self.data = df
+
+    @classmethod
+    def from_file(cls, filename):
+        """
+        constructor of cn class from msd file
+        """
+        new_class = cls() # initialize class
+        new_class.read_file(filename)
+        return new_class # return class as it is a constructor
+
+    def read_file(self, filename):
+        """path_to_data: where the cn object is"""
+        filename = spath.append_suffix(filename, 'mech.csv')
+        self.data = pd.read_csv(filename, index_col=0)
+
+    def write_to_file(self, filename):
+        filename = spath.append_suffix(filename, 'mech.csv')
+        self.data.to_csv(filename)
+
+
 
 def print_Cmat(Cmat):
     print('')
