@@ -271,7 +271,7 @@ class MechanicalProperties(object):
         filename = spath.append_suffix(filename, 'mech.csv')
         self.data = pd.read_csv(filename, index_col=0)
 
-    def write_to_file(self, filename):
+    def write(self, filename):
         filename = spath.append_suffix(filename, 'mech.csv')
         self.data.to_csv(filename)
 
