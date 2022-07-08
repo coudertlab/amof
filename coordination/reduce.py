@@ -37,7 +37,9 @@ def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta
         structure_reducer = lambda struct: sadi.coordination.zif.MetalmIm(struct, "Zn", dist_margin=dist_margin)
         symbols = sadi.symbols.DummySymbols(['Zn', 'mIm']) 
     else:
-        logger.exception('Structure search not available for the mof %s', mof)
+        structure_reducer = lambda struct: sadi.coordination.NotImplementedSearch(mof)
+        symbols = sadi.symbols.DummySymbols()
+        logger.warning(f'Structure search not implemented for {mof}')
     return reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, 
         delta_Step = delta_Step, first_frame = first_frame, parallel = parallel, write_mfpx = write_mfpx)
 

@@ -5,6 +5,7 @@ Core functions of coordination search
 """
 
 #CLEAN from re import L
+from ast import Raise
 import numpy as np
 import pymatgen
 from pymatgen.core.structure import Structure
@@ -705,6 +706,24 @@ class CoordinationSearch(object):
                         else:
                             self.merge_fragments(self.fragnumbers[b], self.fragnumbers[a])
                         
+
+class NotImplementedSearch(CoordinationSearch):
+    """
+    Dummy coordination search class for MOFs for which it is not implemented
+    """
+
+    def __init__(self, mof = None):
+        """
+        Constructor of ZifSearch
+
+        Args:
+            mof: str, name of mof for which search is not implemented
+        """
+        self.report_search = {} 
+        if mof is not None:
+            self.report_search['mof'] = mof
+        raise SearchError('Structure search not implemented', self.report_search)
+ 
 
 
 
