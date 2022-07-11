@@ -252,9 +252,9 @@ class MechanicalProperties(object):
         el = elate.Elastic(C)
         prop = el.averages()
         df = pd.DataFrame(prop, 
-            index = ["Voigt", "Reuss", "Hill"], 
-            columns = ["Bulk modulus","Young's modulus","Shear modulus","Poisson's ratio"])
-        df.index.name = "Averaging scheme"
+            index = ["voigt", "reuss", "hill"], 
+            columns = ["bulk_modulus","youngs_modulus","shear_modulus","poissons_ratio"])
+        df.index.name = "averaging_scheme"
         self.data = df
 
     @classmethod
