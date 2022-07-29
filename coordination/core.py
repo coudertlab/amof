@@ -590,7 +590,7 @@ class CoordinationSearch(object):
                 logger.debug("%s: %s", report_entry, self.report_search[report_entry])
 
         if report_level=='undercoordinated':
-            list_of_atypes = [self.get_atype(i) for i in range(len(A_indices)) if (len(A_conn[i])!=target_N)]
+            list_of_atypes = [self.get_atype(A_indices[i]) for i in range(len(A_indices)) if (len(A_conn[i])!=target_N)]
             self.report_search[report_entry] = Counter(list_of_atypes).most_common() # return list sorted by decreasing number of occurances
             if self.report_search[report_entry] != []:
                 logger.debug("%s: %s", report_entry, self.report_search[report_entry])
