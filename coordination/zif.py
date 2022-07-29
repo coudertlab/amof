@@ -16,7 +16,9 @@ class ZifSearch(CoordinationSearch):
     Provides generic methods used for all these systems
     """
 
-    def __init__(self, struct, dist_margin=1.2, dist_margin_metal=1.5, cutoff_metal = None, ignore_H_in_reduction = True):
+    def __init__(self, struct, dist_margin=1.2, 
+        dist_margin_metal=1.5, dist_margin_H=1.44,
+        cutoff_metal = None, ignore_H_in_reduction = True):
         """
         Constructor of ZifSearch
 
@@ -26,6 +28,8 @@ class ZifSearch(CoordinationSearch):
                 The default option is equivalent to cutoffs of 1.752 for C-C and  1.728 for C-N bonds
             dist_margin_metal: float, specific tolerance for metal-X bonds as they're not covalent
                 For Zn-N, the default option is equivalent to a cut-off of (1.22 + 0.71) * 1.5 = 2.895
+            dist_margin_H: float, specific tolerance for H-X bonds as the distance covalent radius of H is small,
+                causing the detection to be rather sensitive                
             cutoff_metal: float, overide dist_margin_metal if not None 
                 option added but not used so far
             ignore_H_in_reduction: bool, if True imid identification is only done by finding the cycle
@@ -33,34 +37,38 @@ class ZifSearch(CoordinationSearch):
                     is computed with the H taken into account (barycenter).
         """
         self.dist_margin_metal = dist_margin_metal  # dist_margin is created in CoordinationSearch.__init__
+        self.dist_margin_H = dist_margin_H  
         self.ignore_H_in_reduction = ignore_H_in_reduction
         neighb_max_distance = self.find_neighb_max_distance(
-            dist_margin, dist_margin_metal, cutoff_metal)
+            dist_margin, dist_margin_metal, dist_margin_H, cutoff_metal)
         CoordinationSearch.__init__(
             self, struct, neighb_max_distance, dist_margin)
         self.detect_conn()
         self.clean_fragments()
         self.update_atypes()
 
-    def find_neighb_max_distance(self, dist_margin, dist_margin_metal, cutoff_metal):
+    def find_neighb_max_distance(self, dist_margin, dist_margin_metal, dist_margin_H, cutoff_metal):
         """
         Return neighb_max_distance to compute all_neighb to the minimal necessary distance
         
         Args:
             dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
             dist_margin_metal: float, specific tolerance for metal-X bonds
+            dist_margin_H: float, specific tolerance for H-X bonds
             cutoff_metal: float, override dist_margin_metal if not None 
         """
         dist_margin_atoms = self.linker.species
         dist_margin_metal_atoms = self.node.species
         max_cov_linker = np.max([self.covalentradius[A]+self.covalentradius[B]
                                  for A in dist_margin_atoms for B in dist_margin_atoms])
+        max_cov_H = np.max([self.covalentradius['H']+self.covalentradius[B]
+                                for B in (dist_margin_atoms+dist_margin_metal_atoms)])                                 
         if cutoff_metal is None:
             max_cov_metal = np.max([self.covalentradius[A]+self.covalentradius[B]
                                 for A in dist_margin_metal_atoms for B in (dist_margin_atoms+dist_margin_metal_atoms)])
         else: 
             max_cov_metal = cutoff_metal
-        return max(max_cov_linker * dist_margin, max_cov_metal * dist_margin_metal)
+        return max(max_cov_linker * dist_margin, max_cov_metal * dist_margin_metal, max_cov_H * dist_margin_H)
 
     def find_ABAcycles(self, A, B, cycle_length, target_number_of_cycles, fragtype = None):
         """
@@ -228,7 +236,10 @@ class MetalIm(ZifSearch):
         4. bind N and Zn
     """
 
-    def __init__(self, struct, metal, dist_margin=1.2, dist_margin_metal=1.5, ignore_H_in_reduction = True):
+    def __init__(self, struct, metal, dist_margin=1.2, 
+        dist_margin_metal=1.5, 
+        dist_margin_H=1.44,
+        ignore_H_in_reduction = True):
         """
         Constructor for coordination search for MetalmIm glasses
 
@@ -237,6 +248,8 @@ class MetalIm(ZifSearch):
             metal: str, representing metal node
             dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
             dist_margin_metal: float, specific tolerance for metal-X bonds as they're not covalent
+            dist_margin_H: float, specific tolerance for H-X bonds as the distance covalent radius of H is small,
+                causing the detection to be rather sensitive
             ignore_H_in_reduction: bool, if True imid identification is only done by finding the cycle
 
         """
@@ -244,6 +257,7 @@ class MetalIm(ZifSearch):
         self.linker = bu.ImidazoleBased("Im", "C3N2H3")
         ZifSearch.__init__(self, struct, dist_margin = dist_margin, 
             dist_margin_metal = dist_margin_metal, 
+            dist_margin_H = dist_margin_H,
             ignore_H_in_reduction = ignore_H_in_reduction)
 
     
@@ -271,7 +285,7 @@ class MetalIm(ZifSearch):
             3, 
             report_level = 'undercoordinated', report_entry = report_entry,
             propagate_fragments = True, new_fragments_name = new_fragments_name,
-            dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass, equivalent to 1.4976 cutoff for C-H
+            dist_margin=self.dist_margin_H) 
         H_perfectly_connected = H_perfectly_connected and self.report_search[report_entry] == []
 
         # bind the remaining H (there should be non for the crystal)
@@ -284,7 +298,7 @@ class MetalIm(ZifSearch):
             1, 
             report_level='full', report_entry= report_entry,
             propagate_fragments = True, new_fragments_name = new_fragments_name,
-            dist_margin=self.dist_margin * 1.2) # quick fix for ab intio zif4_15glass, equivalent to 1.4976 cutoff for C-H
+            dist_margin=self.dist_margin_H) 
         H_perfectly_connected = H_perfectly_connected and self.report_search[report_entry] == []
 
         self.report_search['H perfectly connected'] = H_perfectly_connected

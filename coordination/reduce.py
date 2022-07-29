@@ -16,7 +16,7 @@ import sadi.trajectory
 logger = logging.getLogger(__name__)
 
 def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta_Step = 1, 
-        first_frame = 0, parallel = False, write_mfpx = False):
+        first_frame = 0, parallel = False, write_mfpx = False, **kwargs):
     """
     Convenient wrapper to reduce trajectory by specifying a specific mof
     For now works for 'ZIF-4', 'ZIF-8', 'ZIF-zni' and 'SALEM-2'
@@ -26,12 +26,19 @@ def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta
         mof: str, mof name
         filename: str, where to write output files  
             if None, avoid writing
-        dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours. Default: 1.2
+        dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours. 
+            Default: 1.2
         delta_Step: int, number of simulation steps between two frames
         write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajectory
     """
+    dist_margin_metal = kwargs.get('dist_margin_metal', 1.6) # 1.6 means 3.088 for Zn-N (one case of 2.92 was observed)
+    dist_margin_H = kwargs.get('dist_margin_H', 1.44)
+
     if mof in ['ZIF-4', 'ZIF-zni', 'SALEM-2']:
-        structure_reducer = lambda struct: sadi.coordination.zif.MetalIm(struct, "Zn", dist_margin=dist_margin, dist_margin_metal=1.6) # 1.6 means 3.088 for Zn-N (one case of 2.92 was observed)
+        structure_reducer = lambda struct: sadi.coordination.zif.MetalIm(struct, "Zn", 
+            dist_margin=dist_margin, 
+            dist_margin_metal=dist_margin_metal,
+            dist_margin_H = dist_margin_H) 
         symbols = sadi.symbols.DummySymbols(['Zn', 'Im']) 
     elif mof in  ['ZIF-8']:
         structure_reducer = lambda struct: sadi.coordination.zif.MetalmIm(struct, "Zn", dist_margin=dist_margin)
