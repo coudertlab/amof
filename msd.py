@@ -175,6 +175,8 @@ class WindowMsd(Msd):
         half_time = (len(trajectory) // 2) * timestep
         if max_time == "half" or max_time > half_time:
             max_time = half_time
+        if delta_time < timestep:
+            logger.exception("Delta_time should be larger than timestep")
         delta_m = delta_time // timestep
         window = np.arange(0, max_time // timestep, delta_m)
         time = timestep * window
