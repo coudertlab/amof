@@ -76,6 +76,12 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
             try:
                 if filename is not None:
                     filename += f"_{step}" 
+
+                # Non-wraped atoms were found to cause memory leak in CoordinationSearch at line
+                # self.all_neighb = self.struct.get_all_neighbors(neighb_max_distance)          
+                # It occured for extreme non wrapped atoms located ~50 images away, and didn't cause any issue for non-failing MD simulations
+                atom.wrap() 
+
                 reduced_atom, report_search_atom = reduce_atom(atom, structure_reducer, symbols, write_mfpx = write_mfpx, filename = filename)
                 report_search['in_reduced_trajectory'] = reduced_atom is not None
                 report_search = {**report_search, **report_search_atom}
