@@ -38,7 +38,7 @@ class CoreBad(object):
     @classmethod
     def from_trajectory(cls, trajectory, nb_set_and_cutoff, dtheta = 0.05, normalization = 'total', parallel = False, ):
         """
-        constructor of rdf class from an ase trajectory object
+        constructor of bad class from an ase trajectory object
         Args:
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom

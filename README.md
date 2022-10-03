@@ -14,7 +14,7 @@ It can compute the following properties:
 - Coordination numbers
 - Mean Squared Displacement (MSD)
 - Elastic constants from cell properties, and mechanical properties from elastic constants by calling [ELATE](https://github.com/coudertlab/elate/)
-- Pore analysis by wrapping [Zeo++](http://zeoplusplus.org/)
+- Pore analysis by wrapping [Zeo++](http://zeoplusplus.org/), reusing code from [pysimm](https://pysimm.org/)
 - Ring statistics by wrapping the [RINGS code](https://rings-code.sourceforge.net/)
 
 The backend for manipulating trajectories is [ASE](https://wiki.fysik.dtu.dk/ase/index.html), which are [ASE trajectory](https://wiki.fysik.dtu.dk/ase/ase/io/trajectory.html) objects.
@@ -27,7 +27,7 @@ A module called `coordination` allows the identification of the different buildi
 
 This allows the computation of rings statistics of the metal-ligand network.
 
-This code is designed to be compatible with [molsys](https://github.com/MOFplus/molsys), and can be used to generate input files in `mfpx` format.
+This code is designed to be compatible with [molsys](https://github.com/MOFplus/cmc-tools), and can be used to generate input files in `mfpx` format.
 
 The detailed algorithm for ZIF-4 is presented in the supporting information of the working paper [Challenges in Molecular Dynamics of Amorphous ZIFs using Reactive Force Fields](https://doi.org/10.26434/chemrxiv-2022-lw5n8).
 
@@ -66,7 +66,7 @@ pip install .
 
 A documentation is available on [xxx]() and can easily be created with [pdoc](https://pdoc3.github.io/pdoc/). 
 
-Simply run with pdoc installed:
+Simply run (with pdoc installed):
 ```
 pdoc --html --output-dir path\to\docs path\to\amof
 ```
