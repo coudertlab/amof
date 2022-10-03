@@ -9,9 +9,12 @@
 # !template.latex
 # etc...
 
+
 # ...even if they are in subdirectories
 !*/
 
 # if the files to be tracked are in subdirectories
 # !*/a/b/file1.txt
 # !*/a/b/c/*
+
+*/.ipynb_checkpoints*.py
