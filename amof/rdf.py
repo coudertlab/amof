@@ -32,7 +32,7 @@ class Rdf(object):
 
     def __init__(self):
         """default constructor"""
-        self.rdf_data = pd.DataFrame({"r": np.empty([0])})
+        self.data = pd.DataFrame({"r": np.empty([0])})
 
     @classmethod
     def from_trajectory(cls, trajectory, dr = 0.01, rmax = 'half_cell'):
@@ -81,7 +81,7 @@ class Rdf(object):
         logger.info("Start computing rdf for %s frames with dr = %s and rmax = %s", len(trajectory), dr, rmax)
         bins = int(rmax // dr)
         r = np.arange(bins) * dr        
-        self.rdf_data = pd.DataFrame({"r": r})
+        self.data = pd.DataFrame({"r": r})
 
         # Code from the asap3 manual for a trajectory
         RDFobj = None
@@ -94,7 +94,7 @@ class Rdf(object):
         
         # Total RDF        
         rdf = RDFobj.get_rdf(groups=0)        
-        self.rdf_data["X-X"] = rdf
+        self.data["X-X"] = rdf
 
         # Partial RDFs               
         elements = [[(x, y) for y in atomic_numbers_unique] for x in atomic_numbers_unique] # cartesian product of very couple of  species
@@ -107,19 +107,19 @@ class Rdf(object):
                 xx = elements[i][j]
                 xx_str = ase.data.chemical_symbols[xx[0]] + "-" + ase.data.chemical_symbols[xx[1]]
                 partial_rdf[i][j] = RDFobj.get_rdf(elements=xx,groups=0)
-                self.rdf_data[xx_str] = partial_rdf[i][j]    
+                self.data[xx_str] = partial_rdf[i][j]    
         for i in range(N_species):
             xx = elements[i][i]
             xx_str = ase.data.chemical_symbols[xx[0]] + "-" + ase.data.chemical_symbols[xx[1]]
-            self.rdf_data[ase.data.chemical_symbols[xx[0]] + "-X"] = sum([partial_rdf[i][j] for j in range(N_species)])   
+            self.data[ase.data.chemical_symbols[xx[0]] + "-X"] = sum([partial_rdf[i][j] for j in range(N_species)])   
 
     def write_to_file(self, filename):
         filename = amof.files.path.append_suffix(filename, 'rdf')
-        self.rdf_data.to_feather(filename)
+        self.data.to_feather(filename)
 
     def read_rdf_file(self, path_to_data):
         path_to_data = amof.files.path.append_suffix(path_to_data, 'rdf')
-        self.rdf_data = pd.read_feather(path_to_data)
+        self.data = pd.read_feather(path_to_data)
 
     def get_coordination_number(self, nn_set, cutoff, density):
         """
@@ -128,7 +128,7 @@ class Rdf(object):
         cutoff: float, in Angstrom
         density: float, no units
         """
-        return get_coordination_number(self.rdf_data['r'], self.rdf_data[nn_set], cutoff, density)
+        return get_coordination_number(self.data['r'], self.data[nn_set], cutoff, density)
 
 
 
@@ -143,7 +143,7 @@ class CoordinationNumber(object):
     def __init__(self):
         """default constructor"""
         logger.warning('Compute CoordinationNumber from RDF, best to use amof.cn.CoordinationNumber')
-        self.cn_data = pd.DataFrame({"Step": np.empty([0])})
+        self.data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
     def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, dr = 0.0001, parallel = False):
@@ -193,7 +193,7 @@ class CoordinationNumber(object):
             num_cores = parallel if type(parallel) == int else 18
             list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_cn_for_frame)(trajectory[i], step[i]) for i in range(len(trajectory)))
 
-        self.cn_data = pd.DataFrame(list_of_dict)
+        self.data = pd.DataFrame(list_of_dict)
 
     @classmethod
     def from_file(cls, filename):
@@ -207,11 +207,11 @@ class CoordinationNumber(object):
     def read_cn_file(self, filename):
         """path_to_data: where the cn object is"""
         filename = amof.files.path.append_suffix(filename, 'cn')
-        self.cn_data = pd.read_feather(filename)
+        self.data = pd.read_feather(filename)
 
     def write_to_file(self, filename):
         filename = amof.files.path.append_suffix(filename, 'cn')
-        self.cn_data.to_feather(filename)
+        self.data.to_feather(filename)
 
 def get_coordination_number(r, rdf, cutoff, density):
     """

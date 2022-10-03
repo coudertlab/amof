@@ -65,7 +65,7 @@ class Bad(CoreBad):
 
     def __init__(self):
         """default constructor"""
-        self.bad_data = pd.DataFrame({"theta": np.empty([0])})
+        self.data = pd.DataFrame({"theta": np.empty([0])})
 
     @staticmethod
     def bad_BAB(atom, A, B, nl):
@@ -142,7 +142,7 @@ class Bad(CoreBad):
         bins = int(180 // dtheta)
         theta_bins = np.arange(bins + 2) * dtheta    
         theta = np.arange(bins + 1) * dtheta + dtheta / 2   
-        self.bad_data = pd.DataFrame({"theta": theta})    
+        self.data = pd.DataFrame({"theta": theta})    
 
 
         if parallel == False:
@@ -157,16 +157,16 @@ class Bad(CoreBad):
             for dic in list_of_dict:
                 angles += dic[aba_str]
             if angles != []:
-                self.bad_data[aba_str] = np.histogram(angles, bins = theta_bins, density=True)[0]
+                self.data[aba_str] = np.histogram(angles, bins = theta_bins, density=True)[0]
 
 
     def write_to_file(self, filename):
         filename = amof.files.path.append_suffix(filename, 'bad')
-        self.bad_data.to_feather(filename)
+        self.data.to_feather(filename)
 
     def read_bad_file(self, path_to_data):
         path_to_data = amof.files.path.append_suffix(path_to_data, 'bad')
-        self.bad_data = pd.read_feather(path_to_data)
+        self.data = pd.read_feather(path_to_data)
 
 
 class BadByCn(CoreBad):
@@ -182,7 +182,7 @@ class BadByCn(CoreBad):
 
     def __init__(self):
         """default constructor"""
-        self.bad_data = xr.DataArray(np.empty([0,0,0]), 
+        self.data = xr.DataArray(np.empty([0,0,0]), 
             coords = [('theta', np.empty([0], dtype='float64')), # one of numpy float
                 ('atom_triple', np.empty([0], dtype='str_')), 
                 ('cn', np.empty([0], dtype='str_'))], # numpy str is str_
@@ -265,7 +265,7 @@ class BadByCn(CoreBad):
         bins = int(180 // dtheta)
         theta_bins = np.arange(bins + 2) * dtheta    
         theta = np.arange(bins + 1) * dtheta + dtheta / 2   
-        # self.bad_data = pd.DataFrame({"theta": theta})    
+        # self.data = pd.DataFrame({"theta": theta})    
 
 
         if parallel == False:
@@ -297,13 +297,13 @@ class BadByCn(CoreBad):
         xa = xr.Dataset(dic_of_xarray)
         xa = xa.to_array("atom_triple")
         xa = xr.Dataset({'bad': xa}) 
-        self.bad_data = xa
+        self.data = xa
 
 
     def write_to_file(self, filename):
         filename = amof.files.path.append_suffix(filename, 'bad')
-        self.bad_data.to_netcdf(filename)
+        self.data.to_netcdf(filename)
 
     def read_bad_file(self, filename):
         filename = amof.files.path.append_suffix(filename, 'bad')
-        self.bad_data = xr.open_dataset(filename)
+        self.data = xr.open_dataset(filename)

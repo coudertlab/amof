@@ -29,7 +29,7 @@ class CoordinationNumber(object):
 
     def __init__(self):
         """default constructor"""
-        self.cn_data = pd.DataFrame({"Step": np.empty([0])})
+        self.data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
     def from_trajectory(cls, trajectory, nb_set_and_cutoff, delta_Step = 1, first_frame = 0, parallel = False):
@@ -79,7 +79,7 @@ class CoordinationNumber(object):
             num_cores = parallel if type(parallel) == int else 18
             list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_cn_for_frame)(trajectory[i], step[i]) for i in range(len(trajectory)))
 
-        self.cn_data = pd.DataFrame(list_of_dict)
+        self.data = pd.DataFrame(list_of_dict)
 
     @classmethod
     def from_file(cls, filename):
@@ -93,8 +93,8 @@ class CoordinationNumber(object):
     def read_cn_file(self, filename):
         """path_to_data: where the cn object is"""
         filename = amof.files.path.append_suffix(filename, 'cn')
-        self.cn_data = pd.read_feather(filename)
+        self.data = pd.read_feather(filename)
 
     def write_to_file(self, filename):
         filename = amof.files.path.append_suffix(filename, 'cn')
-        self.cn_data.to_feather(filename)
+        self.data.to_feather(filename)

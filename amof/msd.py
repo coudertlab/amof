@@ -34,7 +34,7 @@ class Msd(object):
     def write_to_file(self, path_to_output):
         """path_to_output: where the MSD object will be written"""
         path_to_output = amof.files.path.append_suffix(path_to_output, 'msd')
-        self.msd_data.to_feather(path_to_output)
+        self.data.to_feather(path_to_output)
 
     @classmethod
     def from_msd(cls, *args):
@@ -52,7 +52,7 @@ class Msd(object):
     def read_msd_file(self, path_to_data):
         """path_to_data: where the MSD object is"""
         path_to_data = amof.files.path.append_suffix(path_to_data, 'msd')
-        self.msd_data = pd.read_feather(path_to_data)
+        self.data = pd.read_feather(path_to_data)
 
 
 class DirectMsd(Msd):
@@ -67,7 +67,7 @@ class DirectMsd(Msd):
 
     def __init__(self):
         """default constructor"""
-        self.msd_data = pd.DataFrame({"Step": np.empty([0])})
+        self.data = pd.DataFrame({"Step": np.empty([0])})
         logger.warning('DirectMsd is deprecated and not suitable for non-orthogonal cells, use WindowMsd instead')
 
     @classmethod
@@ -122,23 +122,23 @@ class DirectMsd(Msd):
         elements = amof.atom.get_atomic_numbers_unique(trajectory[0])
 
         Step = step     
-        self.msd_data = pd.DataFrame({"Step": Step})
+        self.data = pd.DataFrame({"Step": Step})
         if not parallel:
-            self.msd_data["X"] = self.compute_species_msd(trajectory)
+            self.data["X"] = self.compute_species_msd(trajectory)
 
             for x in elements:
                 x_str = ase.data.chemical_symbols[x]
-                self.msd_data[x_str] = self.compute_species_msd(trajectory, x)
+                self.data[x_str] = self.compute_species_msd(trajectory, x)
         else:
             x_list = [None] + elements
             num_cores = len(x_list) # default value
             if type(parallel) == int and parallel < num_cores:
                 num_cores = parallel
             msd_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_species_msd)(trajectory, x) for x in x_list)
-            self.msd_data["X"] = msd_list[0]
+            self.data["X"] = msd_list[0]
             for i in range(1, len(x_list)):
                 x_str = ase.data.chemical_symbols[x_list[i]]
-                self.msd_data[x_str] = msd_list[i]               
+                self.data[x_str] = msd_list[i]               
 
 
 class WindowMsd(Msd):
@@ -155,7 +155,7 @@ class WindowMsd(Msd):
 
     def __init__(self):
         """default constructor"""
-        self.msd_data = pd.DataFrame({"Time": np.empty([0])})
+        self.data = pd.DataFrame({"Time": np.empty([0])})
 
     @classmethod
     def from_trajectory(cls, trajectory, delta_time = 100, max_time = "half", timestep = 1, parallel = False):
@@ -228,7 +228,7 @@ class WindowMsd(Msd):
             positions_by_elt.append([amof.atom.select_species_positions(atom, x) for atom in trajectory])
         cell = [atom.get_cell() for atom in trajectory]
 
-        self.msd_data = pd.DataFrame({"Time": time}) 
+        self.data = pd.DataFrame({"Time": time}) 
 
         def compute_for_every_m(positions, cell):
             delta_pos = amtraj.get_delta_pos(positions, cell)
@@ -245,10 +245,10 @@ class WindowMsd(Msd):
         # assign partial msd
         for i in range(len(elements)):
             x_str = ase.data.chemical_symbols[elements[i]]
-            self.msd_data[x_str] = msd_list[i]
+            self.data[x_str] = msd_list[i]
         # compute total msd
         formula_dict = trajectory[0].symbols.formula._count
-        self.msd_data['X'] = self.msd_data.groupby(self.msd_data.index).apply(
+        self.data['X'] = self.data.groupby(self.data.index).apply(
             lambda x: 
                 np.sum([x[k] * v for k, v in formula_dict.items()])
                 / sum(formula_dict.values())

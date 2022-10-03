@@ -51,7 +51,7 @@ class Ring(object):
 
     def __init__(self, max_search_depth = None, discard_if_potentially_undiscovered_rings = False):
         """default constructor"""
-        self.ring_data = xr.DataArray(np.empty([0,0,0]), 
+        self.data = xr.DataArray(np.empty([0,0,0]), 
             coords = [('Step', np.empty([0], dtype='int64')), 
                 ('ring_size', np.empty([0], dtype='int64')), 
                 ('ring_var', np.empty([0], dtype='str_'))], # numpy str is str_
@@ -146,7 +146,7 @@ class Ring(object):
             xa = xr.Dataset({'ring': xa}) # one large data_array containing thermo variables
             # xa = xa.to_dataset(dim='thermo') # separate thermo variables
             xa = xa.fillna(0) #  for every ring size found in the entire traj, add 0 at every step if none detected while other ring sizes are
-            self.ring_data = xa
+            self.data = xa
 
     def read_rings_output(self, rstat_path):
         """
@@ -273,7 +273,7 @@ class Ring(object):
 
     def write_to_file(self, filename):
         """path_to_output: where the ring object will be written"""
-        self.ring_data.to_netcdf(ampath.append_suffix(filename, 'ring'))
+        self.data.to_netcdf(ampath.append_suffix(filename, 'ring'))
         self.report_search.to_csv(ampath.append_suffix(filename, 'report_search.csv'))
 
 
@@ -289,4 +289,4 @@ class Ring(object):
     def read_ring_file(self, filename):
         """path_to_data: where the ring object is"""
         filename = ampath.append_suffix(filename, 'ring')
-        self.ring_data = xr.open_dataset(filename)
+        self.data = xr.open_dataset(filename)

@@ -27,7 +27,7 @@ class Pore(object):
 
     def __init__(self):
         """default constructor"""
-        self.surface_volume = pd.DataFrame({"Step": np.empty([0])})
+        self.data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
     def from_trajectory(cls, trajectory, delta_Step = 1, first_frame = 0, parallel = False):
@@ -64,7 +64,7 @@ class Pore(object):
 
         if list_of_dict != []:
             df = pd.DataFrame(list_of_dict)
-            self.surface_volume = df 
+            self.data = df 
         # else keep empty surface_volume from init
 
     @staticmethod
@@ -104,7 +104,7 @@ class Pore(object):
     def write_to_file(self, filename):
         """path_to_output: where the pore object will be written"""
         filename = amof.files.path.append_suffix(filename, 'pore')
-        self.surface_volume.to_feather(filename)
+        self.data.to_feather(filename)
 
     @classmethod
     def from_file(cls, filename):
@@ -118,4 +118,4 @@ class Pore(object):
     def read_surface_volume_file(self, filename):
         """path_to_data: where the MSD object is"""
         filename = amof.files.path.append_suffix(filename, 'pore')
-        self.surface_volume = pd.read_feather(filename)
+        self.data = pd.read_feather(filename)
