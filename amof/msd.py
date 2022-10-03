@@ -20,7 +20,7 @@ import pandas as pd
 import logging
 import joblib
 
-import amof.trajectory as straj
+import amof.trajectory as amtraj
 import amof.atom
 import amof.files.path
 
@@ -81,7 +81,7 @@ class DirectMsd(Msd):
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
         """
         msd_class = cls() # initialize class
-        step = straj.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        step = amtraj.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
         msd_class.compute_msd(trajectory, step, parallel)
         return msd_class # return class as it is a constructor
 
@@ -231,7 +231,7 @@ class WindowMsd(Msd):
         self.msd_data = pd.DataFrame({"Time": time}) 
 
         def compute_for_every_m(positions, cell):
-            delta_pos = straj.get_delta_pos(positions, cell)
+            delta_pos = amtraj.get_delta_pos(positions, cell)
             return [self.compute_msd_of_m(delta_pos, m) for m in window]
 
         if not parallel:

@@ -20,7 +20,7 @@ import logging
 
 import amof.trajectory
 import amof.files.path
-import amof.atom as satom
+import amof.atom as amatom
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -179,7 +179,7 @@ class CoordinationNumber(object):
             # atoms = trajectory[i]
             dic = {'Step': step}
             RDFobj = asap3.analysis.rdf.RadialDistributionFunction(atom, rmax, bins)
-            density = satom.get_number_density(atom)
+            density = amatom.get_number_density(atom)
             for nn_set, cutoff in nb_set_and_cutoff.items():
                 xx = tuple(ase.data.atomic_numbers[i] for i in nn_set.split('-'))
                 rdf = RDFobj.get_rdf(elements=xx, groups=0)

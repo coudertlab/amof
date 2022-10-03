@@ -13,7 +13,7 @@ https://github.com/MOFplus/cmc-tools
 import numpy
 import logging
 
-import amof.files.path as spath
+import amof.files.path as ampath
 
 """
 These functions implement the reading and writing of mfpx files
@@ -48,7 +48,7 @@ def write_mfpx(mol, filename):
         -mol   (obj) : DummyMol or class with similar attributes
         -filename (str) : filename
     """
-    filename = spath.append_suffix(filename, 'mfpx')
+    filename = ampath.append_suffix(filename, 'mfpx')
     f = open(filename, 'w')
     ### write check ###
     try:

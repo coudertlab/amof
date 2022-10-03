@@ -24,8 +24,8 @@ import shlex
 import xarray as xr
 
 import amof.trajectory
-import amof.atom as satom
-import amof.files.path as spath
+import amof.atom as amatom
+import amof.files.path as ampath
 import amof.pore.pysimmzeopp
 
 logger = logging.getLogger(__name__)
@@ -231,7 +231,7 @@ class Ring(object):
             'max_search_depth': self.max_search_depth,
             'Discard if potentially undiscovered rings': self.discard_if_potentially_undiscovered_rings,
             'Rings statistics computed with potentially undiscovered rings': False}
-        cutoff_dict = satom.format_cutoff(nb_set_and_cutoff, sort_pair = True)
+        cutoff_dict = amatom.format_cutoff(nb_set_and_cutoff, sort_pair = True)
         # add 0 where cutoff is not defined
         atomic_numbers_unique = list(set(atom.get_atomic_numbers()))
         for pair in itertools.combinations_with_replacement(atomic_numbers_unique, 2):
@@ -273,8 +273,8 @@ class Ring(object):
 
     def write_to_file(self, filename):
         """path_to_output: where the ring object will be written"""
-        self.ring_data.to_netcdf(spath.append_suffix(filename, 'ring'))
-        self.report_search.to_csv(spath.append_suffix(filename, 'report_search.csv'))
+        self.ring_data.to_netcdf(ampath.append_suffix(filename, 'ring'))
+        self.report_search.to_csv(ampath.append_suffix(filename, 'report_search.csv'))
 
 
     @classmethod
@@ -288,5 +288,5 @@ class Ring(object):
 
     def read_ring_file(self, filename):
         """path_to_data: where the ring object is"""
-        filename = spath.append_suffix(filename, 'ring')
+        filename = ampath.append_suffix(filename, 'ring')
         self.ring_data = xr.open_dataset(filename)

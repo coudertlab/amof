@@ -9,7 +9,7 @@ import logging
 import ase.atoms
 import pandas as pd
 
-import amof.files.path as spath
+import amof.files.path as ampath
 import amof.elastic.elate as elate
 
 logger = logging.getLogger(__name__)
@@ -190,7 +190,7 @@ class ElasticConstant(object):
         self.Cmat = da
 
     def write(self, filename):
-        path_to_output = spath.append_suffix(filename, 'elastic')
+        path_to_output = ampath.append_suffix(filename, 'elastic')
         self.Cmat.to_netcdf(path_to_output)
 
 
@@ -204,7 +204,7 @@ class ElasticConstant(object):
         return new_class # return class as it is a constructor
 
     def read_elastic_file(self, filename):
-        filename = spath.append_suffix(filename, 'elastic')
+        filename = ampath.append_suffix(filename, 'elastic')
         self.Cmat = xr.open_dataset(filename)
 
 
@@ -268,11 +268,11 @@ class MechanicalProperties(object):
 
     def read_file(self, filename):
         """path_to_data: where the cn object is"""
-        filename = spath.append_suffix(filename, 'mech.csv')
+        filename = ampath.append_suffix(filename, 'mech.csv')
         self.data = pd.read_csv(filename, index_col=0)
 
     def write(self, filename):
-        filename = spath.append_suffix(filename, 'mech.csv')
+        filename = ampath.append_suffix(filename, 'mech.csv')
         self.data.to_csv(filename)
 
 

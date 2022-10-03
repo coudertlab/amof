@@ -25,7 +25,7 @@ import logging
 
 import amof.trajectory
 import amof.files.path
-import amof.atom as satom
+import amof.atom as amatom
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ class Bad(CoreBad):
         compute bad for ase atom object
         """
         # atom = trajectory[i]
-        nl = satom.get_neighborlist(atom, cutoff_dict)
+        nl = amatom.get_neighborlist(atom, cutoff_dict)
         dic = {}
         for A, B in elements:
             aba_str = "-".join([ase.data.chemical_symbols[C] for C in [B, A, B]])
@@ -121,7 +121,7 @@ class Bad(CoreBad):
         """
         atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
 
-        cutoff_dict = satom.format_cutoff(nb_set_and_cutoff)
+        cutoff_dict = amatom.format_cutoff(nb_set_and_cutoff)
         elements_present_unique =  list(set([ase.data.atomic_numbers[i] for nb_set in nb_set_and_cutoff.keys() for i in nb_set.split('-') ]))
 
         if len(elements_present_unique) == len(atomic_numbers_unique):
@@ -230,7 +230,7 @@ class BadByCn(CoreBad):
         compute bad for ase atom object
         """
         # atom = trajectory[i]
-        nl = satom.get_neighborlist(atom, cutoff_dict)
+        nl = amatom.get_neighborlist(atom, cutoff_dict)
         dic = {}
         for A, B in elements:
             aba_str = "-".join([ase.data.chemical_symbols[C] for C in [B, A, B]])
@@ -244,7 +244,7 @@ class BadByCn(CoreBad):
         """
         atomic_numbers_unique = list(set(trajectory[0].get_atomic_numbers()))
 
-        cutoff_dict = satom.format_cutoff(nb_set_and_cutoff)
+        cutoff_dict = amatom.format_cutoff(nb_set_and_cutoff)
         elements_present_unique =  list(set([ase.data.atomic_numbers[i] for nb_set in nb_set_and_cutoff.keys() for i in nb_set.split('-') ]))
 
         if len(elements_present_unique) == len(atomic_numbers_unique):

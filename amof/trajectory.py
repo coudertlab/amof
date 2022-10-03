@@ -19,7 +19,7 @@ import pandas as pd
 import pathlib
 
 import amof.atom
-import amof.files.path as spath
+import amof.files.path as ampath
 import amof.symbols
 
 logger = logging.getLogger(__name__)
@@ -146,10 +146,10 @@ class ReducedTrajectory(object):
         """
         if load_trajectory == True:
             logger.info("Read reduced trajectory %s", pathlib.Path(filename).name)
-            trajectory = ase.io.read(spath.append_suffix(filename, 'xyz'), ':', 'xyz')
+            trajectory = ase.io.read(ampath.append_suffix(filename, 'xyz'), ':', 'xyz')
         else:
             trajectory = []
-        report_search = pd.read_csv(spath.append_suffix(filename, 'report_search.csv'), index_col=0)
+        report_search = pd.read_csv(ampath.append_suffix(filename, 'report_search.csv'), index_col=0)
         symbols = amof.symbols.DummySymbols.from_file(filename)
         cn_class = cls(trajectory, report_search, symbols) # initialize class
         if sampling != 1:
@@ -161,8 +161,8 @@ class ReducedTrajectory(object):
         Args: 
             filename: str or path to files without the final suffixes (ie no '.xyz' or '.symbols')
         """
-        self.report_search.to_csv(spath.append_suffix(filename, 'report_search.csv'))
-        ase.io.write(spath.append_suffix(filename, 'xyz'), self.trajectory)
+        self.report_search.to_csv(ampath.append_suffix(filename, 'report_search.csv'))
+        ase.io.write(ampath.append_suffix(filename, 'xyz'), self.trajectory)
         self.symbols.write_to_file(filename)
 
     def sample(self, sampling):

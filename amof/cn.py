@@ -17,7 +17,7 @@ import logging
 
 import amof.trajectory
 import amof.files.path
-import amof.atom as satom
+import amof.atom as amatom
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class CoordinationNumber(object):
         N_species = len(atomic_numbers_unique) # number of different chemical species
 
         logger.info("Start computing coordination number for %s frames", len(trajectory))
-        cutoff_dict = satom.format_cutoff(nb_set_and_cutoff)
+        cutoff_dict = amatom.format_cutoff(nb_set_and_cutoff)
 
         def compute_cn_for_frame(atom, step):
             """
@@ -62,7 +62,7 @@ class CoordinationNumber(object):
             # atoms = trajectory[i]
             dic = {'Step': step}
 
-            nl = satom.get_neighborlist(atom, cutoff_dict) # 92% of computation time is spent in ase neighbour list search (profiled on ZIF8_15glass01)
+            nl = amatom.get_neighborlist(atom, cutoff_dict) # 92% of computation time is spent in ase neighbour list search (profiled on ZIF8_15glass01)
             atomic_numbers = atom.get_atomic_numbers()  
             for nb_set, cutoff in nb_set_and_cutoff.items():
                 a, b = tuple(ase.data.atomic_numbers[i] for i in nb_set.split('-'))

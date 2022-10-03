@@ -25,7 +25,7 @@ import logging
 import amof.files.path
 import amof.structure
 import amof.symbols
-import amof.files.molsys as smolsys
+import amof.files.molsys as ammolsys
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -201,9 +201,9 @@ class CoordinationSearch(object):
         """
         Write an mfpx output file with connectivity info readable by molsys
         """
-        mol = smolsys.DummyMol(self.elems, self.struct.cart_coords, self.struct.lattice.matrix, 
+        mol = ammolsys.DummyMol(self.elems, self.struct.cart_coords, self.struct.lattice.matrix, 
             self.conn, self.atypes, self.fragtypes, self.fragnumbers)
-        smolsys.write_mfpx(mol, filename)
+        ammolsys.write_mfpx(mol, filename)
 
     def make_frag_conn(self):
         """
