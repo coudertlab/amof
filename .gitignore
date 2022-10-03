@@ -5,6 +5,7 @@
 !.gitignore
 !*.py
 !*/ring/template/*
+!README.md
 # !template.latex
 # etc...
 
