@@ -1,5 +1,5 @@
 """
-sadi.elastic
+amof.elastic
 ---
 Submodule containing elastic constant analysis related methods
 Import entire core content

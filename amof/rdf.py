@@ -18,9 +18,9 @@ import joblib
 
 import logging
 
-import sadi.trajectory
-import sadi.files.path
-import sadi.atom as satom
+import amof.trajectory
+import amof.files.path
+import amof.atom as satom
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -114,11 +114,11 @@ class Rdf(object):
             self.rdf_data[ase.data.chemical_symbols[xx[0]] + "-X"] = sum([partial_rdf[i][j] for j in range(N_species)])   
 
     def write_to_file(self, filename):
-        filename = sadi.files.path.append_suffix(filename, 'rdf')
+        filename = amof.files.path.append_suffix(filename, 'rdf')
         self.rdf_data.to_feather(filename)
 
     def read_rdf_file(self, path_to_data):
-        path_to_data = sadi.files.path.append_suffix(path_to_data, 'rdf')
+        path_to_data = amof.files.path.append_suffix(path_to_data, 'rdf')
         self.rdf_data = pd.read_feather(path_to_data)
 
     def get_coordination_number(self, nn_set, cutoff, density):
@@ -137,12 +137,12 @@ class CoordinationNumber(object):
     Class to compute CoordinationNumber from RDF
     
     Subjected to numerical errors in the integration step
-    Best to use sadi.cn.CoordinationNumber
+    Best to use amof.cn.CoordinationNumber
     """
 
     def __init__(self):
         """default constructor"""
-        logger.warning('Compute CoordinationNumber from RDF, best to use sadi.cn.CoordinationNumber')
+        logger.warning('Compute CoordinationNumber from RDF, best to use amof.cn.CoordinationNumber')
         self.cn_data = pd.DataFrame({"Step": np.empty([0])})
 
     @classmethod
@@ -155,7 +155,7 @@ class CoordinationNumber(object):
             dr: float, in Angstrom
         """
         cn_class = cls() # initialize class
-        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        step = amof.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
         cn_class.compute_cn(trajectory, nb_set_and_cutoff, step, dr, parallel)
         return cn_class # return class as it is a constructor
 
@@ -206,11 +206,11 @@ class CoordinationNumber(object):
 
     def read_cn_file(self, filename):
         """path_to_data: where the cn object is"""
-        filename = sadi.files.path.append_suffix(filename, 'cn')
+        filename = amof.files.path.append_suffix(filename, 'cn')
         self.cn_data = pd.read_feather(filename)
 
     def write_to_file(self, filename):
-        filename = sadi.files.path.append_suffix(filename, 'cn')
+        filename = amof.files.path.append_suffix(filename, 'cn')
         self.cn_data.to_feather(filename)
 
 def get_coordination_number(r, rdf, cutoff, density):

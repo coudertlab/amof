@@ -6,7 +6,7 @@ Designed for fragment names, but more general terminology:
     symbol (chemical_symbol, from the periodic table)
 """
 
-import sadi.files.path
+import amof.files.path
 import json
 
 from ase.data import chemical_symbols
@@ -74,7 +74,7 @@ class DummySymbols(object):
 
     def read_file(self, filename):
         """filename: str"""
-        filename = sadi.files.path.append_suffix(filename, 'symbols')
+        filename = amof.files.path.append_suffix(filename, 'symbols')
         self.from_name_to_symbol = json.load(open(filename))
         self.from_symbol_to_name = {v: k for k, v in self.from_name_to_symbol.items()}
         self.names = list(self.from_name_to_symbol.keys())
@@ -82,7 +82,7 @@ class DummySymbols(object):
         self.available_chemical_symbols = [s for s in self.available_chemical_symbols if s not in self.names]
 
     def write_to_file(self, filename):
-        filename = sadi.files.path.append_suffix(filename, 'symbols')
+        filename = amof.files.path.append_suffix(filename, 'symbols')
         with open(filename, 'w') as fp:
             json.dump(self.from_name_to_symbol, fp)
 

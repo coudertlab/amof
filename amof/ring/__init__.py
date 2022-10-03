@@ -1,5 +1,5 @@
 """
-sadi.rings
+amof.rings
 ---
 Submodule containing rings analysis related methods
 Import entire core content

@@ -4,8 +4,8 @@ Supported and validated: ZIF-4
 """
 
 from numpy import False_
-from sadi.coordination import *
-import sadi.coordination.buildingunits as bu
+from amof.coordination import *
+import amof.coordination.buildingunits as bu
 
 
 class ZifSearch(CoordinationSearch):

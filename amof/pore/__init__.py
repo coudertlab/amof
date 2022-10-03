@@ -1,5 +1,5 @@
 """
-sadi.pore
+amof.pore
 ---
 Submodule containing pore analysis related methods
 Import entire core content

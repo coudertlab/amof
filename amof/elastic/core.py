@@ -9,8 +9,8 @@ import logging
 import ase.atoms
 import pandas as pd
 
-import sadi.files.path as spath
-import sadi.elastic.elate as elate
+import amof.files.path as spath
+import amof.elastic.elate as elate
 
 logger = logging.getLogger(__name__)
 

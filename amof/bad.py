@@ -23,9 +23,9 @@ import itertools
 
 import logging
 
-import sadi.trajectory
-import sadi.files.path
-import sadi.atom as satom
+import amof.trajectory
+import amof.files.path
+import amof.atom as satom
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -161,11 +161,11 @@ class Bad(CoreBad):
 
 
     def write_to_file(self, filename):
-        filename = sadi.files.path.append_suffix(filename, 'bad')
+        filename = amof.files.path.append_suffix(filename, 'bad')
         self.bad_data.to_feather(filename)
 
     def read_bad_file(self, path_to_data):
-        path_to_data = sadi.files.path.append_suffix(path_to_data, 'bad')
+        path_to_data = amof.files.path.append_suffix(path_to_data, 'bad')
         self.bad_data = pd.read_feather(path_to_data)
 
 
@@ -301,9 +301,9 @@ class BadByCn(CoreBad):
 
 
     def write_to_file(self, filename):
-        filename = sadi.files.path.append_suffix(filename, 'bad')
+        filename = amof.files.path.append_suffix(filename, 'bad')
         self.bad_data.to_netcdf(filename)
 
     def read_bad_file(self, filename):
-        filename = sadi.files.path.append_suffix(filename, 'bad')
+        filename = amof.files.path.append_suffix(filename, 'bad')
         self.bad_data = xr.open_dataset(filename)

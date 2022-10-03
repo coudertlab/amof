@@ -20,9 +20,9 @@ import pandas as pd
 import logging
 import joblib
 
-import sadi.trajectory as straj
-import sadi.atom
-import sadi.files.path
+import amof.trajectory as straj
+import amof.atom
+import amof.files.path
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class Msd(object):
 
     def write_to_file(self, path_to_output):
         """path_to_output: where the MSD object will be written"""
-        path_to_output = sadi.files.path.append_suffix(path_to_output, 'msd')
+        path_to_output = amof.files.path.append_suffix(path_to_output, 'msd')
         self.msd_data.to_feather(path_to_output)
 
     @classmethod
@@ -51,7 +51,7 @@ class Msd(object):
 
     def read_msd_file(self, path_to_data):
         """path_to_data: where the MSD object is"""
-        path_to_data = sadi.files.path.append_suffix(path_to_data, 'msd')
+        path_to_data = amof.files.path.append_suffix(path_to_data, 'msd')
         self.msd_data = pd.read_feather(path_to_data)
 
 
@@ -91,7 +91,7 @@ class DirectMsd(Msd):
         in ase (extracted with position)
         if atomic_number is None, compute MSD between all atoms
         """
-        r_0 = sadi.atom.select_species_positions(trajectory[0], atomic_number)
+        r_0 = amof.atom.select_species_positions(trajectory[0], atomic_number)
         r_t = r_0
         MSD = np.zeros(len(trajectory))
         for t in range(1, len(trajectory)):
@@ -100,7 +100,7 @@ class DirectMsd(Msd):
             # ! only works for orthogonal cell
             for j in range(3): #x,y,z
                 a = trajectory[t].get_cell()[j,j]
-                dr[:,j] = (sadi.atom.select_species_positions(trajectory[t], atomic_number) - r_t_minus_dt%a)[:,j]
+                dr[:,j] = (amof.atom.select_species_positions(trajectory[t], atomic_number) - r_t_minus_dt%a)[:,j]
                 for i in range(len(dr)):
                     if dr[i][j]>a/2:
                         dr[i][j] -= a
@@ -119,7 +119,7 @@ class DirectMsd(Msd):
         """
         logger.info("Start computing msd for %s frames", len(trajectory))
         
-        elements = sadi.atom.get_atomic_numbers_unique(trajectory[0])
+        elements = amof.atom.get_atomic_numbers_unique(trajectory[0])
 
         Step = step     
         self.msd_data = pd.DataFrame({"Step": Step})
@@ -215,7 +215,7 @@ class WindowMsd(Msd):
         """
         logger.info("Start computing msd at %s times on a trajectory of %s frames", len(window), len(trajectory))
         
-        elements = sadi.atom.get_atomic_numbers_unique(trajectory[0])
+        elements = amof.atom.get_atomic_numbers_unique(trajectory[0])
 
         # Compensate MD drift of center of mass
         for atom in trajectory:
@@ -225,7 +225,7 @@ class WindowMsd(Msd):
         positions_by_elt = [] # each partial trajectory consist of the po
         for x in elements:
             x_str = ase.data.chemical_symbols[x]
-            positions_by_elt.append([sadi.atom.select_species_positions(atom, x) for atom in trajectory])
+            positions_by_elt.append([amof.atom.select_species_positions(atom, x) for atom in trajectory])
         cell = [atom.get_cell() for atom in trajectory]
 
         self.msd_data = pd.DataFrame({"Time": time}) 

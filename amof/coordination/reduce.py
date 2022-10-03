@@ -7,11 +7,11 @@ import logging
 import joblib
 
 from pymatgen.io.ase import AseAtomsAdaptor
-from sadi.coordination.core import SearchError
+from amof.coordination.core import SearchError
 
-import sadi.symbols
-import sadi.coordination.zif
-import sadi.trajectory
+import amof.symbols
+import amof.coordination.zif
+import amof.trajectory
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +35,17 @@ def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta
     dist_margin_H = kwargs.get('dist_margin_H', 1.44)
 
     if mof in ['ZIF-4', 'ZIF-zni', 'SALEM-2']:
-        structure_reducer = lambda struct: sadi.coordination.zif.MetalIm(struct, "Zn", 
+        structure_reducer = lambda struct: amof.coordination.zif.MetalIm(struct, "Zn", 
             dist_margin=dist_margin, 
             dist_margin_metal=dist_margin_metal,
             dist_margin_H = dist_margin_H) 
-        symbols = sadi.symbols.DummySymbols(['Zn', 'Im']) 
+        symbols = amof.symbols.DummySymbols(['Zn', 'Im']) 
     elif mof in  ['ZIF-8']:
-        structure_reducer = lambda struct: sadi.coordination.zif.MetalmIm(struct, "Zn", dist_margin=dist_margin)
-        symbols = sadi.symbols.DummySymbols(['Zn', 'mIm']) 
+        structure_reducer = lambda struct: amof.coordination.zif.MetalmIm(struct, "Zn", dist_margin=dist_margin)
+        symbols = amof.symbols.DummySymbols(['Zn', 'mIm']) 
     else:
-        structure_reducer = lambda struct: sadi.coordination.NotImplementedSearch(mof)
-        symbols = sadi.symbols.DummySymbols()
+        structure_reducer = lambda struct: amof.coordination.NotImplementedSearch(mof)
+        symbols = amof.symbols.DummySymbols()
         logger.warning(f'Structure search not implemented for {mof}')
     return reduce_trajectory_core(trajectory, structure_reducer, symbols, filename, 
         delta_Step = delta_Step, first_frame = first_frame, parallel = parallel, write_mfpx = write_mfpx)
@@ -65,11 +65,11 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
                 if no filename is provided, will not write any
         
         Return:
-            reduced_traj: sadi.trajectory ReducedTrajectory object
+            reduced_traj: amof.trajectory ReducedTrajectory object
         """
         logger.info("Start reducing trajectory for %s frames", len(trajectory))
 
-        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        step = amof.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
 
         def per_atom(atom, step, filename):
             report_search = {'Step': step}
@@ -113,7 +113,7 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
         
         df_report_search = pd.DataFrame(list_report_search).set_index('Step')
 
-        reduced_trajectory = sadi.trajectory.ReducedTrajectory(reduced_traj, df_report_search, symbols)
+        reduced_trajectory = amof.trajectory.ReducedTrajectory(reduced_traj, df_report_search, symbols)
         if filename is not None:
             reduced_trajectory.write_to_file(filename)
         return reduced_trajectory

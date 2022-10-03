@@ -1,5 +1,5 @@
 """
-sadi.coordination
+amof.coordination
 ---
 Submodule containing coordination analysis related methods
 Import entire core content

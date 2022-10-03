@@ -23,10 +23,10 @@ import subprocess
 import shlex
 import xarray as xr
 
-import sadi.trajectory
-import sadi.atom as satom
-import sadi.files.path as spath
-import sadi.pore.pysimmzeopp
+import amof.trajectory
+import amof.atom as satom
+import amof.files.path as spath
+import amof.pore.pysimmzeopp
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class Ring(object):
         """
         ring_class = cls(max_search_depth = max_search_depth) # initialize class
         nb_set_and_cutoff_list = [nb_set_and_cutoff for i in range(len(trajectory))]
-        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        step = amof.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
         ring_class.compute_ring(trajectory, nb_set_and_cutoff_list, step, parallel)
         return ring_class # return class as it is a constructor
 
@@ -80,10 +80,10 @@ class Ring(object):
     def from_reduced_trajectory(cls, reduced_trajectory, max_search_depth = 32, 
             discard_if_potentially_undiscovered_rings = False, parallel = False):
         """
-        Constructor of ring class from a sadi ReducedTrajectory object
+        Constructor of ring class from a amof ReducedTrajectory object
         
         Args:
-            reduced_trajectory: sadi ReducedTrajectory object
+            reduced_trajectory: amof ReducedTrajectory object
             nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
                 values are cutoffs float, in Angstrom
         """

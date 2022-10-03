@@ -22,10 +22,10 @@ import logging
 
 #CLEAN from xarray.core import dataset
 
-import sadi.files.path
-import sadi.structure
-import sadi.symbols
-import sadi.files.molsys as smolsys
+import amof.files.path
+import amof.structure
+import amof.symbols
+import amof.files.molsys as smolsys
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class CoordinationSearch(object):
         self.fragnumbers = [-1 for i in range(struct.num_sites)]
         self.elems = [str(self.struct[i].species)[:-1].lower() for i in range(struct.num_sites)]
         self.fragments = {} 
-        self.symbols = sadi.symbols.DummySymbols()
+        self.symbols = amof.symbols.DummySymbols()
         self.all_neighb = self.struct.get_all_neighbors(neighb_max_distance)
         self.dist_margin = dist_margin
         # initialize report_search with useful descriptors of struct for subsequent report analysis
@@ -159,7 +159,7 @@ class CoordinationSearch(object):
         coords = [[0. ,0., 0.]] * len(self.fragments)
         for fragnumber, fragment in self.fragments.items():
             species[fragnumber] = self.symbols.get_symbol(fragment['fragtype'])
-            coords[fragnumber] = sadi.structure.get_center_of_mass(self.struct, fragment['indices'])            
+            coords[fragnumber] = amof.structure.get_center_of_mass(self.struct, fragment['indices'])            
         reduced_struct = Structure(self.struct.lattice, species, coords, coords_are_cartesian = True)
 
         # compute cutoffs defining nb with reduced structure from frag_conn
@@ -469,7 +469,7 @@ class CoordinationSearch(object):
 
     def plot_conn_as_graph(self, filename = "graph_temp.png"):
         """Create graph with every bond present in self.conn and print it in file"""
-        filename = sadi.files.path.append_suffix(filename, 'png') # draw_graph_to_file needs a filename extension
+        filename = amof.files.path.append_suffix(filename, 'png') # draw_graph_to_file needs a filename extension
         graph = StructureGraph.with_empty_graph(self.struct)
         for i in range(self.struct.num_sites):
             for j in self.conn[i]:

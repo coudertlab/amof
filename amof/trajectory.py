@@ -18,9 +18,9 @@ import tempfile
 import pandas as pd
 import pathlib
 
-import sadi.atom
-import sadi.files.path as spath
-import sadi.symbols
+import amof.atom
+import amof.files.path as spath
+import amof.symbols
 
 logger = logging.getLogger(__name__)
 
@@ -124,11 +124,11 @@ class ReducedTrajectory(object):
     Attributes:
         trajectory: ase trajectory object containing the positions of the reduced trajectory
         report_search: pandas dataframe with information per Step of trajectory
-        symbols: sadi DummySymbols object
+        symbols: amof DummySymbols object
     """
     def __init__(self, trajectory = [], 
             report_search = pd.DataFrame({"Step": np.empty([0])}), 
-            symbols = sadi.symbols.DummySymbols()):
+            symbols = amof.symbols.DummySymbols()):
         """Default constructor from attributes
         Mock reducedtrajectory with no frame if no argument supplied"""
         self.trajectory = trajectory
@@ -150,7 +150,7 @@ class ReducedTrajectory(object):
         else:
             trajectory = []
         report_search = pd.read_csv(spath.append_suffix(filename, 'report_search.csv'), index_col=0)
-        symbols = sadi.symbols.DummySymbols.from_file(filename)
+        symbols = amof.symbols.DummySymbols.from_file(filename)
         cn_class = cls(trajectory, report_search, symbols) # initialize class
         if sampling != 1:
             cn_class.sample(sampling)
@@ -235,11 +235,11 @@ def apply_to_traj(trajectory, function, how):
 
 def get_density(trajectory, how = 'mean'):
     """return density of ase trajectory object"""
-    return apply_to_traj(trajectory, sadi.atom.get_density, how)
+    return apply_to_traj(trajectory, amof.atom.get_density, how)
 
 def get_number_density(trajectory, how = 'mean'):
     """return number density of ase trajectory object"""
-    return apply_to_traj(trajectory, sadi.atom.get_number_density, how)
+    return apply_to_traj(trajectory, amof.atom.get_number_density, how)
 
 def construct_step(**kwargs):
     """

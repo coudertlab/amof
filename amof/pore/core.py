@@ -13,10 +13,10 @@ import tempfile
 import re
 import joblib
 
-import sadi.trajectory
-import sadi.atom
-import sadi.files.path
-import sadi.pore.pysimmzeopp
+import amof.trajectory
+import amof.atom
+import amof.files.path
+import amof.pore.pysimmzeopp
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class Pore(object):
 
         """
         pore_class = cls() # initialize class
-        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        step = amof.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
         pore_class.compute_surface_volume(trajectory, step, parallel)
         return pore_class # return class as it is a constructor
 
@@ -92,7 +92,7 @@ class Pore(object):
         with tempfile.TemporaryDirectory() as tmpdirname:
             atom.write(tmpdirname + '/atom.cif')
             try:
-                sadi.pore.pysimmzeopp.network(tmpdirname + '/atom.cif', sa = True, vol = True)
+                amof.pore.pysimmzeopp.network(tmpdirname + '/atom.cif', sa = True, vol = True)
                 sa = self.read_zeopp(tmpdirname + '/atom.sa')
                 vol = self.read_zeopp(tmpdirname + '/atom.vol')
                 dic = {'Step': step, **sa, **vol}
@@ -103,7 +103,7 @@ class Pore(object):
 
     def write_to_file(self, filename):
         """path_to_output: where the pore object will be written"""
-        filename = sadi.files.path.append_suffix(filename, 'pore')
+        filename = amof.files.path.append_suffix(filename, 'pore')
         self.surface_volume.to_feather(filename)
 
     @classmethod
@@ -117,5 +117,5 @@ class Pore(object):
 
     def read_surface_volume_file(self, filename):
         """path_to_data: where the MSD object is"""
-        filename = sadi.files.path.append_suffix(filename, 'pore')
+        filename = amof.files.path.append_suffix(filename, 'pore')
         self.surface_volume = pd.read_feather(filename)

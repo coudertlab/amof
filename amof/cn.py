@@ -15,9 +15,9 @@ import joblib
 
 import logging
 
-import sadi.trajectory
-import sadi.files.path
-import sadi.atom as satom
+import amof.trajectory
+import amof.files.path
+import amof.atom as satom
 
 # create logger without parameters for this module file that will be incorporated by the main file logging parameters
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class CoordinationNumber(object):
             dr: float, in Angstrom
         """
         cn_class = cls() # initialize class
-        step = sadi.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
+        step = amof.trajectory.construct_step(delta_Step=delta_Step, first_frame = first_frame, number_of_frames = len(trajectory))
         cn_class.compute_cn(trajectory, nb_set_and_cutoff, step, parallel)
         return cn_class # return class as it is a constructor
 
@@ -92,9 +92,9 @@ class CoordinationNumber(object):
 
     def read_cn_file(self, filename):
         """path_to_data: where the cn object is"""
-        filename = sadi.files.path.append_suffix(filename, 'cn')
+        filename = amof.files.path.append_suffix(filename, 'cn')
         self.cn_data = pd.read_feather(filename)
 
     def write_to_file(self, filename):
-        filename = sadi.files.path.append_suffix(filename, 'cn')
+        filename = amof.files.path.append_suffix(filename, 'cn')
         self.cn_data.to_feather(filename)

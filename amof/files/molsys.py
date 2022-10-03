@@ -13,7 +13,7 @@ https://github.com/MOFplus/cmc-tools
 import numpy
 import logging
 
-import sadi.files.path as spath
+import amof.files.path as spath
 
 """
 These functions implement the reading and writing of mfpx files
