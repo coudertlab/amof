@@ -1,6 +1,6 @@
 # aMOF
 
-aMOF is a collection of tools to analyze Molecular Dynamics (MD) trajectories of amorphous Metal-Organic Frameworks (MOFs).
+aMOF is a python package consisting in a collection of tools to analyze Molecular Dynamics (MD) trajectories of amorphous Metal-Organic Frameworks (MOFs).
 
 ## Functionalities
 
