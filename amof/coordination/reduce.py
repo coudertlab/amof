@@ -135,7 +135,7 @@ def reduce_atom(atom, structure_reducer, symbols, write_mfpx = False, filename =
     """
     struct = AseAtomsAdaptor.get_structure(atom)
     searcher = structure_reducer(struct)
-    searcher.symbols = symbols # enforce symbols; TBD: add option to get around, 'auto' setup, etc. #CLEAN
+    searcher.symbols = symbols # enforce symbols; TBD: add option to get around, 'auto' setup, etc. 
     reduced_struct = searcher.reduce_structure()
     report_search = {**{"is_reduced_structure_valid": searcher.is_reduced_structure_valid()}, **searcher.report_search}
     if searcher.is_reduced_structure_valid():
