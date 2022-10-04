@@ -28,7 +28,7 @@ import numpy as np
 # ### Prepare cell information
 # Cell information can be stored under a variety of format depending on the MD scheme used.
 #
-# Here we show the example of the cell information formated as a CP2K output, as aMOF contains a function to read it straight away, but any format of cell is possible as long as it end up formatted as required by aMOF (see below).
+# Here we show the example of the cell information formatted as a CP2K output, as aMOF contains a function to read it straight away, but any format of cell is possible as long as it end up formatted as required by aMOF (see below).
 
 # %%
 from amof.files.cp2k import read_tabular

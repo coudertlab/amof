@@ -76,7 +76,7 @@ class CoordinationNumber(object):
         if parallel == False:
             list_of_dict = [compute_cn_for_frame(trajectory[i], step[i]) for i in range(len(trajectory))]
         else:
-            num_cores = parallel if type(parallel) == int else 18
+            num_cores = parallel if type(parallel) == int else max(joblib.cpu_count() // 2 - 2, 2) # heuristic for 40cores Xeon cpus
             list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(compute_cn_for_frame)(trajectory[i], step[i]) for i in range(len(trajectory)))
 
         self.data = pd.DataFrame(list_of_dict)

@@ -126,7 +126,7 @@ class Ring(object):
             if type(parallel) == int:
                 num_cores = parallel
             else:
-                num_cores = 18 # less than 20 and nice value for 50 steps
+                num_cores = max(joblib.cpu_count() // 2 - 2, 2) # heuristic for 40cores Xeon cpus: less than 20 and nice value for 50 steps
             result_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_ring_for_atom)(
                         trajectory[i], step[i], nb_set_and_cutoff_list[i]) for i in range(len(trajectory)))
 

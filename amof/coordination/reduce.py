@@ -101,7 +101,7 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
         if parallel == False:
             result_list = [per_atom(trajectory[i], step[i], filename) for i in range(len(trajectory))]
         else:
-            num_cores = parallel if type(parallel) == int else 18
+            num_cores = parallel if type(parallel) == int else max(joblib.cpu_count() // 2 - 2, 2) # heuristic for 40cores Xeon cpus
             result_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(per_atom)(trajectory[i], step[i], filename) for i in range(len(trajectory)))
 
         list_report_search = []

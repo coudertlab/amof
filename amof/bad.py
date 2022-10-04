@@ -148,7 +148,7 @@ class Bad(CoreBad):
         if parallel == False:
             list_of_dict = [self.compute_bad_for_frame(trajectory[i], cutoff_dict, elements) for i in range(len(trajectory))]
         else:
-            num_cores = parallel if type(parallel) == int else 18
+            num_cores = parallel if type(parallel) == int else max(joblib.cpu_count() // 2 - 2, 2) # heuristic for 40cores Xeon cpus
             list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_bad_for_frame)(trajectory[i], cutoff_dict, elements) for i in range(len(trajectory)))
 
         aba_str_keys = list_of_dict[0].keys()
@@ -271,7 +271,7 @@ class BadByCn(CoreBad):
         if parallel == False:
             list_of_dict = [self.compute_bad_for_frame(trajectory[i], cutoff_dict, elements) for i in range(len(trajectory))]
         else:
-            num_cores = parallel if type(parallel) == int else 18
+            num_cores = parallel if type(parallel) == int else max(joblib.cpu_count() // 2 - 2, 2) # heuristic for 40cores Xeon cpus
             list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_bad_for_frame)(trajectory[i], cutoff_dict, elements) for i in range(len(trajectory)))
 
         dic_of_xarray = {}

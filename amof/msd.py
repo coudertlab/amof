@@ -131,7 +131,7 @@ class DirectMsd(Msd):
                 self.data[x_str] = self.compute_species_msd(trajectory, x)
         else:
             x_list = [None] + elements
-            num_cores = len(x_list) # default value
+            num_cores = min(len(x_list), joblib.cpu_count()) # default value
             if type(parallel) == int and parallel < num_cores:
                 num_cores = parallel
             msd_list = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.compute_species_msd)(trajectory, x) for x in x_list)
