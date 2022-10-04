@@ -36,7 +36,8 @@ class ElasticConstant(object):
     def from_cell(cls, h, temperature, final_value = False, step = None):
         """default constructor from cell
         Args:
-            h: array_like, unit cell tensor
+            h: array_like, unit cell tensor, can be of any form that ase set_cell can process
+            temperature: float, temperature in K
             final_value: Boolean, If True only one value of C will be computed
             step: Contains step information.
                 can be array_like of same length than h containing the step information

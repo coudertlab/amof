@@ -17,4 +17,4 @@
 # !*/a/b/file1.txt
 # !*/a/b/c/*
 
-*/.ipynb_checkpoints*.py
+*/.ipynb_checkpoints/*.py

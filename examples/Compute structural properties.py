@@ -102,6 +102,26 @@ cn_object = amcn.CoordinationNumber.from_trajectory(traj, {'Zn-N': 2.5})
 cn_object.data
 
 # %% [markdown]
+# ### Mean Squared Displacement (MSD)
+# module `msd`
+#
+# Create a mock trajectory with random noise just to have several frames to show the MSD computations.
+
+# %%
+from copy import deepcopy
+mock_traj = [deepcopy(atom)]
+for i in range(10):
+    atom.rattle(0.5)
+    mock_traj.append(deepcopy(atom))
+
+# %%
+import amof.msd as ammsd
+msd = ammsd.WindowMsd.from_trajectory(mock_traj, delta_time = 1, timestep = 1)        
+
+# %%
+msd.data.hvplot(y = ['X','Zn','C'])
+
+# %% [markdown]
 # ### Pore analysis
 # module `pore`
 #
@@ -123,9 +143,9 @@ pore.data
 
 # %%
 import amof.ring as amring
-ring = amring.Ring.from_trajectory(traj, {'C-N': 1.728, 'C-C': 1.752}, max_search_depth = 5) # takes a few seconds to run
+ring = amring.Ring.from_trajectory(traj, {'C-N': 1.728, 'C-C': 1.752}, max_search_depth = 6) # takes a few seconds to run
 
 # %%
-ring.data.ring
+ring.data.ring.to_series()
 
 # %%
