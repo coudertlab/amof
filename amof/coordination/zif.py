@@ -30,7 +30,7 @@ class ZifSearch(CoordinationSearch):
                 For Zn-N, the default option is equivalent to a cut-off of (1.22 + 0.71) * 1.5 = 2.895
             dist_margin_H: float, specific tolerance for H-X bonds as the distance covalent radius of H is small,
                 causing the detection to be rather sensitive                
-            cutoff_metal: float, overide dist_margin_metal if not None 
+            cutoff_metal: float, override dist_margin_metal if not None 
                 option added but not used so far
             ignore_H_in_reduction: bool, if True imid identification is only done by finding the cycle
                 The errors in bonding H atoms are however reported, and the resulting reduced structure 

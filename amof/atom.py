@@ -1,5 +1,5 @@
 """
-Module containing everything related to atoms: 
+Module containing everything related to ase atom objects: 
 - wrapper for ase atom module
 """
 
@@ -50,7 +50,7 @@ def format_cutoff(nb_set_and_cutoff, format='ase', sort_pair = False):
     Return cutoff formatted for different purposes
 
     Args:
-        nb_set_and_cutoff: dict, keys are str indicating pair of neighbours, 
+        nb_set_and_cutoff: dict, keys are str indicating pair of neighbors, 
             values are cutoffs float, in Angstrom
         format: str, can be 'ase'
         sort_pair: Bool, if True will sort the tuple of the nb atomic numbers
