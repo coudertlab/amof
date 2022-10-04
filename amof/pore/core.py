@@ -57,7 +57,7 @@ class Pore(object):
             if type(parallel) == int:
                 num_cores = parallel
             else:
-                num_cores = 18 # less than 20 and nice value for 50 steps
+                num_cores = max(joblib.cpu_count() // 2 - 2, 2) # heuristic for 40cores Xeon cpus: less than 20 and nice value for 50 steps
             list_of_dict = joblib.Parallel(n_jobs=num_cores)(joblib.delayed(self.get_surface_volume)(trajectory[i], step[i]) for i in range(len(trajectory)))
 
         list_of_dict = [dic for dic in list_of_dict if dic is not None] # filter pore volume that are not properly computed
