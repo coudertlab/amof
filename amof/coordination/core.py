@@ -45,7 +45,7 @@ class SearchError(Exception):
 class CoordinationSearch(object):
     """
     Classes containing general methods to perform a coordination search
-    The actual search is to be launched from a subclass mentionning specific species, etc.
+    The actual search is to be launched from a subclass mentioning specific species, etc.
 
     Attributes:
         fragments: dict of dict;  key i of encompassing dict is fragment of fragnumber i
@@ -67,9 +67,9 @@ class CoordinationSearch(object):
         # initialize report_search with useful descriptors of struct for subsequent report analysis
         self.report_search = {"number_of_atoms":self.struct.num_sites}
 
-    def in_fragment(self, indice):
-        """Return True IFF atom at indice 'indice' is in a fragment"""
-        return self.fragnumbers[indice] != -1
+    def in_fragment(self, index):
+        """Return True IFF atom at index 'index' is in a fragment"""
+        return self.fragnumbers[index] != -1
 
     def create_fragment(self, fragtype, indices, fragnumber = 'auto'):
         """

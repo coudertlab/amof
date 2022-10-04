@@ -19,7 +19,8 @@ def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta
         first_frame = 0, parallel = False, write_mfpx = False, **kwargs):
     """
     Convenient wrapper to reduce trajectory by specifying a specific mof
-    For now works for 'ZIF-4', 'ZIF-8', 'ZIF-zni' and 'SALEM-2'
+    For can handle 'ZIF-4', 'ZIF-8', 'ZIF-zni' and 'SALEM-2'
+    Thoroughly tested only for 'ZIF-4'
 
     Args:
         trajectory: ase trajectory object
@@ -61,7 +62,7 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
                  parallelization issues + not adapted to analysis tools to have variable number of atoms)
             delta_Step: int, number of simulation steps between two frames
             filename: str, where to write output files, specify None to avoid writing
-            write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajetory
+            write_mfpx: bool, if True will write an mfpx file per frame of the reduced trajectory
                 if no filename is provided, will not write any
         
         Return:

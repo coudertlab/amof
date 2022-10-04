@@ -171,13 +171,13 @@ class Bad(CoreBad):
 
 class BadByCn(CoreBad):
     """
-    Modifed Bad class that computes BAD by Coordination Number (BAD for A bonded to 1 B, 2 B, etc.)
+    Modified Bad class that computes BAD by Coordination Number (BAD for A bonded to 1 B, 2 B, etc.)
 
     Partial BAD by cn are normalized such that the sum over cn of partial BAD[cn] is of total area 1 (same as Bad class result).
     Each cn has a weight proportional to the number of angles found for A atoms with cn B nn.
 
     Limited derivation from CoreBad class as the data structure behind is xarray instead of pandas
-    Bad could later be adapted with this new datastructure if this class end up routinely used
+    Bad could later be adapted with this new datastructures if this class end up routinely used
     """
 
     def __init__(self):

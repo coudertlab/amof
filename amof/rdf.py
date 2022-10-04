@@ -236,7 +236,7 @@ class RdfPlotter(object):
     def add_rdf(self, path_to_rdf, rdf_name = None):
         if rdf_name is None:
             rdf_name = path_to_rdf
-        self.multiple_rdf_data[rdf_name] = Rdf.from_rdf(path_to_rdf).rdf_data
+        self.multiple_rdf_data[rdf_name] = Rdf.from_rdf(path_to_rdf).data
 
     # must clean single_frame
     @classmethod
@@ -255,16 +255,8 @@ class RdfPlotter(object):
         """
         plot the rdf of a given neighbour nn_set (e.g. "X-X" or "Zn-Zn") for every rdf_data in multiple_rdf_data
         """
-        # plt.rcParams.update({'font.size': 8})
-        # plt.figure(figsize=[6.0, 2.3]) #default on spyder is [6.0, 4.0] 
         for rdf_name, rdf_data in self.multiple_rdf_data.items():
             plt.plot(rdf_data['r'], rdf_data[nn_set], label = rdf_name,  alpha=0.9, linewidth = 1)
-    #        cutoff = cutoff_from_rdf(x, rdf, 3, 3.8)
-    #        plt.axvline(cutoff, linestyle = '--', linewidth = 1)
-    #        plt.text(cutoff + 0.1, 0, "%.2f" % round(cutoff,2))
-    #        print(cutoff)
-    #        coord = coordination_number(x, rdf, cutoff, phases[t])
-    #        print(coord)
         plt.legend()
         plt.xlabel("$r$ (${\AA}$)")
         plt.ylabel("$g(r)$")
@@ -273,44 +265,6 @@ class RdfPlotter(object):
         plt.title(nn_set)
         if path_to_plot is not None:
             plt.savefig(path_to_plot + ".png", dpi = 300)
-        # plt.xlim(2.5,8.5)
-        # plt.savefig(path_to_plot+output_traj_name+"_rdf_"+prefix+".png", dpi = 300, bbox_inches='tight')
         plt.show()    
    
-
-
-#region deprecated code
-    # # TBC
-    # def cutoff_from_rdf(x, rdf, a, b): 
-    #     """ return x such that rdf(x) global minimun between a and b of rdf"""
-    #     return x[np.argmin(rdf[(x>a)*(x<b)])+np.size(rdf[x<=a])]
-
-    # def plot(self):
-    #     plt.plot(r, rdf)
-    #     plt.xlabel("$r$ (${\AA}$)")
-    #     plt.ylabel("$g(r)$")
-        
-    #     cutoff = cutoff_from_rdf(x, rdf, 3, 3.8)
-    #     plt.axvline(cutoff, linestyle = '--', linewidth = 1)
-    #     plt.text(cutoff + 0.1, 0, "%.2f" % round(cutoff,2))
-    #     plt.savefig(output_path + ".rdf_X-X" + ".png")
-    #     plt.show()
-
-    # def average_rdfs(traj_names, output_name):
-    #     """not changed, may be deprecated when data struct turned to df"""
-    #     rdf_prefixes = ["X-X", "Ag-X", "Sb-X", "Te-X", "Ag-Ag", "Sb-Sb", "Te-Te", "Ag-Sb", "Sb-Ag", "Te-Ag", "Ag-Te", "Sb-Te", "Te-Sb"]
-    #     prefixes = [".x"]+[".rdf_" + x for x in rdf_prefixes]
-    #     input_path = "../analysis/data/rdf/"
-    #     output_path = input_path
-        
-    #     for p in prefixes:
-    #         rdf_l = [] 
-    #         for traj_name in traj_names:
-    #             rdf_l.append(np.load(input_path + traj_name + p + ".npy"))
-            
-    #         rdf_l=np.array(rdf_l)
-    #         rdf = np.average(rdf_l, axis=0)
-    #         np.save(output_path +  output_name + p, rdf)   
-    # #average_rdfs(["3.c1.pbe","3.c2.pbe","3.c3.pbe"], "3.c.pbe")
-#endregion
 
