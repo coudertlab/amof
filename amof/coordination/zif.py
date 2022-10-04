@@ -88,11 +88,6 @@ class ZifSearch(CoordinationSearch):
         self.add_ABbonds(graph, B, A)
         self.add_ABbonds(graph, A, A)
 
-        #CLEAN
-        # debug option whenever missing cycle found
-        # graph.draw_graph_to_file("lastframe_before_cycle.svg", node_labels = True, hide_unconnected_nodes=False, hide_image_edges =False, algo='neato') #algo= neato or fdp
-        #CLEAN
-
         pattern = [A] + [B, A] * int((cycle_length - 1) / 2)
         cycles = self.find_rings(graph, pattern=pattern, target_number_of_rings = target_number_of_cycles, 
             exit_if_too_many_rings=False, remove_overlapping_rings=True)

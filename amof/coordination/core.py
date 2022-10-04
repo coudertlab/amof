@@ -4,7 +4,6 @@
 Core functions of coordination search
 """
 
-#CLEAN from re import L
 from ast import Raise
 import numpy as np
 import pymatgen
@@ -19,8 +18,6 @@ import itertools
 from scipy import stats
 
 import logging
-
-#CLEAN from xarray.core import dataset
 
 import amof.files.path
 import amof.structure
@@ -188,11 +185,6 @@ class CoordinationSearch(object):
             self.report_search['connectivity_wrongly_inferred_from_cutoffs'] = str(dict(Counter(irregular_nb).items()))
             self.report_search['connectivity_wrong_offsets'] = str(stats.describe(irregular_nb_offset))
 
-        #CLEAN
-        # self.struct.to(filename='vesta/not_constructible_connectivity/before_reduction.cif')
-        # reduced_struct.to(filename='vesta/not_constructible_connectivity/reduced.cif')
-        #CLEAN
-
         self.report_search['number_of_nodes'] = reduced_struct.num_sites
         self.report_search['symbols'] = str(self.symbols)
         return reduced_struct
@@ -218,7 +210,6 @@ class CoordinationSearch(object):
             self.frag_conn.append([])
             self.frag_conn_atoms.append([])
         for i, fragment in self.fragments.items():
-        #CLEAN for i,f in enumerate(self.fraglist):
             # determine all external bonds of this fragment
             for ia in fragment['indices']:
                 for ja in self.conn[ia]:
@@ -227,10 +218,6 @@ class CoordinationSearch(object):
                         # this is an external bond
                         self.frag_conn[i].append(j)
                         self.frag_conn_atoms[i].append((ia,ja))
-                        #CLEAN
-                        # logger.debug("fragment %d (%s) bonds to fragment %d (%s) %s - %s" %\
-                        #               (i, fragment['fragtype'], j, self.fraglist[j], self._mol.atypes[ia], self._mol.atypes[ja]))
-                        #CLEAN
 
     def get_atype(self, i):
         """Return atype of atom i formatted as in molsys"""
@@ -247,7 +234,7 @@ class CoordinationSearch(object):
 
     covalentradius = CovalentRadius().radius # private class variable exclusively used in get_covdist
 
-    def get_covdist(self, i, j): #CLEAN turn to class at some point to have struct as self. 
+    def get_covdist(self, i, j): # turn to class at some point to have struct as self. 
         """Return sum of covalent radii of the two atoms referenced by their index i and j"""
         return self.covalentradius[self.elems[i].title()] + self.covalentradius[self.elems[j].title()]
 
@@ -572,7 +559,6 @@ class CoordinationSearch(object):
             for i in range(len(A_indices)):
                 if A_enough_nn[i]==True and len(A_nn_distances[i])==0:
                     A_enough_nn[i]=False
-                    #CLEAN logger.debug("not enough nn for atom id:", A_indices[i], "; N bonds:", C_Nbonds[A_indices[i]], "; missing bonds:", target_N - len(A_conn[i]))
         
         # add A_conn to self.conn
         for i in range(len(A_indices)): 
