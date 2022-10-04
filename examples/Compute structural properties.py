@@ -23,7 +23,6 @@
 # Import hvplot for easy plotting
 import hvplot.xarray # noqa
 import hvplot.pandas # noqa
-# import xarray as xr
 import numpy as np
 
 # %% [markdown]
@@ -143,7 +142,7 @@ pore.data
 
 # %%
 import amof.ring as amring
-ring = amring.Ring.from_trajectory(traj, {'C-N': 1.728, 'C-C': 1.752}, max_search_depth = 6) # takes a few seconds to run
+ring = amring.Ring.from_trajectory(traj, {'C-N': 1.728, 'C-C': 1.752}, max_search_depth = 6) # takes a few minutes to run
 
 # %%
 ring.data.ring.to_series()

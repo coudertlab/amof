@@ -52,7 +52,7 @@ cell = cell.reshape(len(cell_output),3,3)
 cell
 
 # %% [markdown]
-# ### Elastic Constants (Radial Distribution Function)
+# ### Elastic Constants
 # The module `elastic` contains the `ElasticConstant` class that can load the cell information under any format that ASE [.set_cell()](https://wiki.fysik.dtu.dk/ase/ase/atoms.html#ase.Atoms.set_cell) method can process
 
 # %%
