@@ -64,7 +64,7 @@ pip install .
 ```
 
 Special care should be taken with [Asap](https://wiki.fysik.dtu.dk/asap/), which can only be installed if `numpy` is already installed and is thus not a default dependency. 
-To solve this, either have `asap` installed (following [their installation guide](https://wiki.fysik.dtu.dk/asap/Installation)) before installing `amof` with `pip install amof`, or first install `numpy` then install `amof` with the [extra](https://peps.python.org/pep-0508/#extras) `rdf`: 
+To solve this, either install `asap` independently (following [their installation guide](https://wiki.fysik.dtu.dk/asap/Installation)), or first install `numpy` then install `amof` with the [extra](https://peps.python.org/pep-0508/#extras) `rdf`: 
 ```
 pip install numpy
 pip install amof[rdf]
@@ -73,7 +73,6 @@ By default, graphical dependencies (used in the `plot` module) are not installed
 ```
 pip install amof[graphics]
 ```
-
 
 
 ### Documentation
