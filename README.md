@@ -6,7 +6,7 @@ aMOF is a python package consisting in a collection of tools to analyze Molecula
 
 ### General-purpose MD toolbox
 
-This package brings together a number of analysis that can be performed on every MD trajectory (not necessarily MOFs), heavily using pre-existing python packages or non-python codes.
+This package brings together a number of analyses that can be performed on every MD trajectory (not necessarily MOFs), heavily using both other python packages and non-python codes.
 It can compute the following properties:
 
 - Radial Distribution Functions (RDF), based on [ASAP](https://wiki.fysik.dtu.dk/asap)
@@ -64,7 +64,7 @@ pip install .
 ```
 
 Special care should be taken with [Asap](https://wiki.fysik.dtu.dk/asap/), which can only be installed if `numpy` is already installed and is thus not a default dependency. 
-To solve this, either install `asap` independently (following [their installation guide](https://wiki.fysik.dtu.dk/asap/Installation)), or first install `numpy` then install `amof` with the [extra](https://peps.python.org/pep-0508/#extras) `rdf`: 
+To solve this, either install `asap` independently (following [their installation guide](https://wiki.fysik.dtu.dk/asap/Installation)), or first install `numpy` then install `amof` with the `rdf` [extra](https://peps.python.org/pep-0508/#extras): 
 ```
 pip install numpy
 pip install amof[rdf]
