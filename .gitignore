@@ -6,6 +6,7 @@
 !*.py
 !*/ring/template/*
 !README.md
+!pyproject.toml
 # !template.latex
 # etc...
 

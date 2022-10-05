@@ -50,7 +50,8 @@ export PATH=$PATH:/path/to/rings/bin
 ```
 
 
-### Python package
+### Installation with pip
+
 aMOF can be installed from PyPI:
 ```
 pip install amof
@@ -61,6 +62,19 @@ git clone https://github.com/coudertlab/amof.git
 cd amof
 pip install . 
 ```
+
+Special care should be taken with [Asap](https://wiki.fysik.dtu.dk/asap/), which can only be installed if `numpy` is already installed and is thus not a default dependency. 
+To solve this, either have `asap` installed (following [their installation guide](https://wiki.fysik.dtu.dk/asap/Installation)) before installing `amof` with `pip install amof`, or first install `numpy` then install `amof` with the [extra](https://peps.python.org/pep-0508/#extras) `rdf`: 
+```
+pip install numpy
+pip install amof[rdf]
+```
+By default, graphical dependencies (used in the `plot` module) are not installed. To install them use the `graphics` extra:
+```
+pip install amof[graphics]
+```
+
+
 
 ### Documentation
 
