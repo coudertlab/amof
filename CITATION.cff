@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+title: aMOF
+message: "If you use this software, please cite it as below (WARNING: temporary version awaiting article publication)."
+type: software
+authors:
+  - given-names: Nicolas
+    family-names: Castel
+repository-code: "https://github.com/coudertlab/amof"
+url: "https://github.com/coudertlab/amof"
+license: MIT
+version: 1.0.0
+identifiers:
+  - type: url
+    value: "https://doi.org/10.26434/chemrxiv-2022-lw5n8-v2"
+    description: The ChemRxiv preprint.
+preferred-citation:
+  type: article
+  authors:
+    - given-names: Nicolas
+      family-names: Castel
+      affiliation: Chimie ParisTech - PSL & École des Ponts ParisTech 
+      orcid: "https://orcid.org/0000-0002-0572-3940"
+    - given-names: François-Xavier
+      family-names: Coudert
+      affiliation: Chimie ParisTech - PSL
+      orcid: "https://orcid.org/0000-0001-5318-3910"
+  title: "Challenges in Molecular Dynamics of Amorphous ZIFs using Reactive Force Fields"
+  year: 2022
+  doi: "10.26434/chemrxiv-2022-lw5n8-v2"

@@ -77,7 +77,7 @@ pip install amof[graphics]
 
 ### Documentation
 
-A documentation is available on [xxx]() and can easily be created with [pdoc](https://pdoc3.github.io/pdoc/). 
+A documentation is can easily be created with [pdoc](https://pdoc3.github.io/pdoc/). 
 
 Simply run (with pdoc installed):
 ```
