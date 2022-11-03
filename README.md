@@ -29,7 +29,7 @@ This allows the computation of rings statistics of the metal-ligand network.
 
 This code is designed to be compatible with [molsys](https://github.com/MOFplus/cmc-tools), and can be used to generate input files in `mfpx` format.
 
-The detailed algorithm for ZIF-4 is presented in the supporting information of the working paper [Challenges in Molecular Dynamics of Amorphous ZIFs using Reactive Force Fields](https://doi.org/10.26434/chemrxiv-2022-lw5n8).
+The detailed algorithm for ZIF-4 is presented in the supporting information of the paper [Challenges in Molecular Dynamics of Amorphous ZIFs using Reactive Force Fields](https://doi.org/10.26434/chemrxiv-2022-lw5n8).
 
 ## Installation
 
@@ -86,4 +86,10 @@ pdoc --html --output-dir path\to\docs path\to\amof
 
 ## Usage
 
+### Examples
+
 Examples analyses can be found in the `examples` folder of this repository.
+
+### Citation
+
+If you use the python package in published results (paper, conference, etc.), please cite the first paper for which it was developed: [Challenges in Molecular Dynamics of Amorphous ZIFs using Reactive Force Fields](https://doi.org/10.26434/chemrxiv-2022-lw5n8).
