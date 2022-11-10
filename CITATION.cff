@@ -11,8 +11,8 @@ license: MIT
 version: 1.0.0
 identifiers:
   - type: url
-    value: "https://doi.org/10.26434/chemrxiv-2022-lw5n8-v2"
-    description: The ChemRxiv preprint.
+    value: "https://doi.org/10.1021/acs.jpcc.2c06305"
+    description: The JPCC article.
 preferred-citation:
   type: article
   authors:
@@ -26,4 +26,4 @@ preferred-citation:
       orcid: "https://orcid.org/0000-0001-5318-3910"
   title: "Challenges in Molecular Dynamics of Amorphous ZIFs using Reactive Force Fields"
   year: 2022
-  doi: "10.26434/chemrxiv-2022-lw5n8-v2"
+  doi: "10.1021/acs.jpcc.2c06305"
