@@ -49,7 +49,7 @@ class Trajectory(object):
         # cls.traj = ase.io.trajectory(filename, mode='r')
         if unzip:
             logger.info("Unzip trajectory file")
-            with tempfile.NamedTemporaryFile(buffering=0) as tmp: # beffering messes with ase read in some way, desactivating it
+            with tempfile.NamedTemporaryFile(buffering=0) as tmp: # buffering messes with ase read in some way, deactivating it
                 with gzip.open(filename, 'rb') as f_in:
                     shutil.copyfileobj(f_in, tmp)
                 logger.info("Read trajectory with ase")
@@ -190,7 +190,7 @@ def read_lammps_data(filename, atom_style):
     """
     return Trajectory.from_lammps_data(filename, atom_style).get_traj()
 
-def read_lammps_traj(path_to_xyz, index = None, cell = None):
+def read_lammps_traj(path_to_xyz, index = None, cell = None, unzip_xyz = False):
     """
     Args: 
         index: index using ase format: 'first_frame:last_frame:step' or slice(first_frame,last_frame,step)
@@ -199,7 +199,7 @@ def read_lammps_traj(path_to_xyz, index = None, cell = None):
     Returns:
         traj: ase.trajectory object
     """
-    Traj = Trajectory.from_traj(path_to_xyz, index, format = 'xyz')
+    Traj = Trajectory.from_traj(path_to_xyz, index, format = 'xyz', unzip = unzip_xyz)
     if cell is not None:
         Traj.set_cell(cell, set_pbc = True)
     return Traj.get_traj()
