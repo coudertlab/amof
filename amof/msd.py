@@ -154,7 +154,7 @@ class WindowMsd(Msd):
         self.data = pd.DataFrame({"Time": np.empty([0])})
 
     @classmethod
-    def from_trajectory(cls, trajectory, delta_time = 100, max_time = "half", timestep = 1, parallel = False):
+    def from_trajectory(cls, trajectory, delta_time = 100, max_time = "half", timestep = 1, parallel = False, unwrap = False):
         """
         constructor of msd class
 
@@ -166,6 +166,9 @@ class WindowMsd(Msd):
                 if input max_time is higher than half of simulation size, will choose the latter
             timestep: int, time between two frames of the trajectory
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
+            unwrap: Boolean, if True will unwrap the trajectory before computing the MSD. 
+                Use if the input XYZ data was output with a code that automatically wrap the positions 
+                without keeping the center of mass constant.
         """
         msd_class = cls() # initialize class
         half_time = (len(trajectory) // 2) * timestep
@@ -176,7 +179,7 @@ class WindowMsd(Msd):
         delta_m = delta_time // timestep
         window = np.arange(0, max_time // timestep, delta_m)
         time = timestep * window
-        msd_class.compute_msd(trajectory, window, time, parallel)
+        msd_class.compute_msd(trajectory, window, time, parallel, unwrap)
         return msd_class # return class as it is a constructor
 
     @staticmethod
@@ -201,17 +204,32 @@ class WindowMsd(Msd):
         MSD = np.mean(MSD_partial)
         return MSD
 
-    def compute_msd(self, trajectory, window, time, parallel):
+    def compute_msd(self, trajectory, window, time, parallel, unwrap):
         """
         Args:
             trajectory: ase trajectory object
             window: np array, window
             time: np array, time in fs
             parallel: Boolean or int (number of cores to use): whether to parallelize the computation
-        """
-        logger.info("Start computing msd at %s times on a trajectory of %s frames", len(window), len(trajectory))
-        
+            unwrap: Boolean, if True will unwrap the trajectory before computing the MSD. 
+        """     
         elements = amof.atom.get_atomic_numbers_unique(trajectory[0])
+
+        cell = [atom.get_cell() for atom in trajectory]
+
+        # Unwrap before removing the center of mass by reconstructing the pos by summing the delta_pos
+        # Assumes that the timestep isn't too large and that the atoms don't move more than typically half the cell
+        if unwrap == True:
+            logger.info("Unwrap trajectory before computing msd")
+            positions = [atom.get_positions() for atom in trajectory]
+            delta_pos = amtraj.get_delta_pos(positions, cell)
+
+            new_pos = positions[0]
+            for i in range(1, len(trajectory)):
+                new_pos += delta_pos[i]
+                trajectory[i].set_positions(new_pos)
+
+        logger.info("Start computing msd at %s times on a trajectory of %s frames", len(window), len(trajectory))
 
         # Compensate MD drift of center of mass
         for atom in trajectory:
@@ -222,7 +240,6 @@ class WindowMsd(Msd):
         for x in elements:
             x_str = ase.data.chemical_symbols[x]
             positions_by_elt.append([amof.atom.select_species_positions(atom, x) for atom in trajectory])
-        cell = [atom.get_cell() for atom in trajectory]
 
         self.data = pd.DataFrame({"Time": time}) 
 
