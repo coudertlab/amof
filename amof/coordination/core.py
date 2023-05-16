@@ -149,9 +149,14 @@ class CoordinationSearch(object):
         Reduce the system by turning fragments into atoms 
             - reduce connectivity
             - change structure by creating a pymatgen site per fragment
+        
+        Fragments not set up (i.e. identified with "-1") won't be present in the reduced structure
         """
         self.make_frag_conn()
-        self.symbols.add_names(list(set(self.fragtypes)))
+        list_symbols = list(set(self.fragtypes))
+        if "-1" in list_symbols: # remove unidentified fragments from list (not present in self.fragments)
+            list_symbols.remove("-1")
+        self.symbols.add_names(list_symbols)
         species = [''] * len(self.fragments)
         coords = [[0. ,0., 0.]] * len(self.fragments)
         for fragnumber, fragment in self.fragments.items():

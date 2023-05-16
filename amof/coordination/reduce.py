@@ -19,8 +19,10 @@ def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta
         first_frame = 0, parallel = False, write_mfpx = False, **kwargs):
     """
     Convenient wrapper to reduce trajectory by specifying a specific mof
-    For can handle 'ZIF-4', 'ZIF-8', 'ZIF-zni' and 'SALEM-2'
-    Thoroughly tested only for 'ZIF-4'
+    For now can handle 'ZIF-4', 'ZIF-8', 'ZIF-zni' and 'SALEM-2' with full functionality
+    Or 'ZnCycle' only for detection of the C3N2 cycles (e.g. no mfpx output).
+    'ZnCycle' support any ZIF with Zn metal nodes linked to 4 linkers, each linker comprising a unique C3N2 cycle.    
+    Thoroughly tested only for 'ZIF-4' and decently tested with 'ZnCycle'
 
     Args:
         trajectory: ase trajectory object
@@ -44,6 +46,11 @@ def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta
     elif mof in  ['ZIF-8']:
         structure_reducer = lambda struct: amof.coordination.zif.MetalmIm(struct, "Zn", dist_margin=dist_margin)
         symbols = amof.symbols.DummySymbols(['Zn', 'mIm']) 
+    elif mof in  ['ZnCycle']:
+        structure_reducer = lambda struct: amof.coordination.zif.MetalCycle(struct, "Zn", dist_margin=dist_margin)
+        symbols = amof.symbols.DummySymbols(['Zn', 'ImCycle'])      
+        if write_mfpx == True:
+            logger.error(f'Write mfpx is not implemented for {mof}')   
     else:
         structure_reducer = lambda struct: amof.coordination.NotImplementedSearch(mof)
         symbols = amof.symbols.DummySymbols()

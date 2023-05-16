@@ -52,3 +52,16 @@ class ImidazoleBased(Linker):
         self.name = name
         self.formula = formula
         self.species = ["C", "H", "N"] #temporary fix, to be changed (smiles & co)
+
+class ImidazoleCycle(ImidazoleBased):
+    """
+    Class for representing the CNCNC cycle as generic imidazole-based linker
+    """
+    def __init__(self) -> None:
+        """
+        Args:
+            name: str, name of linker
+            formula: str, chemical formula (e.g. "C3H3N2")
+        """        
+        super().__init__("ImCycle", "C3N2")
+        self.species = ["C", "N"] # override 
