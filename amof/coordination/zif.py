@@ -236,7 +236,105 @@ class MetalIm(ZifSearch):
         dist_margin_H=1.44,
         ignore_H_in_reduction = True):
         """
-        Constructor for coordination search for MetalmIm glasses
+        Constructor for coordination search for MetalIm glasses
+
+        Args:
+            struct: pymatgen structure
+            metal: str, representing metal node
+            dist_margin: float, default tolerance when using the covalent radii criteria to determine if two atoms are neighbours
+            dist_margin_metal: float, specific tolerance for metal-X bonds as they're not covalent
+            dist_margin_H: float, specific tolerance for H-X bonds as the distance covalent radius of H is small,
+                causing the detection to be rather sensitive
+            ignore_H_in_reduction: bool, if True imid identification is only done by finding the cycle
+
+        """
+        self.node = bu.SingleMetal(metal, 4)
+        self.linker = bu.ImidazoleBased("Im", "C3N2H3")
+        ZifSearch.__init__(self, struct, dist_margin = dist_margin, 
+            dist_margin_metal = dist_margin_metal, 
+            dist_margin_H = dist_margin_H,
+            ignore_H_in_reduction = ignore_H_in_reduction)
+
+    
+    def detect_conn(self):
+        """
+        Main function to detect connectivity
+        """
+        # Find imid cycles (C-N-C-N-C)
+        self.find_ABAcycles("c", "n", cycle_length = 5, target_number_of_cycles = self.elems.count("n") / 2,
+            fragtype = self.linker.name)
+
+        # hard way to force the reduction to work by ignoring the failed imid search: to be investigated
+        if not self.report_search['Cycle search successful']:
+            raise SearchError('Cycle search failed', self.report_search)
+
+        # Connect H
+        H_perfectly_connected = True
+        
+        # add H based on cov radii to every C
+        new_fragments_name = self.linker.name if self.ignore_H_in_reduction else 'irregular_C'
+        report_entry = "C atoms missing H neighbours"
+        self.assign_B_uniquely_to_A_N_coordinated(
+            lambda i: (self.elems[i] == "c"), 
+            lambda i: (self.elems[i] == "h"),  
+            3, 
+            report_level = 'undercoordinated', report_entry = report_entry,
+            propagate_fragments = True, new_fragments_name = new_fragments_name,
+            dist_margin=self.dist_margin_H) 
+        H_perfectly_connected = H_perfectly_connected and self.report_search[report_entry] == []
+
+        # bind the remaining H (there should be non for the crystal)
+        H_Cbonds = self.get_A_Bbonds("h", "c")
+        new_fragments_name = self.linker.name if self.ignore_H_in_reduction else 'irregular_H'
+        report_entry = "H atoms not bonded to C"
+        self.find_N_closest_cov_dist(
+            lambda i: H_Cbonds[i] == 0, 
+            lambda i: True, 
+            1, 
+            report_level='full', report_entry= report_entry,
+            propagate_fragments = True, new_fragments_name = new_fragments_name,
+            dist_margin=self.dist_margin_H) 
+        H_perfectly_connected = H_perfectly_connected and self.report_search[report_entry] == []
+
+        self.report_search['H perfectly connected'] = H_perfectly_connected
+
+        # link N to metal_atom with no constraint on the number of N to metal_atom
+        metal_atom = self.node.name.lower()
+
+        self.assign_B_uniquely_to_A_N_coordinated(
+            lambda i: self.elems[i] == metal_atom, 
+            lambda i: self.elems[i] == "n",
+            self.node.target_coordination, 
+            dist_margin=self.dist_margin_metal, report_level='undercoordinated',
+            report_entry=f"undercoordinated {self.node.name}", new_fragments_name = self.node.name)            
+
+    def is_reduced_structure_valid(self):
+        """
+        Returns True iff nothing else then Im and Zn are found
+        """
+        return len(self.symbols.from_name_to_symbol) == 2
+    
+
+
+class MetalCycle(ZifSearch):
+    """
+    Generic search for ZIFs made of single metallic node and ligands composed of one imidazolate cycle (C3N2)
+    Only valid for reduction, all other atoms than the metallic node and C3N2 cycles are ignored.
+    Only work if there is only one C3N2 cycle per ligand, and if each metal node is linked to four N atoms (one per ligand)
+    
+    In principle supports most ZIF structures
+    Tested for: ZIF-4, ZIF-zni, SALEM-2, ZIF-8, ZIF-62, ZIF-11, ZIF-71, ZIF-7
+    Principle:
+        1. find every cycle of CNCNC
+        2. bind N and Zn
+    """
+
+    def __init__(self, struct, metal, dist_margin=1.2, 
+        dist_margin_metal=1.5, 
+        dist_margin_H=1.44,
+        ignore_H_in_reduction = True):
+        """
+        Constructor for coordination search for MetalCycle glasses
 
         Args:
             struct: pymatgen structure
