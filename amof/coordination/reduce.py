@@ -22,7 +22,7 @@ def reduce_trajectory(trajectory, mof, filename = None, dist_margin = 1.2, delta
     For now can handle 'ZIF-4', 'ZIF-8', 'ZIF-zni' and 'SALEM-2' with full functionality
     Or 'ZnCycle' only for detection of the C3N2 cycles (e.g. no mfpx output).
     'ZnCycle' support any ZIF with Zn metal nodes linked to 4 linkers, each linker comprising a unique C3N2 cycle.    
-    Thoroughly tested only for 'ZIF-4' and decently tested with 'ZnCycle'
+    Thoroughly tested only for 'ZIF-4' and decently tested for 'ZnCycle'
 
     Args:
         trajectory: ase trajectory object
