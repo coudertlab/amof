@@ -10,6 +10,7 @@
 !pyproject.toml
 !requirements.txt
 !CITATION.cff
+!examples/files/*
 # !template.latex
 # etc...
 
