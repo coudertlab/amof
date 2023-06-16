@@ -34,7 +34,7 @@ dependencies = [
 "pymatgen",
 "requests",
 "scipy",
-"xarray",
+"xarray~=0.19.0",
 ]
 dynamic = ["version"]
 
@@ -47,6 +47,7 @@ graphics = [
   "CairoSVG",
   "holoviews",
   "hvplot",
+  "selenium",
 ]
 
 

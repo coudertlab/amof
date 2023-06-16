@@ -74,6 +74,13 @@ By default, graphical dependencies (used in the `plot` module) are not installed
 pip install amof[graphics]
 ```
 
+#### Installation with conda
+
+Support for installing aMOF with `conda` is not included at the moment.
+However, `conda` can be used to first install all dependencies before installing `amof` with `pip`.
+```
+conda install -c conda-forge ase=3.20.1 asap3 pandas numpy xarray=0.19.0 dask netCDF4 bottleneck ase asap3 joblib pymatgen hvplot atomman jupyter jupyterlab jupytext matplotlib networkx scipy plotly seaborn cairosvg pyarrow selenium
+```
 
 ### Documentation
 
