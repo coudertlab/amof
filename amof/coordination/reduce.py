@@ -6,6 +6,10 @@ import pandas as pd
 import logging
 import joblib
 
+import time
+import multiprocessing
+import functools
+
 from pymatgen.io.ase import AseAtomsAdaptor
 from amof.coordination.core import SearchError
 
@@ -126,6 +130,24 @@ def reduce_trajectory_core(trajectory, structure_reducer, symbols, filename = No
             reduced_trajectory.write_to_file(filename)
         return reduced_trajectory
 
+
+# Forked from https://github.com/joblib/joblib/pull/366#issuecomment-267603530
+def with_timeout(timeout):
+    def decorator(decorated):
+        @functools.wraps(decorated)
+        def inner(*args, **kwargs):
+            pool = multiprocessing.pool.ThreadPool(1)
+            async_result = pool.apply_async(decorated, args, kwargs)
+            try:
+                return async_result.get(timeout)
+            except multiprocessing.TimeoutError:
+                raise SearchError('Timeout reached')            
+                return 
+        return inner
+    return decorator
+
+# Timeout of 30min per reduction. If it is still stuck it probably means that there is something wrong with the XYZ (e.g. unphysicaly clustered atoms)
+@with_timeout(1800)
 def reduce_atom(atom, structure_reducer, symbols, write_mfpx = False, filename = None):
     """
     Args:
