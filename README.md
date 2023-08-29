@@ -23,9 +23,8 @@ The backend for manipulating trajectories is [ASE](https://wiki.fysik.dtu.dk/ase
 
 A module called `coordination` allows the identification of the different building blocks of amorphous MOFs with an _ad hoc_ approach per MOF system.
 
-**Only ZIF-4 is supported in the current release.**
-
-This allows the computation of rings statistics of the metal-ligand network.
+This allows the computation of rings statistics of the metal-ligand network. 
+Only Zn-based ZIFs are natively supported, although the code can be quickly adapted for similar structures.
 
 This code is designed to be compatible with [molsys](https://github.com/MOFplus/cmc-tools), and can be used to generate input files in `mfpx` format.
 
@@ -96,6 +95,8 @@ pdoc --html --output-dir path\to\docs path\to\amof
 ### Examples
 
 Examples analyses can be found in the `examples` folder of this repository.
+
+An example workflow combining MD runs and their subsequent analyses can be found on the [`amof-workflow`](https://github.com/casteln/amof-workflow) repository.
 
 ### Citation
 
